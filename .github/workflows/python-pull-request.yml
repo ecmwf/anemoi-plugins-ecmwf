@@ -68,6 +68,7 @@ jobs:
       run: |
         for pkg in $CHANGED_PACKAGES; do
           cd $pkg # Change to the package directory
+          export GITHUB_WORKSPACE=$(pwd)
           echo "Running pytest in $pkg"
           pytest ./
         done
