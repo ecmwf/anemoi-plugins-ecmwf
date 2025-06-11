@@ -67,5 +67,7 @@ jobs:
       if: env.CHANGED_PACKAGES != ''
       run: |
         for pkg in $CHANGED_PACKAGES; do
-          pytest $pkg
+          cd $pkg # Change to the package directory
+          echo "Running pytest in $pkg"
+          pytest ./
         done
