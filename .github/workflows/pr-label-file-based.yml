@@ -13,6 +13,7 @@ jobs:
   labeler:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
     - name: Assign labels from file changes
       uses: actions/labeler@v5
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
