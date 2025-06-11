@@ -1,8 +1,5 @@
 # An anemoi-inference multio output plugin
 
-[![Upload Python Package](https://github.com/ecmwf/anemoi-inference-output-multio/actions/workflows/python-publish.yml/badge.svg)](https://github.com/ecmwf/anemoi-inference-output-multio/actions/workflows/python-publish.yml)
-[![Code Quality checks and Testing](https://github.com/ecmwf/anemoi-inference-output-multio/actions/workflows/python-pull-request.yml/badge.svg)](https://github.com/ecmwf/anemoi-inference-output-multio/actions/workflows/python-pull-request.yml)
-
 Write `anemoi-inference` with multio.
 
 ## Install
