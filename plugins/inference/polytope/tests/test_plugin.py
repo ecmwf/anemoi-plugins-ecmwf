@@ -15,6 +15,7 @@ from anemoi.inference.runners import create_runner
 from anemoi.inference.testing import fake_checkpoints
 from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
 
+
 @fake_checkpoints
 def test_plugin():
     config = MockRunConfiguration.load(
