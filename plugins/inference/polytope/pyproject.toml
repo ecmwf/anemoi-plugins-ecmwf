@@ -48,7 +48,7 @@ dependencies = [
 ]
 optional-dependencies.tests = [ "anemoi-inference[tests]>=0.5.2", "pytest" ]
 
-urls.Homepage = "https://github.com/ecmwf/anemoi-plugins"
+urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
 
 entry-points."anemoi.inference.inputs".polytope = "anemoi_inference_input_polytope.polytope_input:PolytopeInputPlugin"
 
