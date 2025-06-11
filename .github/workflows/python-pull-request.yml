@@ -60,12 +60,12 @@ jobs:
       if: env.CHANGED_PACKAGES != ''
       run: |
         for pkg in $CHANGED_PACKAGES; do
-          pip install -e ./$pkg[all,tests]
+          pip install -e ./$pkg/[all,tests]
         done
 
     - name: Run pytest for changed packages
       if: env.CHANGED_PACKAGES != ''
       run: |
         for pkg in $CHANGED_PACKAGES; do
-          pytest $pkg
+          pytest $pkg/
         done
