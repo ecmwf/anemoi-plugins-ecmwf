@@ -1,0 +1,14 @@
+plans:
+- name: output-to-file
+  actions:
+  - type: print
+    stream: cout
+    prefix: ' ++ MULTIO-DEBUG-PRIOR-ENCODE :: '
+    only-fields: false
+  - type: encode-mtg2
+  - type: sink
+    sinks:
+    - type: file
+      append: true
+      per-server: false
+      path: 'output.grib'
