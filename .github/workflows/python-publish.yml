@@ -1,0 +1,24 @@
+
+name: Upload Python Package to PyPI
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: contains(github.event.release.tag_name, '-')
+    steps:
+      - name: Extract package name
+        id: extract
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          NAME="${TAG%%-*}"
+          echo "package_name=$NAME" >> $GITHUB_OUTPUT
+
+      - name: Release to PyPI
+        uses: ecmwf/reusable-workflows/.github/workflows/cd-pypi.yml@v2
+        with:
+          working-directory: ./${{ steps.extract.outputs.package_name }}
+          secrets: inherit

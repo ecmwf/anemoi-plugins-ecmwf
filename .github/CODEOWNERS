@@ -1,0 +1,4 @@
+/.github/ @ecmwf/AnemoiSecurity
+
+/.pre-commit-config.yaml @ecmwf/AnemoiSecurity
+/.release-please-config.json @ecmwf/AnemoiSecurity
