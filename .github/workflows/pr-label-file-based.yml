@@ -15,5 +15,3 @@ jobs:
     steps:
     - name: Assign labels from file changes
       uses: actions/labeler@v5
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
