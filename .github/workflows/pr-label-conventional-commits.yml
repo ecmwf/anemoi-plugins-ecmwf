@@ -18,6 +18,8 @@ jobs:
     if: github.event.pull_request.merged == false
     steps:
       - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Assign labels from Conventional Commits
         id: action-assign-labels
         uses: mauroalderete/action-assign-labels@v1
