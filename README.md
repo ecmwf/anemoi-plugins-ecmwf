@@ -36,6 +36,41 @@ i.e. for the `my_input` above, if it is an inference input,
 anemoi_inference_input_my_input
 ```
 
+## Versioning & Release
+
+### pyproject.toml
+
+To setup a new plugin for release and proper versioning, ensure you do the following,
+
+In the `pyproject.toml` including the following to allow dynamic versioning, and replace the parts in `{}`.
+
+```toml
+
+[tool.setuptools_scm]
+
+root = ".."
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+git_describe_command = "git describe --dirty --tags --long --match '{PACKAGE}-{NAME}-*[0-9]*'"
+tag_regex = "^{PACKAGE}-{NAME}-(?P<version>[vV]?[0-9]+[^-]*)"
+version_file = "src/{PACKAGE_PATH}/_version.py"
+fallback_version = "0.0.0"
+```
+
+### release-please
+
+Then to set it up with release-please, modify the `.release-please-config.yaml`. And your package,
+and replace the parts in `{}`.
+
+```yaml
+packages: {
+    "{PATH_TO_PACKAGE}": {
+      "package-name": "{PACKAGED_NAME}",
+      "component": "{PATH_EXCEPT_PLUGINS}"
+    }
+}
+```
+
 ## License
 
 ```text
