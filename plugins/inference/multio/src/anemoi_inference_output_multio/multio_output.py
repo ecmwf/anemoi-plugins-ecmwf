@@ -44,8 +44,8 @@ class UserDefinedMetadata(BaseMetadata):
     """Class name, e.g. od, ai, ..."""
     expver: str
     """Experiment version, e.g. 0001"""
-    # model: str
-    # """Model name, e.g. aifs-single, ..."""
+    model: str
+    """Model name, e.g. aifs-single, ..."""
     number: Optional[int] = NULL_TO_REMOVE  # TODO Check if defined by model or user
     """Ensemble number, e.g. 0,1,2"""
 
@@ -174,8 +174,6 @@ class MultioOutputPlugin(Output):
 
             # Copy the field to ensure it is contiguous
             # Removes ValueError: ndarray is not C-contiguous
-            print(field.shape, {**metadata.to_dict(), **self._user_defined_metadata.to_dict()})
-            breakpoint()
             self._server.write_field(
                 {**metadata.to_dict(), **self._user_defined_metadata.to_dict()}, field.copy(order="C")
             )
