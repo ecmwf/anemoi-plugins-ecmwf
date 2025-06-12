@@ -44,7 +44,7 @@ dynamic = [ "version" ]
 
 dependencies = [
   "anemoi-inference>=0.5.1",
-  "pymultio>=2.5",
+  "pymultio>=2.5.1.dev0",
 ]
 optional-dependencies.tests = [ "anemoi-inference[tests]>=0.5.2", "pytest" ]
 
@@ -63,3 +63,6 @@ git_describe_command = "git describe --dirty --tags --long --match 'inference/mu
 tag_regex = "^inference/multio-(?P<version>[vV]?[0-9]+[^-]*)"
 version_file = "src/anemoi_inference_output_multio/_version.py"
 fallback_version = "0.0.0"
+
+[tool.uv.pip]
+prerelease = "allow"
