@@ -12,6 +12,30 @@ Interfaces and functionality are likely to change, and the project itself may be
 As this repo contains many repositories, see the underlying pages for information
 about how to install.
 
+## Conventions
+
+When adding a plugin to this monorepo, add it under `plugins/{ANEMOI_PACKAGE}/{PLUGIN_NAME}`
+
+i.e. for an inference source
+
+```text
+plugins
+| --- inference
+      | --- my_input
+```
+
+For best discoverability, the plugin should follow the naming convention,
+
+```text
+anemoi_{PACKAGE_NAME}_{SUB_INFORMATION}_{PLUGIN_NAME}
+```
+
+i.e. for the `my_input` above, if it is an inference input,
+
+```text
+anemoi_inference_input_my_input
+```
+
 ## License
 
 ```text
