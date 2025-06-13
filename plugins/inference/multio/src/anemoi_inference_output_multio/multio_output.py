@@ -132,7 +132,6 @@ class MultioOutputPlugin(Output):
         state : State
             The state object.
         """
-        return
 
         state = state.copy()
 
@@ -168,7 +167,7 @@ class MultioOutputPlugin(Output):
             metadata = MultioMetadata(
                 param=param,
                 levtype=variable.grib_keys["levtype"],
-                levelist=variable.level if variable.is_pressure_level else 0,
+                levelist=variable.level if not variable.is_surface else NULL_TO_REMOVE,
                 **shared_metadata,
             )
 

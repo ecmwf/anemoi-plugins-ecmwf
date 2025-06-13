@@ -6,6 +6,7 @@ plans:
     prefix: ' ++ MULTIO-DEBUG-PRIOR-ENCODE :: '
     only-fields: false
   - type: encode-mtg2
+    geo-from-atlas: true
   - type: sink
     sinks:
     - type: file
