@@ -168,7 +168,7 @@ class MultioOutputPlugin(Output):
             metadata = MultioMetadata(
                 param=param,
                 levtype=variable.grib_keys["levtype"],
-                levelist=variable.level if variable.is_pressure_level else "0",
+                levelist=variable.level if variable.is_pressure_level else 0,
                 **shared_metadata,
             )
 
