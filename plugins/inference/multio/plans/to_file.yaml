@@ -1,0 +1,11 @@
+plans:
+- name: output-to-file
+  actions:
+  - type: encode-mtg2
+    geo-from-atlas: true
+  - type: sink
+    sinks:
+    - type: file
+      append: true
+      per-server: false
+      path: 'output.grib'

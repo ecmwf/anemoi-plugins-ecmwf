@@ -1,0 +1,11 @@
+---
+checkpoint: checkpoints/simple.ckpt
+date: 2020-01-01
+output:
+  multio:
+    plan: null
+    stream: test
+    expver: 1
+    klass: test
+    type: test
+    model: test
