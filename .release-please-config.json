@@ -14,12 +14,12 @@
   "pull-request-footer": "> [!IMPORTANT]\n> :warning: Merging this PR will:\n> - Create a new release\n> - Trigger deployment pipelines\n> - Update package versions\n\n **Before merging:**\n - Ensure all tests pass\n - Review the changelog carefully\n - Get required approvals\n\n [Release-please documentation](https://github.com/googleapis/release-please)",
   "packages": {
     "plugins/inference/multio": {
-      "component": "inference/multio",
+      "component": "inference-multio",
       "package-name": "inference-multio"
     },
     "plugins/inference/polytope": {
-      "package-name": "inference-polytope",
-      "component": "inference/polytope"
+      "component": "inference-polytope",
+      "package-name": "inference-polytope"
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
