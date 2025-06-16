@@ -46,7 +46,7 @@ class UserDefinedMetadata(BaseMetadata):
     """Experiment version, e.g. 0001"""
     model: str
     """Model name, e.g. aifs-single, ..."""
-    number: Optional[int] = NULL_TO_REMOVE  # TODO Check if defined by model or user
+    number: Optional[int] = NULL_TO_REMOVE
     """Ensemble number, e.g. 0,1,2"""
 
     def to_dict(self):
@@ -123,6 +123,7 @@ class MultioOutputPlugin(Output):
             with multio.MultioPlan(self._plan):
                 self._server = multio.Multio()
         self._server.open_connections()
+        self._server.write_parametrization(self._user_defined_metadata.to_dict())
 
     def write_initial_state(self, state: State) -> None:
         """Write the initial step of the state.
@@ -173,9 +174,7 @@ class MultioOutputPlugin(Output):
 
             # Copy the field to ensure it is contiguous
             # Removes ValueError: ndarray is not C-contiguous
-            self._server.write_field(
-                {**metadata.to_dict(), **self._user_defined_metadata.to_dict()}, field.copy(order="C")
-            )
+            self._server.write_field({**metadata.to_dict()}, field.copy(order="C"))
 
         self._server.flush()
 
