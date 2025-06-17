@@ -1,0 +1,9 @@
+plans:
+- name: output-to-fdb
+  actions:
+  - type: encode-mtg2
+    geo-from-atlas: true
+  - type: sink
+    sinks:
+    - type: fdb
+      config: 'fdb_config'

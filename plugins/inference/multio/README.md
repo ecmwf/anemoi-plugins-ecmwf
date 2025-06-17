@@ -34,8 +34,7 @@ output:
         plans:
         - name: output-to-file
           actions:
-          # - type: encode
-          #     format: grib
+          - type: encode-mtg2
           - type: sink
               sinks:
               - type: file
@@ -48,6 +47,8 @@ output:
       expver: '0001'
       model: 'aifs'
       stream: 'oper'
+      # number: 1
+      # numberOfEnsemblesInForecast: 50
 ```
 
 To run, just like any other
@@ -55,6 +56,9 @@ To run, just like any other
 ```bash
 anemoi-inference run config.yaml
 ```
+
+> [!NOTE]
+> If you are using an ensemble, set `number` to the ensemble number and `numberOfEnsemblesInForecast` to the total number.
 
 ### Preset Plans
 
