@@ -48,7 +48,7 @@ output:
       model: 'aifs'
       stream: 'oper'
       # number: 1
-      # numberOfEnsemblesInForecast: 50
+      # numberOfForecastsInEnsemble: 50
 ```
 
 To run, just like any other
@@ -58,7 +58,7 @@ anemoi-inference run config.yaml
 ```
 
 > [!NOTE]
-> If you are using an ensemble, set `number` to the ensemble number and `numberOfEnsemblesInForecast` to the total number.
+> If you are using an ensemble, set `number` to the ensemble number and `numberOfForecastsInEnsemble` to the total number.
 
 ### Preset Plans
 

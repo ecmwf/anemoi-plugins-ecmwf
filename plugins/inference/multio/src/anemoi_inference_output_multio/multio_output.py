@@ -48,17 +48,18 @@ class UserDefinedMetadata(BaseMetadata):
     """Model name, e.g. aifs-single, ..."""
     number: Optional[int] = NULL_TO_REMOVE
     """Ensemble number, e.g. 0,1,2"""
-    numberOfEnsemblesInForecast: Optional[int] = NULL_TO_REMOVE
+    numberOfForecastsInEnsemble: Optional[int] = NULL_TO_REMOVE
     """Number of ensembles in the forecast, e.g. 50"""
 
     def to_dict(self):
         dict_repr = super().to_dict()
         dict_repr["class"] = dict_repr.pop("klass")
+        dict_repr["misc-numberOfForecastsInEnsemble"] = dict_repr.pop("numberOfForecastsInEnsemble")
         return dict_repr
 
     def __post_init__(self):
-        if isinstance(self.number, int) and not isinstance(self.numberOfEnsemblesInForecast, int):
-            error_msg = "numberOfEnsemblesInForecast must be an integer if number is provided"
+        if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
+            error_msg = "numberOfForecastsInEnsemble must be an integer if number is provided"
             raise AttributeError(error_msg)
 
 
