@@ -44,7 +44,7 @@ dynamic = [ "version" ]
 
 dependencies = [
   "anemoi-inference>=0.5.1",
-  "pymultio>=2.5.1.dev0",
+  "pymultio>=2.5.1.dev20250627",
 ]
 optional-dependencies.tests = [ "anemoi-inference[tests]>=0.5.2", "pytest" ]
 
