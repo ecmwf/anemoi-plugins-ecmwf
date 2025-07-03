@@ -6,11 +6,11 @@ Write `anemoi-inference` with multio.
 
 ```python
 
-pip install ---- #TODO
+pip install "git+https://github.com/ecmwf/anemoi-plugins-ecmwf.git#subdirectory=plugins/inference/multio"
 
 ```
 
-However, `multio` does not have a build, and must be built manually.
+The recommended `pymultio` is `pymultio>=2.5.1.dev20250627`
 
 ## Usage
 
