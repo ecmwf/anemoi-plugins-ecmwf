@@ -27,7 +27,11 @@ NULL_TO_REMOVE = "NULL_TO_REMOVE"
 
 
 class BaseMetadata:
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the dataclass to a dictionary representation.
+
+        Will remove any fields that have the value NULL_TO_REMOVE.
+        """
         dict_repr = asdict(self)
         # Remove None values
         dict_repr = {key: value for key, value in dict_repr.items() if value is not NULL_TO_REMOVE}
@@ -51,10 +55,11 @@ class UserDefinedMetadata(BaseMetadata):
     numberOfForecastsInEnsemble: Optional[int] = NULL_TO_REMOVE
     """Number of ensembles in the forecast, e.g. 50"""
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         dict_repr = super().to_dict()
         dict_repr["class"] = dict_repr.pop("klass")
-        dict_repr["misc-numberOfForecastsInEnsemble"] = dict_repr.pop("numberOfForecastsInEnsemble")
+        if "numberOfForecastsInEnsemble" in dict_repr:
+            dict_repr["misc-numberOfForecastsInEnsemble"] = dict_repr.pop("numberOfForecastsInEnsemble")
         return dict_repr
 
     def __post_init__(self):
@@ -217,7 +222,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
                 multio.plans.Plan(
                     name="output-to-file",
                     actions=[
-                        multio.plans.EncodeMTG(),
+                        multio.plans.EncodeMTG(geo_from_atlas=True),
                         multio.plans.Sink(
                             sinks=[
                                 multio.plans.sinks.File(
@@ -257,7 +262,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
                 multio.plans.Plan(
                     name="output-to-fdb",
                     actions=[
-                        multio.plans.EncodeMTG(),
+                        multio.plans.EncodeMTG(geo_from_atlas=True),
                         multio.plans.Sink(
                             sinks=[
                                 multio.plans.sinks.FDB(
