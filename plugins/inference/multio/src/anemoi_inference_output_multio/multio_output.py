@@ -207,7 +207,9 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
     It is a subclass of the MultioOutputPlugin class.
     """
 
-    def __init__(self, context: Context, path: str, **kwargs: Any) -> None:
+    def __init__(
+        self, context: Context, path: str, append: bool = True, per_server: bool = False, **kwargs: Any
+    ) -> None:
         """Multio Grib Output Plugin.
 
         Parameters
@@ -216,6 +218,10 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
             Model Runner
         path : str
             Path to write to
+        append : bool
+            Whether to append to the file or not
+        per_server : bool
+            Whether to write to a separate file per server or not
         """
         plan = multio.plans.Client(
             plans=[
@@ -226,8 +232,8 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
                         multio.plans.Sink(
                             sinks=[
                                 multio.plans.sinks.File(
-                                    append=True,
-                                    per_server=False,
+                                    append=append,
+                                    per_server=per_server,
                                     path=path,
                                 )
                             ]
