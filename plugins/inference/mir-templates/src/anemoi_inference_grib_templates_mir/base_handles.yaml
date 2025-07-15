@@ -1,0 +1,29 @@
+# (C) Copyright 2025 Anemoi contributors.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+# Q-1000, GRIB2, ECMWF, CCSDS
+- - { levtype: pl }
+  - |
+    eJztlL9Lw0AYht+7NtVBBIUOBYcqDiIK1UUHhyCKFac6iYMUUXBwcNNFyOCv0aWOUvAf6OBucerg4KiTdhFdxMHJJb7fJdFLI6
+    F/gPeQ45I7jnD3vc/S6vK870PDNKfFLq+wCQxD9bxp1ccPPp8BDUV0VpVKpSmuLGeA3kVPK4zBTzZAe7KjjJ11PWm2P+Ygv/e0
+    ESxQLjCIAka5wySmMQcXZbKCCtZRxRZ2cUAOcYpzcoE6rg1N0sKDoY0Pwxd/r58UDRPENSyoHYt94pFzUlONkFvD8w8v6lPQPB
+    Y99INrsRbixTgjVyH3CR71e0AGIUWLcVL9k6MOminckdc4WVjMprCdgpeg0QU3Ng7+6Yb4qXV1zsnbSbvLtBqwaqWzjkxtNVPo
+    rNO/q1nq3K77MAtRNpiSZHKiTEm+4omLcmhn8zexzG+QZCb6N91B2qPs14wLPCJusF2xEBpEXBJYRfwCfIXGaYcGahkfBWaq01
+    LiqlNaS9y1S4tVabMKrSZuc2m5adpujNYr0H7ASFbMyG39S1pRycsW30/qkUdRcES0GJcpLy99fxEi11xOpp2eGbZv22c1Jg==
+
+# LSM, GRIB2, ECMWF, CCSDS  (we use LSM so the level info is missing)
+# retrieve,levtype=sfc,param=lsm,grid=n320,target=data.grib
+- - {}
+  - |
+    eJzt1LFLw0AYBfB3Z9M6iKBQpOBQxUFEobro4BBEseKkkzhIEQUHBzddhAyKjl10lIL/gIO7xamDg6NO6iK6iIOTS3zf5aqXpo
+    T+AeZHw9GEIyTfe4urS3NhqDXM4TV4yitsAkNQuXete/hHyF+fhiKdUaVSaZJ3lruA7oVAK4wiTB6ADmRHWXvresJsf8xFfu9p
+    I7pB+UA/ChjhDhOYwix8lGkZK1hHBVvYxQEd4gRVOkcN10adGngwXvBpfPPxeqlojJNvzKsdxz4FVKUzdWXdGs+/XtWX0KDBX7
+    5jzQpiTunSuk941B+RLlhFxxhV2jpqUU9xR29xGThmUmynCBKuOnDj8vCvE/G31tF7Tn6dtG+ZNgPOrLTOkZmteorWOW0/zTLn
+    7tzbLDSzwZQkk9PMlOQrnrhmDt1s/iWW+Y2SzET/pTtKezP7Z6YLApJucLti3jaIdEnUKtIvwLdtnBfbQA3TR1Ez1dhS0lUnbC
+    3prl22WIVttsJWk27z2XJTbLtRtl6B7QcMZ6LqRXjBVlSyUrEeRcGTosWYXAoG5NxbhJRrNiuXvdw0jx+V0Dib
