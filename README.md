@@ -14,27 +14,17 @@ about how to install.
 
 ## Conventions
 
-When adding a plugin to this monorepo, add it under `plugins/{ANEMOI_PACKAGE}/{PLUGIN_NAME}`
+When adding a plugin to this monorepo, add it under `{ANEMOI_PACKAGE}/src/.../{PLUGIN_NAME}`
 
 i.e. for an inference source
 
 ```text
-plugins
-| --- inference
+inference
+| --- src/.../
       | --- my_input
 ```
 
 For best discoverability, the plugin should follow the naming convention,
-
-```text
-anemoi_{PACKAGE_NAME}_{SUB_INFORMATION}_{PLUGIN_NAME}
-```
-
-i.e. for the `my_input` above, if it is an inference input,
-
-```text
-anemoi_inference_input_my_input
-```
 
 ## Versioning & Release
 
@@ -42,34 +32,8 @@ anemoi_inference_input_my_input
 
 To setup a new plugin for release and proper versioning, ensure you do the following,
 
-In the `pyproject.toml` including the following to allow dynamic versioning, and replace the parts in `{}`.
-
-```toml
-
-[tool.setuptools_scm]
-
-root = ".."
-version_scheme = "post-release"
-local_scheme = "no-local-version"
-git_describe_command = "git describe --dirty --tags --long --match '{PACKAGE}-{NAME}-*[0-9]*'"
-tag_regex = "^{PACKAGE}-{NAME}-(?P<version>[vV]?[0-9]+[^-]*)"
-version_file = "src/{PACKAGE_PATH}/_version.py"
-fallback_version = "0.0.0"
-```
-
-### release-please
-
-Then to set it up with release-please, modify the `.release-please-config.yaml`. And your package,
-and replace the parts in `{}`.
-
-```yaml
-packages: {
-    "{PATH_TO_PACKAGE}": {
-      "package-name": "{PACKAGED_NAME}",
-      "component": "{PATH_EXCEPT_PLUGINS}"
-    }
-}
-```
+In the `pyproject.toml` for the plugin package include the new plugin in the `optional-dependencies`,
+and in the `entry-points`
 
 ## License
 

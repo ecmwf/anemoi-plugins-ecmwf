@@ -47,7 +47,7 @@ jobs:
       run: |
         echo "CHANGED_PACKAGES<<EOF" >> $GITHUB_ENV
         git fetch origin ${{ github.base_ref }} --depth=1
-        for pkg in plugins/*/*; do
+        for pkg in *; do
             if [ -d "$pkg" ]; then
                 if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^${pkg}/"; then
                     echo "$pkg"

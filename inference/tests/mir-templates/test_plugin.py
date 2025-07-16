@@ -8,7 +8,7 @@
 # nor does it submit to any jurisdiction.
 
 from anemoi.inference.grib.templates import create_template_provider
-from anemoi_inference_grib_templates_mir.mir_templates import MirTemplatesProvider
+from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
 
 
 def test_registration():

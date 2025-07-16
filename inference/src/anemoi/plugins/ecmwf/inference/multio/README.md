@@ -66,3 +66,23 @@ Additionally, two preset plans are provided
 
 - `multio.grib` : Write to grib
 - `multio.fdb`  : Write to FDB
+
+```yaml
+checkpoint:
+  huggingface: ecmwf/aifs-single-1.0
+
+date: 2020-01-01
+
+input: mars
+
+output:
+  multio.grib:
+      path: 'output.grib'
+      type: 'an'
+      klass: 'ml'
+      expver: '0001'
+      model: 'aifs'
+      stream: 'oper'
+      # number: 1
+      # numberOfForecastsInEnsemble: 50
+```

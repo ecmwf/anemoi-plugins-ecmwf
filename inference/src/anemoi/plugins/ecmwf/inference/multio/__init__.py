@@ -8,3 +8,6 @@
 # nor does it submit to any jurisdiction.
 
 """Anemoi Inference Output Multio Plugin"""
+
+
+from .multio_output import MultioOutputPlugin as MultioOutputPlugin
