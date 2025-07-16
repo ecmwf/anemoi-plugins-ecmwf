@@ -72,6 +72,3 @@ addopts = [
   "--numprocesses=8",
   "--strict-config",
 ]
-
-[tool.uv.pip]
-prerelease = "allow"

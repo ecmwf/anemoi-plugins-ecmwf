@@ -30,7 +30,7 @@ def MirTemplatesProvider_instance():
     return MirTemplatesProvider(manager)
 
 
-@pytest.mark.parametrize("grid", ["O48", "O96", "N320", "O1280", "1.0/1.0", "0.5/0.5", "0.25/0.25"])
+@pytest.mark.parametrize("grid", ["O48", "O96", "N320", "O1280", "1.0/1.0", "0.5/0.5", "0.25/0.25", [0.5, 0.5]])
 @pytest.mark.parametrize("lookup", VALID_LOOKUPS)
 def test_simple_regrid(MirTemplatesProvider_instance: MirTemplatesProvider, lookup: dict[str, Any], grid: str):
     """Test that the simple regrid template is correctly done."""
@@ -49,8 +49,15 @@ def test_simple_regrid(MirTemplatesProvider_instance: MirTemplatesProvider, look
     ), f"Expected grid {expected_grid}, got {template.metadata().geography.mars_grid()}"
 
 
-@pytest.mark.parametrize("grid", ["0.5/0.5", "0.25/0.25"])
-@pytest.mark.parametrize("area_box", [("10/-0.5/0.5/11", [10.0, 359.5, 0.5, 11.0]), ("2/4/2/4", [2.0, 4.0, 2.0, 4.0])])
+@pytest.mark.parametrize("grid", ["0.5/0.5", "0.25/0.25", [0.5, 0.5]])
+@pytest.mark.parametrize(
+    "area_box",
+    [
+        ("10/-0.5/0.5/11", [10.0, 359.5, 0.5, 11.0]),
+        ("2/4/2/4", [2.0, 4.0, 2.0, 4.0]),
+        ([2, 4, 2, 4], [2.0, 4.0, 2.0, 4.0]),
+    ],
+)
 @pytest.mark.parametrize("lookup", VALID_LOOKUPS)
 def test_regrid_and_area(
     MirTemplatesProvider_instance: MirTemplatesProvider,
