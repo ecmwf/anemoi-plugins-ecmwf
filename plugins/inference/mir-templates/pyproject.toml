@@ -47,8 +47,9 @@ dependencies = [
   "earthkit-data",
   "mir-python>=1.27.1.dev20250627",
 ]
-optional-dependencies.tests = [ "anemoi-inference[tests]>=0.5.2", "pytest", "pytest-xdist" ]
+optional-dependencies.all = [ "anemoi-inference-grib-templates-mir[tests]" ]
 
+optional-dependencies.tests = [ "anemoi-inference[tests]>=0.5.2", "pytest", "pytest-xdist" ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins"
 
 entry-points."anemoi.inference.grib.templates".mir = "anemoi_inference_grib_templates_mir.mir_templates:MirTemplatesProvider"
