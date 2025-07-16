@@ -11,9 +11,3 @@ plans:
     stream: cout
     prefix: ' ++ MULTIO-DEBUG-POST-ENCODE :: '
     only-fields: false
-  - type: sink
-    sinks:
-    - type: file
-      append: true
-      per-server: false
-      path: 'debug.grib'
