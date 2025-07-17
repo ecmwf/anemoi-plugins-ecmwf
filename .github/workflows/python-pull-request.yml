@@ -70,6 +70,7 @@ jobs:
           pushd $pkg # Change to the package directory
           export GITHUB_WORKSPACE=$(pwd)
           echo "Running pytest in $pkg"
-          pytest ./
+          pytest --cov=./ --cov-report=xml --emoji
+          python -m coverage report
           popd # Return to the previous directory
         done
