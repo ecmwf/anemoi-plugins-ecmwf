@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ["ubuntu-latest", "macos-latest"]
+        platform: ["ubuntu-latest", "macos-latest", [self-hosted, macOS, ARM64], [self-hosted, macOS, X64]]
         python-version: ["3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 60
@@ -30,6 +30,11 @@ jobs:
       with:
         fetch-depth: 0
         fetch-tags: true
+
+    - name: Install dependencies on macOS
+      if: runner.os == 'macOS'
+      run: |
+        brew install fftw
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -70,7 +75,7 @@ jobs:
           pushd $pkg # Change to the package directory
           export GITHUB_WORKSPACE=$(pwd)
           echo "Running pytest in $pkg"
-          pytest --cov=./ --cov-report=xml --emoji
+          pytest --cov=./ --cov-report=xml --emoji --md report.md
           python -m coverage report
           popd # Return to the previous directory
         done
