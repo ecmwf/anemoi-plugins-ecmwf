@@ -15,10 +15,10 @@ from unittest.mock import patch
 from anemoi.inference.runners import create_runner
 from anemoi.inference.testing import fake_checkpoints
 from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
-from anemoi_inference_output_multio.multio_output import MultioOutputPlugin
+from anemoi.plugins.ecmwf.inference.multio import MultioOutputPlugin
 
 
-@patch("anemoi_inference_output_multio.multio_output.MultioOutputPlugin.open")
+@patch("anemoi.plugins.ecmwf.inference.multio.MultioOutputPlugin.open")
 @fake_checkpoints
 def test_metadata(mock_open_function) -> None:
     """Test the inference process using a fake checkpoint.

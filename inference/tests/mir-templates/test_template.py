@@ -10,7 +10,7 @@
 from typing import Any
 
 import pytest
-from anemoi_inference_grib_templates_mir.mir_templates import MirTemplatesProvider
+from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
 
 
 class MockTemplateManager:

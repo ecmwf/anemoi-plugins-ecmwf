@@ -1,0 +1,81 @@
+# (C) Copyright 2025- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+[build-system]
+requires = [ "setuptools>=60", "setuptools-scm>=8" ]
+
+[project]
+name = "anemoi-plugins-ecmwf-inference"
+
+description = "Plugins for anemoi.inference as built by ECMWF"
+readme = "README.md"
+
+keywords = [
+  "anemoi-inference",
+]
+
+license = { file = "LICENSE" }
+authors = [
+  { name = "European Centre for Medium-Range Weather Forecasts (ECMWF)", email = "software.support@ecmwf.int" },
+]
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+dynamic = [ "version" ]
+dependencies = [
+  "anemoi-inference>=0.5.1",
+]
+
+optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[multio,mir,polytope]" ]
+optional-dependencies.mir = [ "earthkit-data", "mir-python>=1.27.1.dev20250627" ]
+optional-dependencies.multio = [ "pymultio[all]>=2.5.1.dev20250627" ]
+optional-dependencies.polytope = [ "earthkit-data[polytope]" ]
+optional-dependencies.tests = [
+  "anemoi-inference>=0.5.2",
+  "anemoi-plugins-ecmwf-inference[all]",
+  "pytest",
+  "pytest-xdist",
+]
+urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
+
+## Entry Points
+entry-points."anemoi.inference.grib.templates".mir = "anemoi.plugins.ecmwf.inference.mir_templates.mir_templates:MirTemplatesProvider"
+entry-points."anemoi.inference.inputs".polytope = "anemoi.plugins.ecmwf.inference.polytope.polytope:PolytopeInputPlugin"
+entry-points."anemoi.inference.outputs"."multio" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputPlugin"
+entry-points."anemoi.inference.outputs"."multio.fdb" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputFDBPlugin"
+entry-points."anemoi.inference.outputs"."multio.grib" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputGribPlugin"
+
+[tool.setuptools.package-data]
+"anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
+
+[tool.setuptools_scm]
+root = ".."
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+git_describe_command = "git describe --dirty --tags --long --match 'inference-[0-9]*'"
+tag_regex = "^inference-(?P<version>[vV]?[0-9]+[^-]*)"
+version_file = "src/anemoi/plugins/ecmwf/inference/_version.py"
+fallback_version = "0.0.0"
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+addopts = [
+  "--numprocesses=8",
+  "--strict-config",
+]

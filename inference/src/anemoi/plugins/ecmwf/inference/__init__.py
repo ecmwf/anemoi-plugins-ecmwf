@@ -7,4 +7,4 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-"""Anemoi Inference Polytope Input Plugin"""
+"""Anemoi Inference Plugins by ECMWF"""

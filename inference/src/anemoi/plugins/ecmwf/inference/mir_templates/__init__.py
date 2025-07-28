@@ -8,3 +8,5 @@
 # nor does it submit to any jurisdiction.
 
 """Anemoi Inference Grib Templates Mir Plugin"""
+
+from .mir_templates import MirTemplatesProvider as MirTemplatesProvider
