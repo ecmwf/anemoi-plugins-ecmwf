@@ -4,8 +4,6 @@ name: Upload Python Package to PyPI
 on:
   release:
     types: [created]
-  workflow_dispatch:
-
 
 jobs:
   extract-package-name:
@@ -31,5 +29,4 @@ jobs:
     uses: ecmwf/reusable-workflows/.github/workflows/cd-pypi.yml@v2
     with:
       working-directory: ./${{ needs.extract-package-name.outputs.package_name }}
-      testpypi: ${{ github.event_name == 'workflow_dispatch' }}
     secrets: inherit
