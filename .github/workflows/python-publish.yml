@@ -16,9 +16,14 @@ jobs:
       - name: Extract package name from tag
         id: extract
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.ref_name }}"
           NAME="${TAG%%-*}"
+          if [ -z "$NAME" ]; then
+            echo "Package name is empty. Exiting."
+            exit 1
+          fi
           echo "Extracted package name: $NAME"
+
           echo "package_name=$NAME" >> $GITHUB_OUTPUT
 
   deploy:
