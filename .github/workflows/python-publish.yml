@@ -4,21 +4,32 @@ name: Upload Python Package to PyPI
 on:
   release:
     types: [created]
+  workflow_dispatch:
+
 
 jobs:
-  deploy:
+  extract-package-name:
     runs-on: ubuntu-latest
-    if: contains(github.event.release.tag_name, '-')
+    outputs:
+      package_name: ${{ steps.extract.outputs.package_name }}
     steps:
-      - name: Extract package name
+      - name: Extract package name from tag
         id: extract
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.ref_name }}"
           NAME="${TAG%%-*}"
+          if [ -z "$NAME" ]; then
+            echo "Package name is empty. Exiting."
+            exit 1
+          fi
+          echo "Extracted package name: $NAME"
+
           echo "package_name=$NAME" >> $GITHUB_OUTPUT
 
-      - name: Release to PyPI
-        uses: ecmwf/reusable-workflows/.github/workflows/cd-pypi.yml@v2
-        with:
-          working-directory: ./${{ steps.extract.outputs.package_name }}
-          secrets: inherit
+  deploy:
+    needs: extract-package-name
+    uses: ecmwf/reusable-workflows/.github/workflows/cd-pypi.yml@v2
+    with:
+      working-directory: ./${{ needs.extract-package-name.outputs.package_name }}
+      testpypi: ${{ github.event_name == 'workflow_dispatch' }}
+    secrets: inherit
