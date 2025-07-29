@@ -9,4 +9,4 @@
 
 """Anemoi Inference Opendata Input Plugin"""
 
-from .opendata import OpenDataInput as OpenDataInput
+from .opendata import OpenDataInputPlugin as OpenDataInputPlugin

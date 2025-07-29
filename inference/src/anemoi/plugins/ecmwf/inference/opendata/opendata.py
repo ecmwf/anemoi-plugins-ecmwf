@@ -49,9 +49,10 @@ def _retrieve_soil(request: dict, soil_params: list[str]) -> ekd.FieldList:
     ekd.FieldList
         Soil data.
     """
-    levels = list(set(int(s[-1]) for s in soil_params))
+    request = request.copy()
+
     request["param"] = list(SOIL_MAPPING[s] for s in soil_params)
-    request["levelist"] = levels
+    request["levelist"] = list(set(int(s[-1]) for s in soil_params))
     request.pop("levtype")
 
     soil_data = ekd.from_source("ecmwf-open-data", request)
@@ -105,7 +106,7 @@ def regridding(
 
         for k in ["typeOfLevel", "time", "date"]:
             namespace_metadata[k] = f.metadata()[k]
-        for k in ["domain", "levtype", "step", "validityDate", "validityTime"]:
+        for k in ["domain", "levtype", "type", "step", "validityDate", "validityTime", "timespan"]:
             namespace_metadata.pop(k)
 
         r += r.from_array(np.expand_dims(interpolated_values, 0), f_md.override(**namespace_metadata))  # type: ignore
@@ -153,7 +154,7 @@ def retrieve(
 
         return ",".join(f"{k}={v}" for k, v in mars.items())
 
-    result = ekd.from_source("empty")
+    result = ekd.SimpleFieldList()
     for r in requests:
         r.update(kwargs)
 
@@ -165,7 +166,7 @@ def retrieve(
         if any(k in r["param"] for k in SOIL_MAPPING.keys()):
             requested_soil_variables = [k for k in SOIL_MAPPING.keys() if k in r["param"]]
             r["param"] = [p for p in r["param"] if p not in requested_soil_variables]
-            result += regridding(_retrieve_soil(r.copy(), requested_soil_variables), grid, area, template)
+            result += regridding(_retrieve_soil(r, requested_soil_variables), grid, area, template)
 
         LOG.debug("%s", _(r))
         result += regridding(ekd.from_source("ecmwf-open-data", r), grid, area, template)  # type: ignore
@@ -173,7 +174,7 @@ def retrieve(
     return result
 
 
-class OpenDataInput(GribInput):
+class OpenDataInputPlugin(GribInput):
     """Get input fields from ECMWF open-data."""
 
     trace_name = "opendata"
@@ -183,7 +184,6 @@ class OpenDataInput(GribInput):
         context: Context,
         *,
         pre_processors: Optional[list[ProcessorConfig]] = None,
-        namer: Optional[Any] = None,
         templates: Optional[Union[str, dict]] = None,
         **kwargs: Any,
     ) -> None:
@@ -198,8 +198,11 @@ class OpenDataInput(GribInput):
         templates : Optional[Union[str, dict]], optional
             Optional specification for template provider, by default None
         """
-        super().__init__(context, namer=namer, pre_processors=pre_processors)
-        self.pre_processors.append(OrographyProcessor(context=context))
+        rules_for_namer = [
+            ({"levtype": "sol"}, "{param}"),
+        ]
+        super().__init__(context, namer={"rules": rules_for_namer}, pre_processors=pre_processors)
+        self.pre_processors.append(OrographyProcessor(context=context, orog="gh"))
 
         self.variables = self.checkpoint.variables_from_input(include_forcings=False)
         self.kwargs = kwargs
@@ -254,6 +257,7 @@ class OpenDataInput(GribInput):
             variables=variables,
             dates=dates,
             use_grib_paramid=self.context.use_grib_paramid,
+            type="fc",
         )
 
         if not requests:
@@ -266,15 +270,17 @@ class OpenDataInput(GribInput):
             self.checkpoint.grid,
             self.checkpoint.area,
             template_provider=self.template_provider,
-            patch=self.context.patch_data_request,
+            patch=self.patch_data_request,
             **kwargs,
         )
 
-    def load_forcings_state(self, *, dates: list[Date], current_state: State) -> State:
+    def load_forcings_state(self, *, variables: list[str], dates: list[Date], current_state: State) -> State:
         """Load the forcings state for the given variables and dates.
 
         Parameters
         ----------
+        variables : List[str]
+            The list of variables for which to load the forcings state.
         dates : list[Date]
             The list of dates for which to load the forcings state.
         current_state : State
@@ -285,4 +291,6 @@ class OpenDataInput(GribInput):
         Any
             The loaded forcings state.
         """
-        return self._load_forcings_state(self.retrieve(self.variables, dates), dates=dates, current_state=current_state)
+        return self._load_forcings_state(
+            self.retrieve(variables, dates), variables=variables, dates=dates, current_state=current_state
+        )

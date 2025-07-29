@@ -1,15 +1,12 @@
 # An anemoi-inference polytope input plugin
 
-<!-- [![Upload Python Package](https://github.com/ecmwf/anemoi-inference-input-polytope/actions/workflows/python-publish.yml/badge.svg)](https://github.com/ecmwf/anemoi-inference-input-polytope/actions/workflows/python-publish.yml)
-[![Code Quality checks and Testing](https://github.com/ecmwf/anemoi-inference-input-polytope/actions/workflows/python-pull-request.yml/badge.svg)](https://github.com/ecmwf/anemoi-inference-input-polytope/actions/workflows/python-pull-request.yml) -->
-
 Initialise `anemoi-inference` with polytope.
 
 ## Install
 
 ```python
 
-pip install anemoi-inference-input-polytope
+pip install anemoi-plugins-ecmwf-inference[polytope]
 
 ```
 
