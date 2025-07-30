@@ -6,7 +6,7 @@ Write `anemoi-inference` with multio.
 
 ```python
 
-pip install "git+https://github.com/ecmwf/anemoi-plugins-ecmwf.git#subdirectory=plugins/inference/multio"
+pip install anemoi-plugins-ecmwf-inference[multio]
 
 ```
 
