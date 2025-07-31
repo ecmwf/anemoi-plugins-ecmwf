@@ -45,7 +45,7 @@ dependencies = [
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[multio,mir,polytope,opendata]" ]
 optional-dependencies.mir = [ "earthkit-data", "mir-python>=1.27.1.dev20250627" ]
 optional-dependencies.multio = [ "pymultio[all]>=2.5.1.dev20250627" ]
-optional-dependencies.opendata = [ "earthkit-data[opendata]", "earthkit-regrid" ]
+optional-dependencies.opendata = [ "earthkit-data", "ecmwf-opendata", "earthkit-regrid" ]
 optional-dependencies.polytope = [ "earthkit-data[polytope]" ]
 optional-dependencies.tests = [
   "anemoi-inference>=0.5.2",
