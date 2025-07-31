@@ -29,7 +29,7 @@ class InferenceOrography(Orography):
         if param is None:
             return data_request
 
-        if self.z in param and data_request["levtype"] == "pl":
+        if self.z in param and (data_request.get("levtype", "") == "pl" or data_request.get("levelist", []) :
             data_request["param"] = [self.orog if p == self.z else p for p in param]
         return data_request
 
