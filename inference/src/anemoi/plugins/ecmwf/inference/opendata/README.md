@@ -1,12 +1,12 @@
-# An anemoi-inference polytope input plugin
+# An anemoi-inference opendata input plugin
 
-Initialise `anemoi-inference` with polytope.
+Initialise `anemoi-inference` with ECMWF Opendata.
 
 ## Install
 
 ```python
 
-pip install anemoi-plugins-ecmwf-inference[polytope]
+pip install anemoi-plugins-ecmwf-inference[opendata]
 
 ```
 
@@ -24,7 +24,7 @@ checkpoint:
 
 date: 2020-01-01
 
-input: polytope
+input: opendata
 ```
 
 To run, just like any other

@@ -8,6 +8,7 @@ This package includes all plugins developed for anemoi inference developed by EC
 |-----------|------------------------------------|
 | `multio`  | Write out to a multio plan         |
 | `polytope`| Use polytope as an input source    |
+| `opendata`| Use ecmwf-opendata as an input source    |
 | `mir`     | Use mir to create grib templates   |
 | `regrid`  | Use `earthkit-regrid` to preprocess|
 
