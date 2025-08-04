@@ -17,13 +17,11 @@ import earthkit.data as ekd
 from anemoi.inference.context import Context
 from anemoi.inference.grib.templates import TemplateProvider
 from anemoi.inference.grib.templates import create_template_provider
-from anemoi.inference.inputs.grib import GribInput
+from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
 from anemoi.inference.types import ProcessorConfig
-from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
-from earthkit.data.utils.dates import to_datetime
 
 from .geopotential_height import OrographyProcessor
 
@@ -174,7 +172,7 @@ def retrieve(
     return result
 
 
-class OpenDataInputPlugin(GribInput):
+class OpenDataInputPlugin(MarsInput):
     """Get input fields from ECMWF open-data."""
 
     trace_name = "opendata"
@@ -208,34 +206,6 @@ class OpenDataInputPlugin(GribInput):
         self.kwargs = kwargs
 
         self.template_provider = create_template_provider(self, templates or "builtin")  # type: ignore
-
-    def create_input_state(self, *, date: Optional[Date]) -> State:
-        """Create the input state for the given date.
-
-        Parameters
-        ----------
-        date : Optional[Date]
-            The date for which to create the input state.
-
-        Returns
-        -------
-        State
-            The created input state.
-        """
-        if date is None:
-            date = to_datetime(-1)
-            LOG.warning("OpenDataInput: `date` parameter not provided, using yesterday's date: %s", date)
-
-        date = to_datetime(date)
-
-        return self._create_input_state(
-            self.retrieve(
-                self.variables,
-                [date + h for h in self.checkpoint.lagged],
-            ),
-            variables=self.variables,
-            date=date,
-        )
 
     def retrieve(self, variables: list[str], dates: list[Date]) -> Any:
         """Retrieve data for the given variables and dates.
@@ -272,25 +242,4 @@ class OpenDataInputPlugin(GribInput):
             template_provider=self.template_provider,
             patch=self.patch_data_request,
             **kwargs,
-        )
-
-    def load_forcings_state(self, *, variables: list[str], dates: list[Date], current_state: State) -> State:
-        """Load the forcings state for the given variables and dates.
-
-        Parameters
-        ----------
-        variables : List[str]
-            The list of variables for which to load the forcings state.
-        dates : list[Date]
-            The list of dates for which to load the forcings state.
-        current_state : State
-            The current state to be updated with the loaded forcings state.
-
-        Returns
-        -------
-        Any
-            The loaded forcings state.
-        """
-        return self._load_forcings_state(
-            self.retrieve(variables, dates), variables=variables, dates=dates, current_state=current_state
         )
