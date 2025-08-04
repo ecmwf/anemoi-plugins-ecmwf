@@ -110,7 +110,7 @@ class MirTemplatesProvider(TemplateProvider):
         if base_template is None:
             raise ValueError(f"Base template not found for variable {variable} with lookup {lookup}")
 
-        regridded_template = self._regrid_with_mir(base_template, grid, area)
+        regridded_template = self._regrid_with_mir(base_template, str(grid), area)
 
         if len(regridded_template) == 0:
             raise ValueError(f"Regridded template is empty for variable {variable} with lookup {lookup}")
