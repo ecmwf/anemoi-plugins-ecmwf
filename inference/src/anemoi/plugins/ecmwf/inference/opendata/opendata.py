@@ -107,7 +107,7 @@ def regridding(
         for k in ["typeOfLevel", "time", "date"]:
             namespace_metadata[k] = f.metadata()[k]
         for k in ["domain", "levtype", "type", "step", "validityDate", "validityTime", "timespan"]:
-            namespace_metadata.pop(k)
+            namespace_metadata.pop(k, None)
 
         r += r.from_array(np.expand_dims(interpolated_values, 0), f_md.override(**namespace_metadata))  # type: ignore
     return r
