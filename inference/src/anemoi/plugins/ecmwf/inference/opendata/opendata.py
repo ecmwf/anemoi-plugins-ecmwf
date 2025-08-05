@@ -10,19 +10,17 @@
 
 import logging
 from typing import Any
-from typing import Optional
 
 import earthkit.data as ekd
 from anemoi.inference.context import Context
-from anemoi.inference.grib.templates import create_template_provider
 from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
 from anemoi.inference.types import ProcessorConfig
 from anemoi.utils.grib import shortname_to_paramid
 
-from .geopotential_height import OrographyProcessor
 from ..regrid import regrid as ekr
+from .geopotential_height import OrographyProcessor
 
 LOG = logging.getLogger(__name__)
 
@@ -54,21 +52,21 @@ def _retrieve_soil(request: dict, soil_params: list[str]) -> ekd.FieldList:
 
     soil_data = ekd.from_source("ecmwf-open-data", request)
     assert isinstance(soil_data, ekd.FieldList), "Expected a FieldList from the soil data request"
-    
+
     for field in soil_data:
         newname = {f"{v}{k[-1]}": k for k, v in SOIL_MAPPING.items()}[
             f"{field.metadata()['param']}{field.metadata()['level']}"
         ]
-        field._metadata = field.metadata().override(paramId=shortname_to_paramid(newname)) # type: ignore
+        field._metadata = field.metadata().override(paramId=shortname_to_paramid(newname))  # type: ignore
 
     return soil_data
 
 
 def retrieve(
     requests: list[dict[str, Any]],
-    grid: Optional[str | list[float]],
-    area: Optional[list[float]],
-    patch: Optional[Any] = None,
+    grid: str | list[float] | None,
+    area: list[float] | None,
+    patch: Any | None = None,
     **kwargs: Any,
 ) -> ekd.FieldList:
     """Retrieve data from ECMWF Opendata.
@@ -129,7 +127,7 @@ class OpenDataInputPlugin(MarsInput):
         self,
         context: Context,
         *,
-        pre_processors: Optional[list[ProcessorConfig]] = None,
+        pre_processors: list[ProcessorConfig] | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the OpenDataInput.
@@ -174,7 +172,7 @@ class OpenDataInputPlugin(MarsInput):
         )
 
         if not requests:
-            raise ValueError("No requests for {} ({})".format(variables, dates))
+            raise ValueError(f"No requests for {variables} ({dates})")
 
         kwargs = self.kwargs.copy()
 
