@@ -51,7 +51,11 @@ def _retrieve_soil(request: dict, soil_params: list[str]) -> ekd.FieldList:
 
     soil_data = ekd.from_source("ecmwf-open-data", request)
     assert isinstance(soil_data, ekd.FieldList), "Expected a FieldList from the soil data request"
+    return soil_data
 
+
+def rename_soildata(soil_data: ekd.FieldList) -> ekd.FieldList:
+    """Rename soil data param to match the expected format."""
     for field in soil_data:
         newname = {f"{v}{k[-1]}": k for k, v in SOIL_MAPPING.items()}[
             f"{field.metadata()['param']}{field.metadata()['level']}"
@@ -109,7 +113,7 @@ def retrieve(
         if any(k in r["param"] for k in SOIL_MAPPING.keys()):
             requested_soil_variables = [k for k in SOIL_MAPPING.keys() if k in r["param"]]
             r["param"] = [p for p in r["param"] if p not in requested_soil_variables]
-            result += ekr.regrid(_retrieve_soil(r, requested_soil_variables), grid, area)
+            result += rename_soildata(ekr.regrid(_retrieve_soil(r, requested_soil_variables), grid, area))
 
         LOG.debug("%s", _(r))
         result += ekr.regrid(ekd.from_source("ecmwf-open-data", r), grid, area)  # type: ignore
