@@ -16,7 +16,6 @@ from anemoi.inference.context import Context
 from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
-from anemoi.inference.types import ProcessorConfig
 from anemoi.utils.grib import shortname_to_paramid
 
 from ..regrid import regrid as ekr
@@ -126,8 +125,6 @@ class OpenDataInputPlugin(MarsInput):
     def __init__(
         self,
         context: Context,
-        *,
-        pre_processors: list[ProcessorConfig] | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the OpenDataInput.
@@ -136,17 +133,13 @@ class OpenDataInputPlugin(MarsInput):
         ----------
         context : Any
             The context in which the input is used.
-        namer : Optional[Any]
-            Optional namer for the input.
         """
         rules_for_namer = [
             ({"levtype": "sol"}, "{param}"),
         ]
-        super().__init__(context, namer={"rules": rules_for_namer}, pre_processors=pre_processors)
+        kwargs.pop("namer", None)  # Ensure namer is not passed to MarsInput
+        super().__init__(context, namer={"rules": rules_for_namer}, **kwargs)
         self.pre_processors.append(OrographyProcessor(context=context, orog="gh"))
-
-        self.variables = self.checkpoint.variables_from_input(include_forcings=False)
-        self.kwargs = kwargs
 
     def retrieve(self, variables: list[str], dates: list[Date]) -> Any:
         """Retrieve data for the given variables and dates.
