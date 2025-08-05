@@ -11,11 +11,9 @@
 import logging
 from typing import Any
 from typing import Optional
-from typing import Union
 
 import earthkit.data as ekd
 from anemoi.inference.context import Context
-from anemoi.inference.grib.templates import TemplateProvider
 from anemoi.inference.grib.templates import create_template_provider
 from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.types import DataRequest
@@ -24,6 +22,7 @@ from anemoi.inference.types import ProcessorConfig
 from anemoi.utils.grib import shortname_to_paramid
 
 from .geopotential_height import OrographyProcessor
+from ..regrid import regrid as ekr
 
 LOG = logging.getLogger(__name__)
 
@@ -50,72 +49,25 @@ def _retrieve_soil(request: dict, soil_params: list[str]) -> ekd.FieldList:
     request = request.copy()
 
     request["param"] = list(SOIL_MAPPING[s] for s in soil_params)
-    request["levelist"] = list(set(int(s[-1]) for s in soil_params))
+    request["levelist"] = list({int(s[-1]) for s in soil_params})
     request.pop("levtype")
 
     soil_data = ekd.from_source("ecmwf-open-data", request)
+    assert isinstance(soil_data, ekd.FieldList), "Expected a FieldList from the soil data request"
+    
     for field in soil_data:
         newname = {f"{v}{k[-1]}": k for k, v in SOIL_MAPPING.items()}[
             f"{field.metadata()['param']}{field.metadata()['level']}"
         ]
-        field._metadata = field.metadata().override(paramId=shortname_to_paramid(newname))
+        field._metadata = field.metadata().override(paramId=shortname_to_paramid(newname)) # type: ignore
 
     return soil_data
 
 
-def regridding(
-    fields: ekd.FieldList, grid: Optional[Union[str, list[float]]], area: Optional[list[float]], template: ekd.Field
-) -> ekd.FieldList:
-    """Apply regridding to the field.
-
-    Parameters
-    ----------
-    fields : ekd.FieldList
-        Fields to be regridded.
-    grid : Optional[Union[str, list[float]]]
-        Grid for the regridding.
-    area : Optional[list[float]]
-        Area for the regridding.
-    template : ekd.Field
-        Template for the regridding.
-
-    Returns
-    -------
-    ekd.FieldList
-        Regridded fields.
-    """
-    import earthkit.regrid as ekr
-    import numpy as np
-
-    r = ekd.FieldList()
-
-    _ = area
-
-    f_md = template.metadata()
-
-    for f in fields:
-        rolled_values = np.roll(f.to_numpy(), -f.shape[1] // 2, axis=1)
-        interpolated_values = ekr.interpolate(rolled_values, in_grid={"grid": (0.25, 0.25)}, out_grid={"grid": grid})
-
-        # Set the metadata with the grid directly, not this ridiculous template, TODO Harrison Cook
-        namespace_metadata = f.metadata().as_namespace("mars")
-        namespace_metadata.update(f.metadata().as_namespace("time"))
-        namespace_metadata["paramId"] = shortname_to_paramid(namespace_metadata.pop("param"))
-
-        for k in ["typeOfLevel", "time", "date"]:
-            namespace_metadata[k] = f.metadata()[k]
-        for k in ["domain", "levtype", "type", "step", "validityDate", "validityTime", "timespan"]:
-            namespace_metadata.pop(k)
-
-        r += r.from_array(np.expand_dims(interpolated_values, 0), f_md.override(**namespace_metadata))  # type: ignore
-    return r
-
-
 def retrieve(
     requests: list[dict[str, Any]],
-    grid: Optional[Union[str, list[float]]],
+    grid: Optional[str | list[float]],
     area: Optional[list[float]],
-    template_provider: TemplateProvider,
     patch: Optional[Any] = None,
     **kwargs: Any,
 ) -> ekd.FieldList:
@@ -129,8 +81,6 @@ def retrieve(
         The grid for the retrieval.
     area : Optional[list[float]]
         The area for the retrieval.
-    template_provider : TemplateProvider
-        Template provider for the regridding.
     patch : Optional[Any], optional
         Optional patch for the request, by default None.
     **kwargs : Any
@@ -159,15 +109,13 @@ def retrieve(
         if patch:
             r = patch(r)
 
-        template = template_provider.template(None, {"grid": grid, "levtype": r["levtype"]})  # type: ignore
-
         if any(k in r["param"] for k in SOIL_MAPPING.keys()):
             requested_soil_variables = [k for k in SOIL_MAPPING.keys() if k in r["param"]]
             r["param"] = [p for p in r["param"] if p not in requested_soil_variables]
-            result += regridding(_retrieve_soil(r, requested_soil_variables), grid, area, template)
+            result += ekr.regrid(_retrieve_soil(r, requested_soil_variables), grid, area)
 
         LOG.debug("%s", _(r))
-        result += regridding(ekd.from_source("ecmwf-open-data", r), grid, area, template)  # type: ignore
+        result += ekr.regrid(ekd.from_source("ecmwf-open-data", r), grid, area)  # type: ignore
 
     return result
 
@@ -182,7 +130,6 @@ class OpenDataInputPlugin(MarsInput):
         context: Context,
         *,
         pre_processors: Optional[list[ProcessorConfig]] = None,
-        templates: Optional[Union[str, dict]] = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the OpenDataInput.
@@ -193,8 +140,6 @@ class OpenDataInputPlugin(MarsInput):
             The context in which the input is used.
         namer : Optional[Any]
             Optional namer for the input.
-        templates : Optional[Union[str, dict]], optional
-            Optional specification for template provider, by default None
         """
         rules_for_namer = [
             ({"levtype": "sol"}, "{param}"),
@@ -204,8 +149,6 @@ class OpenDataInputPlugin(MarsInput):
 
         self.variables = self.checkpoint.variables_from_input(include_forcings=False)
         self.kwargs = kwargs
-
-        self.template_provider = create_template_provider(self, templates or "builtin")  # type: ignore
 
     def retrieve(self, variables: list[str], dates: list[Date]) -> Any:
         """Retrieve data for the given variables and dates.
@@ -231,7 +174,7 @@ class OpenDataInputPlugin(MarsInput):
         )
 
         if not requests:
-            raise ValueError("No requests for %s (%s)" % (variables, dates))
+            raise ValueError("No requests for {} ({})".format(variables, dates))
 
         kwargs = self.kwargs.copy()
 
@@ -239,7 +182,6 @@ class OpenDataInputPlugin(MarsInput):
             requests,
             self.checkpoint.grid,
             self.checkpoint.area,
-            template_provider=self.template_provider,
             patch=self.patch_data_request,
             **kwargs,
         )
