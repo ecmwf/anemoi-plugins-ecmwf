@@ -68,7 +68,7 @@ jobs:
       if: env.CHANGED_PACKAGES != ''
       run: |
         for pkg in $CHANGED_PACKAGES; do
-          uv pip install -e ./$pkg[all,tests] pytest pytest-md pytest-emoji
+          uv pip install -e ./$pkg[all,tests] pytest pytest-md pytest-emoji --prerelease=allow
         done
 
     - name: Run pytest for changed packages
