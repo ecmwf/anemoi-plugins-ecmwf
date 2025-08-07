@@ -10,21 +10,15 @@
 
 import logging
 from typing import Any
-from typing import Optional
-from typing import Union
 
 import earthkit.data as ekd
 from anemoi.inference.context import Context
-from anemoi.inference.grib.templates import TemplateProvider
-from anemoi.inference.grib.templates import create_template_provider
-from anemoi.inference.inputs.grib import GribInput
+from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
-from anemoi.inference.types import ProcessorConfig
-from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
-from earthkit.data.utils.dates import to_datetime
 
+from ..regrid import regrid as ekr
 from .geopotential_height import OrographyProcessor
 
 LOG = logging.getLogger(__name__)
@@ -52,73 +46,30 @@ def _retrieve_soil(request: dict, soil_params: list[str]) -> ekd.FieldList:
     request = request.copy()
 
     request["param"] = list(SOIL_MAPPING[s] for s in soil_params)
-    request["levelist"] = list(set(int(s[-1]) for s in soil_params))
+    request["levelist"] = list({int(s[-1]) for s in soil_params})
     request.pop("levtype")
 
     soil_data = ekd.from_source("ecmwf-open-data", request)
+    assert isinstance(soil_data, ekd.FieldList), "Expected a FieldList from the soil data request"
+    return soil_data
+
+
+def rename_soildata(soil_data: ekd.FieldList) -> ekd.FieldList:
+    """Rename soil data param to match the expected format."""
     for field in soil_data:
         newname = {f"{v}{k[-1]}": k for k, v in SOIL_MAPPING.items()}[
             f"{field.metadata()['param']}{field.metadata()['level']}"
         ]
-        field._metadata = field.metadata().override(paramId=shortname_to_paramid(newname))
+        field._metadata = field.metadata().override(paramId=shortname_to_paramid(newname))  # type: ignore
 
     return soil_data
 
 
-def regridding(
-    fields: ekd.FieldList, grid: Optional[Union[str, list[float]]], area: Optional[list[float]], template: ekd.Field
-) -> ekd.FieldList:
-    """Apply regridding to the field.
-
-    Parameters
-    ----------
-    fields : ekd.FieldList
-        Fields to be regridded.
-    grid : Optional[Union[str, list[float]]]
-        Grid for the regridding.
-    area : Optional[list[float]]
-        Area for the regridding.
-    template : ekd.Field
-        Template for the regridding.
-
-    Returns
-    -------
-    ekd.FieldList
-        Regridded fields.
-    """
-    import earthkit.regrid as ekr
-    import numpy as np
-
-    r = ekd.FieldList()
-
-    _ = area
-
-    f_md = template.metadata()
-
-    for f in fields:
-        rolled_values = np.roll(f.to_numpy(), -f.shape[1] // 2, axis=1)
-        interpolated_values = ekr.interpolate(rolled_values, in_grid={"grid": (0.25, 0.25)}, out_grid={"grid": grid})
-
-        # Set the metadata with the grid directly, not this ridiculous template, TODO Harrison Cook
-        namespace_metadata = f.metadata().as_namespace("mars")
-        namespace_metadata.update(f.metadata().as_namespace("time"))
-        namespace_metadata["paramId"] = shortname_to_paramid(namespace_metadata.pop("param"))
-
-        for k in ["typeOfLevel", "time", "date"]:
-            namespace_metadata[k] = f.metadata()[k]
-        for k in ["domain", "levtype", "type", "step", "validityDate", "validityTime", "timespan"]:
-            namespace_metadata.pop(k, None)
-
-        r += r.from_array(np.expand_dims(interpolated_values, 0), f_md.override(**namespace_metadata))  # type: ignore
-    return r
-
-
 def retrieve(
     requests: list[dict[str, Any]],
-    grid: Optional[Union[str, list[float]]],
-    area: Optional[list[float]],
-    template_provider: TemplateProvider,
-    patch: Optional[Any] = None,
+    grid: str | list[float] | None,
+    area: list[float] | None,
+    patch: Any | None = None,
     **kwargs: Any,
 ) -> ekd.FieldList:
     """Retrieve data from ECMWF Opendata.
@@ -131,8 +82,6 @@ def retrieve(
         The grid for the retrieval.
     area : Optional[list[float]]
         The area for the retrieval.
-    template_provider : TemplateProvider
-        Template provider for the regridding.
     patch : Optional[Any], optional
         Optional patch for the request, by default None.
     **kwargs : Any
@@ -161,20 +110,18 @@ def retrieve(
         if patch:
             r = patch(r)
 
-        template = template_provider.template(None, {"grid": grid, "levtype": r["levtype"]})  # type: ignore
-
         if any(k in r["param"] for k in SOIL_MAPPING.keys()):
             requested_soil_variables = [k for k in SOIL_MAPPING.keys() if k in r["param"]]
             r["param"] = [p for p in r["param"] if p not in requested_soil_variables]
-            result += regridding(_retrieve_soil(r, requested_soil_variables), grid, area, template)
+            result += rename_soildata(ekr.regrid(_retrieve_soil(r, requested_soil_variables), grid, area))
 
         LOG.debug("%s", _(r))
-        result += regridding(ekd.from_source("ecmwf-open-data", r), grid, area, template)  # type: ignore
+        result += ekr.regrid(ekd.from_source("ecmwf-open-data", r), grid, area)  # type: ignore
 
     return result
 
 
-class OpenDataInputPlugin(GribInput):
+class OpenDataInputPlugin(MarsInput):
     """Get input fields from ECMWF open-data."""
 
     trace_name = "opendata"
@@ -182,9 +129,6 @@ class OpenDataInputPlugin(GribInput):
     def __init__(
         self,
         context: Context,
-        *,
-        pre_processors: Optional[list[ProcessorConfig]] = None,
-        templates: Optional[Union[str, dict]] = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the OpenDataInput.
@@ -193,49 +137,13 @@ class OpenDataInputPlugin(GribInput):
         ----------
         context : Any
             The context in which the input is used.
-        namer : Optional[Any]
-            Optional namer for the input.
-        templates : Optional[Union[str, dict]], optional
-            Optional specification for template provider, by default None
         """
         rules_for_namer = [
             ({"levtype": "sol"}, "{param}"),
         ]
-        super().__init__(context, namer={"rules": rules_for_namer}, pre_processors=pre_processors)
+        kwargs.pop("namer", None)  # Ensure namer is not passed to MarsInput
+        super().__init__(context, namer={"rules": rules_for_namer}, **kwargs)
         self.pre_processors.append(OrographyProcessor(context=context, orog="gh"))
-
-        self.variables = self.checkpoint.variables_from_input(include_forcings=False)
-        self.kwargs = kwargs
-
-        self.template_provider = create_template_provider(self, templates or "builtin")  # type: ignore
-
-    def create_input_state(self, *, date: Optional[Date]) -> State:
-        """Create the input state for the given date.
-
-        Parameters
-        ----------
-        date : Optional[Date]
-            The date for which to create the input state.
-
-        Returns
-        -------
-        State
-            The created input state.
-        """
-        if date is None:
-            date = to_datetime(-1)
-            LOG.warning("OpenDataInput: `date` parameter not provided, using yesterday's date: %s", date)
-
-        date = to_datetime(date)
-
-        return self._create_input_state(
-            self.retrieve(
-                self.variables,
-                [date + h for h in self.checkpoint.lagged],
-            ),
-            variables=self.variables,
-            date=date,
-        )
 
     def retrieve(self, variables: list[str], dates: list[Date]) -> Any:
         """Retrieve data for the given variables and dates.
@@ -261,7 +169,7 @@ class OpenDataInputPlugin(GribInput):
         )
 
         if not requests:
-            raise ValueError("No requests for %s (%s)" % (variables, dates))
+            raise ValueError(f"No requests for {variables} ({dates})")
 
         kwargs = self.kwargs.copy()
 
@@ -269,28 +177,6 @@ class OpenDataInputPlugin(GribInput):
             requests,
             self.checkpoint.grid,
             self.checkpoint.area,
-            template_provider=self.template_provider,
             patch=self.patch_data_request,
             **kwargs,
-        )
-
-    def load_forcings_state(self, *, variables: list[str], dates: list[Date], current_state: State) -> State:
-        """Load the forcings state for the given variables and dates.
-
-        Parameters
-        ----------
-        variables : List[str]
-            The list of variables for which to load the forcings state.
-        dates : list[Date]
-            The list of dates for which to load the forcings state.
-        current_state : State
-            The current state to be updated with the loaded forcings state.
-
-        Returns
-        -------
-        Any
-            The loaded forcings state.
-        """
-        return self._load_forcings_state(
-            self.retrieve(variables, dates), variables=variables, dates=dates, current_state=current_state
         )

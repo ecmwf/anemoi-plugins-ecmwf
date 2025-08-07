@@ -12,7 +12,6 @@ from dataclasses import asdict
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
-from typing import Optional
 
 import multio
 from anemoi.inference.context import Context
@@ -50,9 +49,9 @@ class UserDefinedMetadata(BaseMetadata):
     """Experiment version, e.g. 0001"""
     model: str
     """Model name, e.g. aifs-single, ..."""
-    number: Optional[int] = NULL_TO_REMOVE
+    number: int | None = NULL_TO_REMOVE
     """Ensemble number, e.g. 0,1,2"""
-    numberOfForecastsInEnsemble: Optional[int] = NULL_TO_REMOVE
+    numberOfForecastsInEnsemble: int | None = NULL_TO_REMOVE
     """Number of ensembles in the forecast, e.g. 50"""
 
     def to_dict(self) -> dict[str, Any]:
@@ -82,17 +81,17 @@ class MultioMetadata(BaseMetadata):
     """Forecast step, e.g. 0,6,12,24"""
     grid: str
     """Grid name, e.g. n320, o96"""
-    levelist: Optional[int] = NULL_TO_REMOVE
+    levelist: int | None = NULL_TO_REMOVE
     """Level, e.g. 0,50,100"""
 
-    timespan: Optional[str] = NULL_TO_REMOVE
+    timespan: str | None = NULL_TO_REMOVE
     """Time span, e.g."""
 
-    origin: Optional[str] = NULL_TO_REMOVE
+    origin: str | None = NULL_TO_REMOVE
     """Origin name, e.g. ecmf, ukmo"""
-    packing: Optional[str] = "ccsds"
+    packing: str | None = "ccsds"
     """Packing type, e.g. ccsds"""
-    repres: Optional[str] = None
+    repres: str | None = None
     """Representation type"""
 
     def __post_init__(self):
@@ -115,8 +114,8 @@ class MultioOutputPlugin(Output):
         context: Context,
         plan: str | dict | multio.plans.Plan,
         *,
-        output_frequency: Optional[int] = None,
-        write_initial_state: Optional[bool] = None,
+        output_frequency: int | None = None,
+        write_initial_state: bool | None = None,
         **metadata: Any,
     ) -> None:
         super().__init__(

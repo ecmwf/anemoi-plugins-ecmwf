@@ -9,10 +9,6 @@
 
 import logging
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
@@ -26,10 +22,10 @@ LOG = logging.getLogger(__name__)
 
 def retrieve(
     collection: str,
-    requests: List[Dict[str, Any]],
-    grid: Optional[Union[str, List[float]]],
-    area: Optional[List[float]],
-    patch: Optional[Any] = None,
+    requests: list[dict[str, Any]],
+    grid: str | list[float] | None,
+    area: list[float] | None,
+    patch: Any | None = None,
     **kwargs: Any,
 ) -> Any:
     """Retrieve data from Polytope.
@@ -100,7 +96,7 @@ class PolytopeInputPlugin(MarsInput):
     def __init__(
         self,
         context: Context,
-        collection: Optional[str] = None,
+        collection: str | None = None,
         **kwargs: Any,
     ):
         """Initialize the Polytope input plugin.
@@ -117,7 +113,7 @@ class PolytopeInputPlugin(MarsInput):
         super().__init__(context, **kwargs)
         self.collection = collection or "ecmwf-mars"
 
-    def retrieve(self, variables: List[str], dates: List[Date]) -> Any:
+    def retrieve(self, variables: list[str], dates: list[Date]) -> Any:
         """Retrieve data for the given variables and dates.
 
         Parameters
@@ -140,7 +136,7 @@ class PolytopeInputPlugin(MarsInput):
         )
 
         if not requests:
-            raise ValueError("No requests for %s (%s)" % (variables, dates))
+            raise ValueError(f"No requests for {variables} ({dates})")
 
         kwargs = self.kwargs.copy()
         kwargs.setdefault("expver", "0001")
