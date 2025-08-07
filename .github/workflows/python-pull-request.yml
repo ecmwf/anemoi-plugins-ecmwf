@@ -45,7 +45,7 @@ jobs:
     - name: Install test dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest pytest-md pytest-emoji pytest-cov
+        pip install pytest pytest-md pytest-emoji pytest-cov uv
 
     - name: Detect changed packages
       id: changed
@@ -65,7 +65,7 @@ jobs:
       if: env.CHANGED_PACKAGES != ''
       run: |
         for pkg in $CHANGED_PACKAGES; do
-          pip install -e ./$pkg[all,tests]
+          uv pip install -e ./$pkg[all,tests]
         done
 
     - name: Run pytest for changed packages
