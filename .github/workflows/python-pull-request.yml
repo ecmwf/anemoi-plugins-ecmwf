@@ -10,6 +10,9 @@ on:
     - cron: "9 2 * * 0" # at 9:02 on sunday
   workflow_dispatch:
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   quality:
     uses: ecmwf/reusable-workflows/.github/workflows/qa-precommit-run.yml@v2
