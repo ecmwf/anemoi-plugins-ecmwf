@@ -13,8 +13,6 @@ import logging
 import os
 import zlib
 from typing import Any
-from typing import Dict
-from typing import Optional
 
 import earthkit.data as ekd
 import mir
@@ -25,14 +23,14 @@ LOG = logging.getLogger(__name__)
 
 
 class BaseTemplateProvider(IndexTemplateProvider):
-    def load_template(self, grib: str, lookup: Dict[str, Any]) -> bytes:  # type: ignore
+    def load_template(self, grib: str, lookup: dict[str, Any]) -> bytes:  # type: ignore
         return zlib.decompress(base64.b64decode(grib))
 
 
 class MirTemplatesProvider(TemplateProvider):
     """Template provider using mir to make new grid templates."""
 
-    def __init__(self, manager: Any, path: Optional[str] = None) -> None:
+    def __init__(self, manager: Any, path: str | None = None) -> None:
         """Initialise the MirTemplatesProvider instance.
 
         Parameters
@@ -51,7 +49,7 @@ class MirTemplatesProvider(TemplateProvider):
 
         self._base_template_provider = BaseTemplateProvider(manager, path)
 
-    def _regrid_with_mir(self, base_template: bytes, grid: str, area: Optional[str] = None) -> bytes:
+    def _regrid_with_mir(self, base_template: bytes, grid: str, area: str | None = None) -> bytes:
         """Regrid the base template using mir.
 
         Parameters
@@ -81,7 +79,7 @@ class MirTemplatesProvider(TemplateProvider):
 
         return buffer.getvalue()
 
-    def template(self, variable: str, lookup: Dict[str, Any]) -> ekd.Field:
+    def template(self, variable: str, lookup: dict[str, Any]) -> ekd.Field:
         """Get the template for the given variable and lookup.
 
         Parameters
