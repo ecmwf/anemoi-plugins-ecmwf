@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.1...inference-0.1.2) (2025-08-13)
+
+
+### Bug Fixes
+
+* updates from anemoi-inference ([#18](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/18)) ([91194fb](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/91194fbb30ea9279d255e1f17cfab7b4e31533c7))
+
 ## [0.1.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.0...inference-0.1.1) (2025-08-05)
 
 
