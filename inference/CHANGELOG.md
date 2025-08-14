@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.2...inference-0.1.3) (2025-08-14)
+
+
+### Bug Fixes
+
+* mir grid handling due to anemoi-inference ([#23](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/23)) ([a65ffa4](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/a65ffa49b6f4785bf46b6ae763ac369878e3ec1b))
+
 ## [0.1.2](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.1...inference-0.1.2) (2025-08-13)
 
 
