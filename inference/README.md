@@ -11,6 +11,7 @@ This package includes all plugins developed for anemoi inference developed by EC
 | `opendata`| Use ecmwf-opendata as an input source    |
 | `mir`     | Use mir to create grib templates   |
 | `regrid`  | Use `earthkit-regrid` to preprocess|
+| `dynamics`| Use `earthkit-regrid` to preprocess|
 
 See the underlying code for a more detailed `README`.
 
