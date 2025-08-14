@@ -103,6 +103,9 @@ class MirTemplatesProvider(TemplateProvider):
             grid = "/".join(map(str, grid))
         if isinstance(area, (list, tuple)):
             area = "/".join(map(str, area))
+        
+        if isinstance(grid, (int, float)):
+            grid = f"{grid}/{grid}" # Convert single value to a grid string, introduced by choice in anemoi-inference.
 
         base_template = self._base_template_provider.template(variable, lookup)
         if base_template is None:
