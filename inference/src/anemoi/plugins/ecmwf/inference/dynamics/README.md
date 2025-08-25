@@ -38,7 +38,7 @@ pre_processors:
       value: 200
       fields:
           - {"shortName": "msl"}
-      method: "replace"
+      method: "subtract"
 ```
 
 To run, just like any other
