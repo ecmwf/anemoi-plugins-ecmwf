@@ -46,3 +46,7 @@ To run, just like any other
 ```bash
 anemoi-inference run config.yaml
 ```
+
+### Notes
+
+1. The `array_overlay` or `modify_value` can both take `npy` files in addition to the example shown above.

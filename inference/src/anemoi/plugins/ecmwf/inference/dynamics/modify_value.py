@@ -41,9 +41,11 @@ class ModifyValuePlugin(Processor):
     ```
     """
 
-    def __init__(self, context, fields: list[dict[str, Any]], value: float, method: VALID_METHODS = "add"):
+    def __init__(self, context, fields: list[dict[str, Any]], value: float | str, method: VALID_METHODS = "add"):
         super().__init__(context)
         self.method = method
+        if isinstance(value, str):
+            value = np.load(value)
         self.value = value
         self.fields = fields
 
