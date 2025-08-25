@@ -13,7 +13,6 @@ from typing import Literal
 import earthkit.data as ekd
 import numpy as np
 from anemoi.inference.processor import Processor
-from anemoi.transform.fields import new_field_from_numpy
 
 from ._operate_on_fields import apply_function_to_fields
 
@@ -56,7 +55,7 @@ class ModifyValuePlugin(Processor):
         data = field.to_numpy()
         data = METHOD_FUNCTIONS[self.method](data, self.value)
 
-        return new_field_from_numpy(data, template=field)  # type: ignore
+        return ekd.ArrayField(data, field.metadata())  # type: ignore
 
     def process(self, fields: ekd.FieldList) -> ekd.FieldList:  # pyright: ignore[reportIncompatibleMethodOverride]
         """Process the fields and apply the value modification."""

@@ -29,7 +29,7 @@ def apply_function_to_fields(
     """Apply a function to fields in a FieldList based on metadata filter criteria."""
     result = []
     for field in fields:
-        metadata = dict(field.metadata().items())
+        metadata = dict(field.metadata())
         if filter_matches(metadata, filter or []):
             field = func(field)  # type: ignore
         result.append(field)

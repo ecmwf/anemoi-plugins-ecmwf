@@ -18,7 +18,6 @@ import earthkit.data as ekd
 import earthkit.regrid as ekr
 import numpy as np
 from anemoi.inference.processor import Processor
-from anemoi.transform.fields import new_field_from_numpy
 
 from ._operate_on_fields import apply_function_to_fields
 
@@ -156,7 +155,7 @@ class ArrayOverlayPlugin(Processor):
         else:
             raise ValueError(f"Unknown method {self._method}.")
 
-        return new_field_from_numpy(data, template=field)  # type: ignore
+        return ekd.ArrayField(data, field.metadata())  # type: ignore
 
     def process(self, fields):  # type: ignore
         return apply_function_to_fields(
