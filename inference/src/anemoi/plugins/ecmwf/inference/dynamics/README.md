@@ -49,4 +49,6 @@ anemoi-inference run config.yaml
 
 ### Notes
 
-1. The `array_overlay` or `modify_value` can both take `npy` files in addition to the example shown above.
+1. The `array_overlay` can take a `npy` file in addition to the example shown above.
+    It will be regridded from an N320 grid, so use latxlon
+2. The `modify_value` can also take a `npy` file, but is expected to be of the right node shape.
