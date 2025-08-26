@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.3...inference-0.1.4) (2025-08-26)
+
+
+### Features
+
+* Add preprocessors to test dynamics  ([#25](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/25)) ([0e98f93](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/0e98f939b3d1c5a8b94d2082ef529062113c1e9f))
+
 ## [0.1.3](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.2...inference-0.1.3) (2025-08-14)
 
 
