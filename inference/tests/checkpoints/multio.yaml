@@ -21,6 +21,11 @@ data_indices:
       - 5
       - 8
       - 9
+      prognostic:
+      - 0
+      - 1
+      - 2
+      - 3
       full:
       - 0
       - 1
