@@ -43,6 +43,7 @@ dependencies = [
 ]
 
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[multio,mir,polytope,opendata]" ]
+optional-dependencies.dynamics = [ "earthkit-regrid", "pillow" ]
 optional-dependencies.mir = [ "earthkit-data", "mir-python>=1.27.1.dev20250627" ]
 optional-dependencies.multio = [ "pymultio[all]>=2.5.1.dev20250627" ]
 optional-dependencies.opendata = [
@@ -56,6 +57,7 @@ optional-dependencies.regrid = [ "anemoi-plugins-ecmwf-inference[mir]" ]
 optional-dependencies.tests = [
   "anemoi-plugins-ecmwf-inference[all]",
   "pytest",
+  "pytest-mock",
   "pytest-xdist",
 ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
@@ -67,6 +69,9 @@ entry-points."anemoi.inference.inputs".polytope = "anemoi.plugins.ecmwf.inferenc
 entry-points."anemoi.inference.outputs"."multio" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputPlugin"
 entry-points."anemoi.inference.outputs"."multio.fdb" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputFDBPlugin"
 entry-points."anemoi.inference.outputs"."multio.grib" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputGribPlugin"
+entry-points."anemoi.inference.pre_processors"."array_overlay" = "anemoi.plugins.ecmwf.inference.dynamics:ArrayOverlayPlugin"
+entry-points."anemoi.inference.pre_processors"."modify_value" = "anemoi.plugins.ecmwf.inference.dynamics:ModifyValuePlugin"
+
 entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.inference.regrid:RegridPreprocessor"
 
 [tool.setuptools.package-data]
