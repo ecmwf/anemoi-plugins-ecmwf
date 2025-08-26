@@ -57,6 +57,7 @@ optional-dependencies.regrid = [ "anemoi-plugins-ecmwf-inference[mir]" ]
 optional-dependencies.tests = [
   "anemoi-plugins-ecmwf-inference[all]",
   "pytest",
+  "pytest-mock",
   "pytest-xdist",
 ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
