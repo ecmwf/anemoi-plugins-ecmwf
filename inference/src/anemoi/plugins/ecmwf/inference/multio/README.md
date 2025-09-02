@@ -41,11 +41,10 @@ output:
               append: true
               per-server: false
               path: 'output.grib'
-
-      type: 'an'
-      klass: 'ml'
+      type: 'fc'
+      klass: 'ai'
       expver: '0001'
-      model: 'aifs'
+      model: 'aifs-single'
       stream: 'oper'
       # number: 1
       # numberOfForecastsInEnsemble: 50
@@ -78,10 +77,10 @@ input: mars
 output:
   multio.grib:
       path: 'output.grib'
-      type: 'an'
-      klass: 'ml'
+      type: 'fc'
+      klass: 'ai'
       expver: '0001'
-      model: 'aifs'
+      model: 'aifs-single'
       stream: 'oper'
       # number: 1
       # numberOfForecastsInEnsemble: 50
