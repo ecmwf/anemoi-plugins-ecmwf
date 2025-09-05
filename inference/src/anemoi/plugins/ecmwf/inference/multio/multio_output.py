@@ -222,7 +222,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
     """
 
     def __init__(
-        self, context: Context, path: str, append: bool = True, per_server: bool = False, **kwargs: Any
+        self, context: Context, path: str, append: bool = False, per_server: bool = False, **kwargs: Any
     ) -> None:
         """Multio Grib Output Plugin.
 
