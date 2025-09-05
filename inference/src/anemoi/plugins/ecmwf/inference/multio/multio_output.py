@@ -14,6 +14,7 @@ from datetime import timedelta
 from typing import Any
 
 import multio
+from anemoi.inference.post_processors.accumulate import Accumulate
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
 from anemoi.inference.output import Output
@@ -168,10 +169,16 @@ class MultioOutputPlugin(Output):
             "time": reference_date.hour * 100,
         }
 
+        timespan = self.context.checkpoint.timestep.total_seconds() // 3600
+        if any(isinstance(x, Accumulate) for x in self.context.create_post_processors()): # type: ignore
+            timespan = shared_metadata['step']
+
         for param, field in state["fields"].items():
             variable = self.checkpoint.typed_variables[param]
             if variable.is_computed_forcing:
                 continue
+            if variable.is_accumulation:
+                shared_metadata["timespan"] = int(timespan)
 
             param = variable.grib_keys.get("param", param)
             if CONVERT_PARAM_TO_PARAMID:
