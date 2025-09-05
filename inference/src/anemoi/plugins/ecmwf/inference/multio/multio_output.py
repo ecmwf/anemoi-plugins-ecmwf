@@ -20,6 +20,7 @@ from anemoi.inference.decorators import main_argument
 from anemoi.inference.output import Output
 from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
+import numpy as np
 
 CONVERT_PARAM_TO_PARAMID = True
 
@@ -193,7 +194,13 @@ class MultioOutputPlugin(Output):
 
             # Copy the field to ensure it is contiguous
             # Removes ValueError: ndarray is not C-contiguous
-            self._server.write_field({**metadata.to_dict()}, field.copy(order="C"))
+            # Replace NaNs with a missing value
+            field = field.copy(order="C")
+            missing_value = float(-999999.0)
+            
+            field = np.nan_to_num(field, nan=missing_value) # type: ignore
+
+            self._server.write_field({**metadata.to_dict(), "misc-missingValue": missing_value}, field)
 
         self._server.flush()
 
