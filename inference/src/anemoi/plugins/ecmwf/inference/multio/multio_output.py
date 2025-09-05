@@ -175,7 +175,7 @@ class MultioOutputPlugin(Output):
             timespan = shared_metadata["step"]
 
         for param, field in state["fields"].items():
-            variable = self.checkpoint.typed_variables[param]
+            variable = self.typed_variables[param]
             if variable.is_computed_forcing:
                 continue
             if variable.is_accumulation:
