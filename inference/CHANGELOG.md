@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.4...inference-0.1.5) (2025-09-05)
+
+
+### Documentation
+
+* Update multio readme ([#27](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/27)) ([b4373f8](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/b4373f834d88356555531eb257c4087726631e94))
+
 ## [0.1.4](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.3...inference-0.1.4) (2025-08-26)
 
 
