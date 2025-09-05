@@ -14,13 +14,13 @@ from datetime import timedelta
 from typing import Any
 
 import multio
-from anemoi.inference.post_processors.accumulate import Accumulate
+import numpy as np
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
 from anemoi.inference.output import Output
+from anemoi.inference.post_processors.accumulate import Accumulate
 from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
-import numpy as np
 
 CONVERT_PARAM_TO_PARAMID = True
 
@@ -171,8 +171,8 @@ class MultioOutputPlugin(Output):
         }
 
         timespan = self.context.checkpoint.timestep.total_seconds() // 3600
-        if any(isinstance(x, Accumulate) for x in self.context.create_post_processors()): # type: ignore
-            timespan = shared_metadata['step']
+        if any(isinstance(x, Accumulate) for x in self.context.create_post_processors()):  # type: ignore
+            timespan = shared_metadata["step"]
 
         for param, field in state["fields"].items():
             variable = self.checkpoint.typed_variables[param]
@@ -197,8 +197,8 @@ class MultioOutputPlugin(Output):
             # Replace NaNs with a missing value
             field = field.copy(order="C")
             missing_value = float(-999999.0)
-            
-            field = np.nan_to_num(field, nan=missing_value) # type: ignore
+
+            field = np.nan_to_num(field, nan=missing_value)  # type: ignore
 
             self._server.write_field({**metadata.to_dict(), "misc-missingValue": missing_value}, field)
 
