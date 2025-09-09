@@ -194,9 +194,12 @@ class MultioOutputPlugin(Output):
             if CONVERT_PARAM_TO_PARAMID:
                 param = shortname_to_paramid(param)
 
+            levtype = variable.grib_keys.get("levtype")
+            assert levtype is not None, f"levtype must be defined for variable {variable.name!r}"
+
             metadata = MultioMetadata(
                 param=param,
-                levtype=variable.grib_keys["levtype"],
+                levtype=levtype,
                 levelist=variable.level if not variable.is_surface_level else None,
                 timespan=int(timespan) if variable.is_accumulation else None,
                 **shared_metadata,
@@ -316,3 +319,41 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
         )
 
         super().__init__(context, plan=plan, **kwargs)
+
+
+@main_argument("plan")
+class MultioOutputPlanPlugin(MultioOutputPlugin):
+    """Multio output plugin to write with a plan."""
+
+    def __init__(self, context: Context, plan: str | dict, **kwargs: Any) -> None:
+        """Multio FDB Output Plugin.
+
+        Parameters
+        ----------
+        context : Context
+            Model Runner
+        plan : str | dict
+            Multio Plan
+        """
+        super().__init__(context, plan=plan, **kwargs)
+
+
+class MultioDisambiguousOutputPlugin(MultioOutputPlugin):
+    """Provide a class to delegate to the correct MultioOutputPlugin subclass based on arguments."""
+
+    def __new__(cls, *args, **kwargs):
+        plugins = [
+            ("plan", MultioOutputPlanPlugin),
+            ("path", MultioOutputGribPlugin),
+            ("fdb_config", MultioOutputFDBPlugin),
+        ]
+
+        selected_plugins = [(key, plugin) for key, plugin in plugins if key in kwargs]
+
+        if len(selected_plugins) != 1:
+            raise ValueError(
+                "Must provide exactly one of 'plan', 'path', or 'fdb_config' keyword arguments to delegate to the correct MultioOutputPlugin subclass."
+            )
+
+        _, plugin = selected_plugins[0]
+        return plugin(*args, **kwargs)
