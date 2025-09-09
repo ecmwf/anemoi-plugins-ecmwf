@@ -25,8 +25,6 @@ from pydantic import model_validator
 
 CONVERT_PARAM_TO_PARAMID = True
 
-NULL_TO_REMOVE = "NULL_TO_REMOVE"
-
 
 class UserDefinedMetadata(BaseModel):
     stream: str
