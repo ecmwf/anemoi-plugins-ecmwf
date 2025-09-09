@@ -178,8 +178,6 @@ class MultioOutputPlugin(Output):
             variable = self.typed_variables[param]
             if variable.is_computed_forcing:
                 continue
-            if variable.is_accumulation:
-                shared_metadata["timespan"] = int(timespan)
 
             param = variable.grib_keys.get("param", param)
             if CONVERT_PARAM_TO_PARAMID:
@@ -188,10 +186,10 @@ class MultioOutputPlugin(Output):
             metadata = MultioMetadata(
                 param=param,
                 levtype=variable.grib_keys["levtype"],
-                levelist=variable.level if not variable.is_surface_level else NULL_TO_REMOVE,
+                levelist=variable.level if not variable.is_surface_level else None,
+                timespan=int(timespan) if variable.is_accumulation else None,
                 **shared_metadata,
             )
-
             # Copy the field to ensure it is contiguous
             # Removes ValueError: ndarray is not C-contiguous
             # Replace NaNs with a missing value
