@@ -7,68 +7,49 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-
-from dataclasses import asdict
-from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
 
 import multio
+import numpy as np
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
 from anemoi.inference.output import Output
+from anemoi.inference.post_processors.accumulate import Accumulate
 from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
+from pydantic import BaseModel
+from pydantic import Field
+from pydantic import field_validator
+from pydantic import model_validator
 
 CONVERT_PARAM_TO_PARAMID = True
 
-NULL_TO_REMOVE = "NULL_TO_REMOVE"
 
-
-class BaseMetadata:
-    def to_dict(self) -> dict[str, Any]:
-        """Convert the dataclass to a dictionary representation.
-
-        Will remove any fields that have the value NULL_TO_REMOVE.
-        """
-        dict_repr = asdict(self)
-        # Remove None values
-        dict_repr = {key: value for key, value in dict_repr.items() if value is not NULL_TO_REMOVE}
-        return dict_repr
-
-
-@dataclass
-class UserDefinedMetadata(BaseMetadata):
+class UserDefinedMetadata(BaseModel):
     stream: str
     """Stream name, e.g. oper, enfo"""
     type: str
     """Type name, e.g. fc, an"""
-    klass: str
+    klass: str = Field(alias="class")
     """Class name, e.g. od, ai, ..."""
-    expver: str
+    expver: str | int
     """Experiment version, e.g. 0001"""
     model: str
     """Model name, e.g. aifs-single, ..."""
-    number: int | None = NULL_TO_REMOVE
+    number: int | None = None
     """Ensemble number, e.g. 0,1,2"""
-    numberOfForecastsInEnsemble: int | None = NULL_TO_REMOVE
+    numberOfForecastsInEnsemble: int | None = Field(None, serialization_alias="misc-numberOfForecastsInEnsemble")
     """Number of ensembles in the forecast, e.g. 50"""
 
-    def to_dict(self) -> dict[str, Any]:
-        dict_repr = super().to_dict()
-        dict_repr["class"] = dict_repr.pop("klass")
-        if "numberOfForecastsInEnsemble" in dict_repr:
-            dict_repr["misc-numberOfForecastsInEnsemble"] = dict_repr.pop("numberOfForecastsInEnsemble")
-        return dict_repr
-
-    def __post_init__(self):
-        if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
-            error_msg = "numberOfForecastsInEnsemble must be an integer if number is provided"
-            raise AttributeError(error_msg)
+    @field_validator("numberOfForecastsInEnsemble")
+    def validate_number_of_forecasts(cls, numberOfForecastsInEnsemble, values):
+        if isinstance(values.get("number"), int) and not isinstance(numberOfForecastsInEnsemble, int):
+            raise ValueError("numberOfForecastsInEnsemble must be an integer if number is provided")
+        return numberOfForecastsInEnsemble
 
 
-@dataclass
-class MultioMetadata(BaseMetadata):
+class MultioMetadata(BaseModel):
     param: int
     """Param ID, e.g. 130"""
     levtype: str
@@ -81,25 +62,28 @@ class MultioMetadata(BaseMetadata):
     """Forecast step, e.g. 0,6,12,24"""
     grid: str
     """Grid name, e.g. n320, o96"""
-    levelist: int | None = NULL_TO_REMOVE
+    levelist: int | None = None
     """Level, e.g. 0,50,100"""
 
-    timespan: str | None = NULL_TO_REMOVE
+    timespan: int | None = None
     """Time span, e.g."""
 
-    origin: str | None = NULL_TO_REMOVE
+    origin: str | None = None
     """Origin name, e.g. ecmf, ukmo"""
     packing: str | None = "ccsds"
     """Packing type, e.g. ccsds"""
     repres: str | None = None
     """Representation type"""
 
-    def __post_init__(self):
+    @model_validator(mode="after")
+    def set_repres(self):
         if self.repres is None:
-            if any(self.grid.upper().startswith(prefix) for prefix in ["N", "O"]):
+            grid = self.grid.upper()
+            if any(grid.startswith(prefix) for prefix in ["N", "O"]):
                 self.repres = "gg"
             else:
                 self.repres = "ll"
+        return self
 
 
 class MultioOutputPlugin(Output):
@@ -107,7 +91,7 @@ class MultioOutputPlugin(Output):
     api_version = "1.0.0"
     schema = None
 
-    _server: multio.Multio = None
+    _server: multio.Multio | None = None
 
     def __init__(
         self,
@@ -135,7 +119,7 @@ class MultioOutputPlugin(Output):
             with multio.MultioPlan(self._plan):
                 self._server = multio.Multio()
         self._server.open_connections()
-        self._server.write_parametrization(self._user_defined_metadata.to_dict())
+        self._server.write_parametrization(self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True))
 
     def write_initial_state(self, state: State) -> None:
         """Write the initial step of the state.
@@ -168,8 +152,12 @@ class MultioOutputPlugin(Output):
             "time": reference_date.hour * 100,
         }
 
+        timespan = self.context.checkpoint.timestep.total_seconds() // 3600
+        if any(isinstance(x, Accumulate) for x in self.context.create_post_processors()):  # type: ignore
+            timespan = shared_metadata["step"]
+
         for param, field in state["fields"].items():
-            variable = self.checkpoint.typed_variables[param]
+            variable = self.typed_variables[param]
             if variable.is_computed_forcing:
                 continue
 
@@ -180,13 +168,22 @@ class MultioOutputPlugin(Output):
             metadata = MultioMetadata(
                 param=param,
                 levtype=variable.grib_keys["levtype"],
-                levelist=variable.level if not variable.is_surface_level else NULL_TO_REMOVE,
+                levelist=variable.level if not variable.is_surface_level else None,
+                timespan=int(timespan) if variable.is_accumulation else None,
                 **shared_metadata,
             )
-
             # Copy the field to ensure it is contiguous
             # Removes ValueError: ndarray is not C-contiguous
-            self._server.write_field({**metadata.to_dict()}, field.copy(order="C"))
+            # Replace NaNs with a missing value
+            field = field.copy(order="C")
+            missing_value = float(-999999.0)
+
+            if np.isnan(field).any():
+                field = np.nan_to_num(field, nan=missing_value)  # type: ignore
+
+            self._server.write_field(
+                {**metadata.model_dump(exclude_none=True, by_alias=True), "misc-missingValue": missing_value}, field
+            )
 
         self._server.flush()
 
@@ -207,7 +204,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
     """
 
     def __init__(
-        self, context: Context, path: str, append: bool = True, per_server: bool = False, **kwargs: Any
+        self, context: Context, path: str, append: bool = False, per_server: bool = False, **kwargs: Any
     ) -> None:
         """Multio Grib Output Plugin.
 
