@@ -19,7 +19,7 @@ from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
 FAKE_METADATA_KEYS = {
     "stream": "test",
     "expver": "1",
-    "klass": "test",
+    "class": "test",
     "type": "test",
     "model": "test",
 }
