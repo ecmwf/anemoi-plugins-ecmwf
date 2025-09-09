@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.5...inference-0.1.6) (2025-09-09)
+
+
+### Bug Fixes
+
+* [inference-multio] Address timing and generatingProcessIdentifier issues ([#31](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/31)) ([405837c](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/405837c889e5d50baf4fb063362a85ca6eaa9240))
+
 ## [0.1.5](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.4...inference-0.1.5) (2025-09-09)
 
 
