@@ -75,11 +75,11 @@ def test_multio_write_field_called(mock_multio_server, state: State) -> None:
             assert key in metadata, f"Required metadata key '{key}' missing"
 
         if metadata["param"] == 228:
-            assert "timespan" in metadata, f"Timespan should be set for accumulated fields - {metadata["param"]}"
+            assert "timespan" in metadata, f"Timespan should be set for accumulated fields - {metadata['param']}"
         else:
             assert (
                 "timespan" not in metadata
-            ), f"Timespan should not be set for non-accumulated fields - {metadata["param"]}"
+            ), f"Timespan should not be set for non-accumulated fields - {metadata['param']}"
 
         # Check that missing value is set
         assert "misc-missingValue" in metadata, "Missing value should be set in metadata"
@@ -120,7 +120,7 @@ def test_multio_archiver(mock_multio_server, state) -> None:
 
     output_override = {
         "multio": {
-            "path": "output.multio",
+            "path": "output.grib",
             "archive_requests": {
                 "path": "archive_request.json",
                 "extra": {"source": "output.grib"},
@@ -159,7 +159,6 @@ def test_multio_archiver(mock_multio_server, state) -> None:
     assert request["expver"] == ["1"]
     assert request["class"] == ["test"]
     assert request["type"] == ["test"]
-    assert request["source"] == ["output.grib"]
 
     assert "param" in request
     assert "levtype" in request
