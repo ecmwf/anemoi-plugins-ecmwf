@@ -178,7 +178,7 @@ class MultioOutputPlugin(Output):
             "step": int(step.total_seconds() // 3600),
             "grid": str(self.context.checkpoint.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
-            "time": reference_date.hour * 10000 + reference_date.minute * 100 + reference_date.second,  # type: ignore
+            "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
         }
 
         timespan = self.context.checkpoint.timestep.total_seconds() // 3600
@@ -200,7 +200,7 @@ class MultioOutputPlugin(Output):
             metadata = MultioMetadata(
                 param=param,
                 levtype=levtype,
-                levelist=variable.level if not variable.is_surface_level else None,
+                levelist=variable.level * 100 if not variable.is_surface_level else None,
                 timespan=int(timespan) if variable.is_accumulation else None,
                 **shared_metadata,
             )
@@ -241,7 +241,13 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
     """
 
     def __init__(
-        self, context: Context, path: str, append: bool = False, per_server: bool = False, **kwargs: Any
+        self,
+        context: Context,
+        path: str,
+        append: bool = False,
+        per_server: bool = False,
+        debug: bool = False,
+        **kwargs: Any,
     ) -> None:
         """Multio Grib Output Plugin.
 
@@ -255,6 +261,8 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
             Whether to append to the file or not
         per_server : bool
             Whether to write to a separate file per server or not
+        debug : bool, optional
+            Whether to enable debug output or not, default is False
         """
         self.source = path
 
@@ -277,6 +285,14 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
                 )
             ]
         )
+        if debug:
+            plan.plans[0].actions.insert(
+                0, multio.plans.Print(stream="cout", prefix="MULTIO PRE-ENC DEBUG: ", only_fields=False)
+            )
+            plan.plans[0].actions.insert(
+                2, multio.plans.Print(stream="cout", prefix="MULTIO PST-ENC DEBUG: ", only_fields=False)
+            )
+
         super().__init__(context, plan=plan, **kwargs)
 
 
@@ -288,7 +304,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
     It is a subclass of the MultioOutputPlugin class.
     """
 
-    def __init__(self, context: Context, fdb_config: str, **kwargs: Any) -> None:
+    def __init__(self, context: Context, fdb_config: str, debug: bool = False, **kwargs: Any) -> None:
         """Multio FDB Output Plugin.
 
         Parameters
@@ -297,6 +313,8 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
             Model Runner
         fdb_config : str
             FDB Configuration file
+        debug : bool, optional
+            Whether to enable debug output or not, default is False
         """
         self.source = "fdb_config"
 
@@ -317,6 +335,13 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
                 )
             ]
         )
+        if debug:
+            plan.plans[0].actions.insert(
+                0, multio.plans.Print(stream="cout", prefix="MULTIO PRE-ENC DEBUG: ", only_fields=False)
+            )
+            plan.plans[0].actions.insert(
+                2, multio.plans.Print(stream="cout", prefix="MULTIO PST-ENC DEBUG: ", only_fields=False)
+            )
 
         super().__init__(context, plan=plan, **kwargs)
 
