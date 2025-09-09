@@ -41,6 +41,8 @@ class UserDefinedMetadata(BaseModel):
     """Ensemble number, e.g. 0,1,2"""
     numberOfForecastsInEnsemble: int | None = Field(None, serialization_alias="misc-numberOfForecastsInEnsemble")
     """Number of ensembles in the forecast, e.g. 50"""
+    generatingProcessIdentifier: int | None = Field(None, serialization_alias="misc-generatingProcessIdentifier")
+    """Generating process identifier"""
 
     @field_validator("numberOfForecastsInEnsemble")
     def validate_number_of_forecasts(cls, numberOfForecastsInEnsemble, values):
