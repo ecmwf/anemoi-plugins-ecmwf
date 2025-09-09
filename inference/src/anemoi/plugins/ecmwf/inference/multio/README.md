@@ -42,10 +42,11 @@ output:
               per-server: false
               path: 'output.grib'
       type: 'fc'
-      klass: 'ai'
+      class: 'ai'
       expver: '0001'
       model: 'aifs-single'
       stream: 'oper'
+      # generatingProcessIdentifier: 4
       # number: 1
       # numberOfForecastsInEnsemble: 50
 ```
@@ -78,10 +79,11 @@ output:
   multio.grib:
       path: 'output.grib'
       type: 'fc'
-      klass: 'ai'
+      class: 'ai'
       expver: '0001'
       model: 'aifs-single'
       stream: 'oper'
+      # generatingProcessIdentifier: 4
       # number: 1
       # numberOfForecastsInEnsemble: 50
 ```
