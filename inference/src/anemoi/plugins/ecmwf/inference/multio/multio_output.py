@@ -41,6 +41,8 @@ class UserDefinedMetadata(BaseModel):
     """Ensemble number, e.g. 0,1,2"""
     numberOfForecastsInEnsemble: int | None = Field(None, serialization_alias="misc-numberOfForecastsInEnsemble")
     """Number of ensembles in the forecast, e.g. 50"""
+    generatingProcessIdentifier: int | None = Field(None, serialization_alias="misc-generatingProcessIdentifier")
+    """Generating process identifier"""
 
     @field_validator("numberOfForecastsInEnsemble")
     def validate_number_of_forecasts(cls, numberOfForecastsInEnsemble, values):
@@ -149,7 +151,7 @@ class MultioOutputPlugin(Output):
             "step": int(step.total_seconds() // 3600),
             "grid": str(self.context.checkpoint.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),
-            "time": reference_date.hour * 100,
+            "time": reference_date.hour * 10000 + reference_date.minute * 100 + reference_date.second,
         }
 
         timespan = self.context.checkpoint.timestep.total_seconds() // 3600
