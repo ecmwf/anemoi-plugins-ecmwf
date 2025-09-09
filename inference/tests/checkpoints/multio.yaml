@@ -129,10 +129,10 @@ dataset:
         levtype: sfc
         param: tcc
     tp:
-      accumulated: true
       mars:
         levtype: sfc
         param: tp
+      process: accumulation
     z:
       constant_in_time: true
       mars:

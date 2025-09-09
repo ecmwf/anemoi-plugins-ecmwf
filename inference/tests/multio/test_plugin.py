@@ -28,15 +28,18 @@ FAKE_METADATA_KEYS = {
 @pytest.mark.parametrize(
     "plugin, kwargs",
     [
-        ("multio", {"plan": None}),
         ("multio.grib", {"path": __file__}),
         ("multio.fdb", {"fdb_config": {}}),
+        ("multio.plan", {"plan": None}),
+        ("multio", {"fdb_config": {}}),
+        ("multio", {"plan": None}),
+        ("multio", {"path": __file__}),
     ],
 )
 @fake_checkpoints
 def test_plugin(plugin, kwargs):
     config = MockRunConfiguration.load(
-        (Path(__file__).parent / "configs/simple.yaml").absolute(),
+        str((Path(__file__).parent / "configs/simple.yaml").absolute()),
         overrides=dict(output={plugin: {**kwargs, **FAKE_METADATA_KEYS}}),
     )
     runner = create_runner(config)
