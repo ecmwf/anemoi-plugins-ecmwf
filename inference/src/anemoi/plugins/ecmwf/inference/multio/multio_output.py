@@ -105,7 +105,7 @@ def _to_mars(metadata: MultioMetadata, user_metadata: UserDefinedMetadata) -> di
         "expver": str(user_metadata.expver),
     }
     if metadata.levelist is not None:
-        mars_dict["levelist"] = metadata.levelist
+        mars_dict["levelist"] = metadata.levelist // 100
     if user_metadata.number is not None:
         mars_dict["number"] = user_metadata.number
 
