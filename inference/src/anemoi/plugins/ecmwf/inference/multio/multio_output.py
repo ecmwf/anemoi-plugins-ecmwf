@@ -7,6 +7,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+import logging
 from datetime import timedelta
 from typing import Any
 
@@ -27,6 +28,8 @@ from .archive import ArchiveCollector
 from .archive import Config
 
 CONVERT_PARAM_TO_PARAMID = True
+
+LOG = logging.getLogger(__name__)
 
 
 class UserDefinedMetadata(BaseModel):
@@ -128,6 +131,7 @@ class MultioOutputPlugin(Output):
         output_frequency: int | None = None,
         write_initial_state: bool | None = None,
         archive_requests: Config | None = None,
+        initial_state_diagnostics_grib: str | None = None,
         **metadata: Any,
     ) -> None:
         super().__init__(
@@ -137,6 +141,7 @@ class MultioOutputPlugin(Output):
         )
         self._plan = plan
         self._archiver = ArchiveCollector(archive_requests) if archive_requests else None
+        self._initial_state_diagnostics_grib = initial_state_diagnostics_grib
 
         try:
             self._user_defined_metadata = UserDefinedMetadata(**metadata)
@@ -164,7 +169,24 @@ class MultioOutputPlugin(Output):
         self.reference_date = state["date"]
         state.setdefault("step", timedelta(0))
 
+        if self._initial_state_diagnostics_grib:
+            self._copy_initial_state_diagnostics(state)
+
         return self.write_step(state)
+
+    def _copy_initial_state_diagnostics(self, state: State) -> None:
+        import earthkit.data as ekd
+
+        ds = ekd.from_source("file", self._initial_state_diagnostics_grib)
+        namer = self.context.checkpoint.default_namer()
+
+        LOG.info(f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:")
+        for field in ds:
+            name = namer(field, field.metadata())
+            if name in state["fields"]:
+                raise ValueError(f"Field {name!r} already exists in the initial state.")
+            state["fields"][name] = field.to_numpy()
+            LOG.info(f"+ {name}")
 
     def write_step(self, state: State) -> None:
         """Write a step of the state with multio."""
