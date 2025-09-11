@@ -1,9 +1,9 @@
 ---
-checkpoint: checkpoints/simple.ckpt
+checkpoint: checkpoints/multio.ckpt
 date: 2020-01-01
 output:
   multio:
-    plan: null
+    path: /dev/null
     stream: test
     expver: 1
     class: test

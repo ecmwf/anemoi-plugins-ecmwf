@@ -23,6 +23,9 @@ from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
 
+from .archive import ArchiveCollector
+from .archive import Config
+
 CONVERT_PARAM_TO_PARAMID = True
 
 
@@ -88,11 +91,33 @@ class MultioMetadata(BaseModel):
         return self
 
 
+def _to_mars(metadata: MultioMetadata, user_metadata: UserDefinedMetadata) -> dict[str, Any]:
+    """Convert MultioMetadata and UserDefinedMetadata to a MARS request dictionary for use with the ArchiveCollector."""
+    mars_dict = {
+        "levtype": metadata.levtype,
+        "date": metadata.date,
+        "time": metadata.time // 10000,
+        "step": metadata.step,
+        "param": metadata.param,
+        "class": user_metadata.klass,
+        "type": user_metadata.type,
+        "stream": user_metadata.stream,
+        "expver": str(user_metadata.expver),
+    }
+    if metadata.levelist is not None:
+        mars_dict["levelist"] = metadata.levelist // 100
+    if user_metadata.number is not None:
+        mars_dict["number"] = user_metadata.number
+
+    return mars_dict
+
+
 class MultioOutputPlugin(Output):
 
     api_version = "1.0.0"
     schema = None
 
+    source: str = "multio"
     _server: multio.Multio | None = None
 
     def __init__(
@@ -102,6 +127,7 @@ class MultioOutputPlugin(Output):
         *,
         output_frequency: int | None = None,
         write_initial_state: bool | None = None,
+        archive_requests: Config | None = None,
         **metadata: Any,
     ) -> None:
         super().__init__(
@@ -110,6 +136,7 @@ class MultioOutputPlugin(Output):
             write_initial_state=write_initial_state,
         )
         self._plan = plan
+        self._archiver = ArchiveCollector(archive_requests) if archive_requests else None
 
         try:
             self._user_defined_metadata = UserDefinedMetadata(**metadata)
@@ -118,7 +145,7 @@ class MultioOutputPlugin(Output):
 
     def open(self, state: State) -> None:
         if self._server is None:
-            with multio.MultioPlan(self._plan):
+            with multio.MultioPlan(self._plan):  # type: ignore
                 self._server = multio.Multio()
         self._server.open_connections()
         self._server.write_parametrization(self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True))
@@ -150,8 +177,8 @@ class MultioOutputPlugin(Output):
         shared_metadata = {
             "step": int(step.total_seconds() // 3600),
             "grid": str(self.context.checkpoint.grid).upper(),
-            "date": int(reference_date.strftime("%Y%m%d")),
-            "time": reference_date.hour * 10000 + reference_date.minute * 100 + reference_date.second,
+            "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
+            "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
         }
 
         timespan = self.context.checkpoint.timestep.total_seconds() // 3600
@@ -173,7 +200,7 @@ class MultioOutputPlugin(Output):
             metadata = MultioMetadata(
                 param=param,
                 levtype=levtype,
-                levelist=variable.level if not variable.is_surface_level else None,
+                levelist=variable.level * 100 if not variable.is_surface_level else None,
                 timespan=int(timespan) if variable.is_accumulation else None,
                 **shared_metadata,
             )
@@ -189,6 +216,8 @@ class MultioOutputPlugin(Output):
             self._server.write_field(
                 {**metadata.model_dump(exclude_none=True, by_alias=True), "misc-missingValue": missing_value}, field
             )
+            if self._archiver:
+                self._archiver.add(_to_mars(metadata, self._user_defined_metadata))
 
         self._server.flush()
 
@@ -198,6 +227,9 @@ class MultioOutputPlugin(Output):
 
         self._server.close_connections()
         self._server = None
+
+        if self._archiver:
+            self._archiver.write(source=self.source, use_grib_paramid=self.context.use_grib_paramid)
 
 
 @main_argument("path")
@@ -209,7 +241,13 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
     """
 
     def __init__(
-        self, context: Context, path: str, append: bool = False, per_server: bool = False, **kwargs: Any
+        self,
+        context: Context,
+        path: str,
+        append: bool = False,
+        per_server: bool = False,
+        debug: bool = False,
+        **kwargs: Any,
     ) -> None:
         """Multio Grib Output Plugin.
 
@@ -223,7 +261,11 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
             Whether to append to the file or not
         per_server : bool
             Whether to write to a separate file per server or not
+        debug : bool, optional
+            Whether to enable debug output or not, default is False
         """
+        self.source = path
+
         plan = multio.plans.Client(
             plans=[
                 multio.plans.Plan(
@@ -243,6 +285,14 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
                 )
             ]
         )
+        if debug:
+            plan.plans[0].actions.insert(
+                0, multio.plans.Print(stream="cout", prefix="MULTIO PRE-ENC DEBUG: ", only_fields=False)
+            )
+            plan.plans[0].actions.insert(
+                2, multio.plans.Print(stream="cout", prefix="MULTIO PST-ENC DEBUG: ", only_fields=False)
+            )
+
         super().__init__(context, plan=plan, **kwargs)
 
 
@@ -254,7 +304,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
     It is a subclass of the MultioOutputPlugin class.
     """
 
-    def __init__(self, context: Context, fdb_config: str, **kwargs: Any) -> None:
+    def __init__(self, context: Context, fdb_config: str, debug: bool = False, **kwargs: Any) -> None:
         """Multio FDB Output Plugin.
 
         Parameters
@@ -263,7 +313,11 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
             Model Runner
         fdb_config : str
             FDB Configuration file
+        debug : bool, optional
+            Whether to enable debug output or not, default is False
         """
+        self.source = "fdb_config"
+
         plan = multio.plans.Client(
             plans=[
                 multio.plans.Plan(
@@ -281,6 +335,13 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
                 )
             ]
         )
+        if debug:
+            plan.plans[0].actions.insert(
+                0, multio.plans.Print(stream="cout", prefix="MULTIO PRE-ENC DEBUG: ", only_fields=False)
+            )
+            plan.plans[0].actions.insert(
+                2, multio.plans.Print(stream="cout", prefix="MULTIO PST-ENC DEBUG: ", only_fields=False)
+            )
 
         super().__init__(context, plan=plan, **kwargs)
 
