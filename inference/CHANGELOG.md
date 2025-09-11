@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.6...inference-0.1.7) (2025-09-11)
+
+
+### Features
+
+* [inference-multio] Add archive collector ([#34](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/34)) ([c9ba2ec](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/c9ba2ecfc9c541fa4166a3c1bcce08aa0ef4efc1))
+* [inference-multio] Add disambiguous entrypoint ([#33](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/33)) ([32707df](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/32707df09126b8edf2a00a65f0acefc231e87d58))
+
 ## [0.1.6](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.5...inference-0.1.6) (2025-09-09)
 
 
