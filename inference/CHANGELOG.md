@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.7...inference-0.1.8) (2025-09-11)
+
+
+### Features
+
+* **multio:** Option to copy initial state diagnostics from grib ([#36](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/36)) ([14b4bdd](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/14b4bdd6b3f69a33b1c5a71a043c76d982140ac9))
+
 ## [0.1.7](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.6...inference-0.1.7) (2025-09-11)
 
 
