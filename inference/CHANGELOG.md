@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.9...inference-0.1.10) (2025-09-16)
+
+
+### Bug Fixes
+
+* Move mir version to lower bound ([#40](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/40)) ([96792b1](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/96792b10903a950e756995404b4f525ef40fed8f))
+
 ## [0.1.9](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.8...inference-0.1.9) (2025-09-15)
 
 
