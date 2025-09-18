@@ -106,6 +106,8 @@ def retrieve(
     result = ekd.SimpleFieldList()
     for r in requests:
         r.update(kwargs)
+        if r.get("class") in ("rd", "ea"):
+            r["class"] = "od"
 
         if patch:
             r = patch(r)
