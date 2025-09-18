@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.10...inference-0.1.11) (2025-09-18)
+
+
+### Bug Fixes
+
+* [opendata] Use `od` instead of `ea` ([#42](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/42)) ([2457540](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/245754030d29790b57ce1bd1764f905e77601674))
+
 ## [0.1.10](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.9...inference-0.1.10) (2025-09-16)
 
 
