@@ -27,5 +27,17 @@ def test_plugin():
     assert input is not None
 
 
+@fake_checkpoints
+def test_orography_processor_in_input():
+    config = MockRunConfiguration.load(
+        (Path(__file__).parent / "configs/simple.yaml").absolute(),
+        overrides=dict(input="opendata"),
+    )
+    runner = create_runner(config)
+    input = create_input(runner, config.input)
+    assert input is not None
+    assert any(p.__class__.__name__ == "OrographyProcessor" for p in input.pre_processors)
+
+
 if __name__ == "__main__":
     test_plugin()

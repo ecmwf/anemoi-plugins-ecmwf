@@ -9,11 +9,13 @@
 
 
 import logging
+from functools import cached_property
 from typing import Any
 
 import earthkit.data as ekd
 from anemoi.inference.context import Context
 from anemoi.inference.inputs.mars import MarsInput
+from anemoi.inference.processor import Processor
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
 from anemoi.utils.grib import shortname_to_paramid
@@ -145,7 +147,13 @@ class OpenDataInputPlugin(MarsInput):
         ]
         kwargs.pop("namer", None)  # Ensure namer is not passed to MarsInput
         super().__init__(context, namer={"rules": rules_for_namer}, **kwargs)
-        self.pre_processors.append(OrographyProcessor(context=context, orog="gh"))
+
+    @cached_property
+    def pre_processors(self) -> list[Processor]:
+        """Return pre-processors."""
+        processors = super().pre_processors
+        processors.append(OrographyProcessor(context=self.context, orog="gh"))
+        return processors
 
     def retrieve(self, variables: list[str], dates: list[Date]) -> Any:
         """Retrieve data for the given variables and dates.
