@@ -36,11 +36,11 @@ output:
           actions:
           - type: encode-mtg2
           - type: sink
-              sinks:
-              - type: file
-                append: true
-                per-server: false
-                path: 'output.grib'
+            sinks:
+            - type: file
+              append: true
+              per-server: false
+              path: 'output.grib'
       type: 'fc'
       class: 'ai'
       expver: '0001'

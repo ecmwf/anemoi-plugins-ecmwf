@@ -148,6 +148,11 @@ class MultioOutputPlugin(Output):
         except TypeError as e:
             raise TypeError(f"Invalid metadata: {e}") from e
 
+        dumped_plan = (
+            self._plan.dump_yaml() if isinstance(self._plan, multio.plans.plans.MultioBaseModel) else self._plan
+        )
+        LOG.info("Using Multio plan:\n%s", dumped_plan)
+
     def open(self, state: State) -> None:
         if self._server is None:
             with multio.MultioPlan(self._plan):  # type: ignore
