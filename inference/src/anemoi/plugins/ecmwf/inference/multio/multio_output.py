@@ -152,6 +152,7 @@ class MultioOutputPlugin(Output):
         if self._server is None:
             with multio.MultioPlan(self._plan):  # type: ignore
                 self._server = multio.Multio()
+
         self._server.open_connections()
         self._server.write_parametrization(self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True))
 
@@ -392,16 +393,16 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
             If the plan contains sinks and sinks is not None, an exception is raised
             default is None
         """
-        if not sinks:
-            super().__init__(context, plan=plan, **kwargs)
+        if sinks:
+            realised_plan = (
+                multio.plans.Client(**plan) if isinstance(plan, dict) else multio.plans.Client.from_yamlfile(plan)
+            )
+            if any(isinstance(action, multio.plans.sinks.SINKS) for p in realised_plan.plans for action in p.actions):
+                raise ValueError("The plan already contains sinks, cannot add additional sinks.")
 
-        assert sinks
-
-        realised_plan = multio.plans.Plan(**plan) if isinstance(plan, dict) else multio.plans.Plan.from_yaml(plan)
-        if any(isinstance(action, multio.plans.sinks.SINKS) for action in realised_plan.actions):
-            raise ValueError("The plan already contains sinks, cannot add additional sinks.")
-
-        realised_plan.actions.append(multio.plans.Sink(sinks=sinks))
+            for p in realised_plan.plans:
+                p.actions.append(multio.plans.Sink(sinks=sinks))
+            plan = realised_plan  # type: ignore
 
         super().__init__(context, plan=plan, **kwargs)
 

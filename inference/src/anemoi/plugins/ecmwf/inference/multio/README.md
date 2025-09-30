@@ -38,9 +38,9 @@ output:
           - type: sink
               sinks:
               - type: file
-              append: true
-              per-server: false
-              path: 'output.grib'
+                append: true
+                per-server: false
+                path: 'output.grib'
       type: 'fc'
       class: 'ai'
       expver: '0001'
