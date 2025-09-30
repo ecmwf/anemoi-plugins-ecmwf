@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.12](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.11...inference-0.1.12) (2025-09-30)
+
+
+### Features
+
+* **inference.multio:** Add sinks argument to plan output ([#44](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/44)) ([0b33b89](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/0b33b89e7c59bd4865dfe43eee5cdce2cab4794d))
+
 ## [0.1.11](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.10...inference-0.1.11) (2025-09-18)
 
 
