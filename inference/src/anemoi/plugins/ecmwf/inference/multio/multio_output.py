@@ -126,7 +126,7 @@ class MultioOutputPlugin(Output):
     def __init__(
         self,
         context: Context,
-        plan: str | dict | multio.plans.Plan,
+        plan: str | dict | multio.plans.Client | multio.plans.Server,
         *,
         output_frequency: int | None = None,
         write_initial_state: bool | None = None,
@@ -148,10 +148,16 @@ class MultioOutputPlugin(Output):
         except TypeError as e:
             raise TypeError(f"Invalid metadata: {e}") from e
 
+        dumped_plan = (
+            self._plan.dump_yaml() if isinstance(self._plan, multio.plans.plans.MultioBaseModel) else self._plan
+        )
+        LOG.info("Using Multio plan:\n%s", dumped_plan)
+
     def open(self, state: State) -> None:
         if self._server is None:
             with multio.MultioPlan(self._plan):  # type: ignore
                 self._server = multio.Multio()
+
         self._server.open_connections()
         self._server.write_parametrization(self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True))
 
@@ -181,7 +187,7 @@ class MultioOutputPlugin(Output):
         namer = self.context.checkpoint.default_namer()
 
         LOG.info(f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:")
-        for field in ds:
+        for field in ds:  # type: ignore
             name = namer(field, field.metadata())
             if name in state["fields"]:
                 raise ValueError(f"Field {name!r} already exists in the initial state.")
@@ -254,6 +260,20 @@ class MultioOutputPlugin(Output):
             self._archiver.write(source=self.source, use_grib_paramid=self.context.use_grib_paramid)
 
 
+def add_debug(locations: dict[int, str], plan: multio.plans.Plan) -> None:
+    """Add debug print actions in place to a multio plan at specified locations.
+
+    Parameters
+    ----------
+    locations : dict[int, str]
+        A dictionary mapping action indices to debug prefixes.
+    plan : multio.plans.Plan
+        The multio plan to modify.
+    """
+    for index, prefix in sorted(locations.items(), reverse=True):
+        plan.actions.insert(index, multio.plans.Print(stream="cout", prefix=prefix, only_fields=False))
+
+
 @main_argument("path")
 class MultioOutputGribPlugin(MultioOutputPlugin):
     """Multio output plugin for GRIB files.
@@ -308,12 +328,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
             ]
         )
         if debug:
-            plan.plans[0].actions.insert(
-                0, multio.plans.Print(stream="cout", prefix="MULTIO PRE-ENC DEBUG: ", only_fields=False)
-            )
-            plan.plans[0].actions.insert(
-                2, multio.plans.Print(stream="cout", prefix="MULTIO PST-ENC DEBUG: ", only_fields=False)
-            )
+            add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
 
         super().__init__(context, plan=plan, **kwargs)
 
@@ -358,12 +373,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
             ]
         )
         if debug:
-            plan.plans[0].actions.insert(
-                0, multio.plans.Print(stream="cout", prefix="MULTIO PRE-ENC DEBUG: ", only_fields=False)
-            )
-            plan.plans[0].actions.insert(
-                2, multio.plans.Print(stream="cout", prefix="MULTIO PST-ENC DEBUG: ", only_fields=False)
-            )
+            add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
 
         super().__init__(context, plan=plan, **kwargs)
 
@@ -372,7 +382,9 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
 class MultioOutputPlanPlugin(MultioOutputPlugin):
     """Multio output plugin to write with a plan."""
 
-    def __init__(self, context: Context, plan: str | dict, **kwargs: Any) -> None:
+    def __init__(
+        self, context: Context, plan: str | dict, *, sinks: list[multio.plans.sinks.SINKS] | None = None, **kwargs: Any
+    ) -> None:
         """Multio FDB Output Plugin.
 
         Parameters
@@ -381,7 +393,22 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
             Model Runner
         plan : str | dict
             Multio Plan
+        sinks : list[multio.plans.sinks.SINKS] | None
+            List of sinks to use in the plan, will be appended to the end of the plan.
+            If the plan contains sinks and sinks is not None, an exception is raised
+            default is None
         """
+        if sinks:
+            realised_plan = (
+                multio.plans.Client(**plan) if isinstance(plan, dict) else multio.plans.Client.from_yamlfile(plan)
+            )
+            if any(isinstance(action, multio.plans.sinks.SINKS) for p in realised_plan.plans for action in p.actions):
+                raise ValueError("The plan already contains sinks, cannot add additional sinks.")
+
+            for p in realised_plan.plans:
+                p.actions.append(multio.plans.Sink(sinks=sinks))
+            plan = realised_plan  # type: ignore
+
         super().__init__(context, plan=plan, **kwargs)
 
 

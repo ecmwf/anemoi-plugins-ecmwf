@@ -36,8 +36,8 @@ output:
           actions:
           - type: encode-mtg2
           - type: sink
-              sinks:
-              - type: file
+            sinks:
+            - type: file
               append: true
               per-server: false
               path: 'output.grib'
