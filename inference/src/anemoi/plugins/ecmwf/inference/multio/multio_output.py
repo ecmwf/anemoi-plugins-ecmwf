@@ -242,6 +242,8 @@ class MultioOutputPlugin(Output):
             if self._archiver:
                 self._archiver.add(_to_mars(metadata, self._user_defined_metadata))
 
+        self._server.flush()
+
     def close(self) -> None:
         if self._server is None:
             raise RuntimeError("Multio server is not open to close, call `.open()` first.")
