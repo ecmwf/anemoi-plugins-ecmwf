@@ -376,7 +376,9 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
 class MultioOutputPlanPlugin(MultioOutputPlugin):
     """Multio output plugin to write with a plan."""
 
-    def __init__(self, context: Context, plan: str | dict, **kwargs: Any) -> None:
+    def __init__(
+        self, context: Context, plan: str | dict, *, sinks: list[multio.plans.sinks.SINKS] | None = None, **kwargs: Any
+    ) -> None:
         """Multio FDB Output Plugin.
 
         Parameters
@@ -385,7 +387,22 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
             Model Runner
         plan : str | dict
             Multio Plan
+        sinks : list[multio.plans.sinks.SINKS] | None
+            List of sinks to use in the plan, will be appended to the end of the plan.
+            If the plan contains sinks and sinks is not None, an exception is raised
+            default is None
         """
+        if not sinks:
+            super().__init__(context, plan=plan, **kwargs)
+
+        assert sinks
+
+        realised_plan = multio.plans.Plan(**plan) if isinstance(plan, dict) else multio.plans.Plan.from_yaml(plan)
+        if any(isinstance(action, multio.plans.sinks.SINKS) for action in realised_plan.actions):
+            raise ValueError("The plan already contains sinks, cannot add additional sinks.")
+
+        realised_plan.actions.append(multio.plans.Sink(sinks=sinks))
+
         super().__init__(context, plan=plan, **kwargs)
 
 
