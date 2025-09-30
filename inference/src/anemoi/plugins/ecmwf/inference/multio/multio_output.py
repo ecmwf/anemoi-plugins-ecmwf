@@ -126,7 +126,7 @@ class MultioOutputPlugin(Output):
     def __init__(
         self,
         context: Context,
-        plan: str | dict | multio.plans.Plan,
+        plan: str | dict | multio.plans.Client | multio.plans.Server,
         *,
         output_frequency: int | None = None,
         write_initial_state: bool | None = None,
@@ -181,7 +181,7 @@ class MultioOutputPlugin(Output):
         namer = self.context.checkpoint.default_namer()
 
         LOG.info(f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:")
-        for field in ds:
+        for field in ds:  # type: ignore
             name = namer(field, field.metadata())
             if name in state["fields"]:
                 raise ValueError(f"Field {name!r} already exists in the initial state.")
