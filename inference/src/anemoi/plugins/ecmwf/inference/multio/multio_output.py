@@ -254,6 +254,20 @@ class MultioOutputPlugin(Output):
             self._archiver.write(source=self.source, use_grib_paramid=self.context.use_grib_paramid)
 
 
+def add_debug(locations: dict[int, str], plan: multio.plans.Plan) -> None:
+    """Add debug print actions in place to a multio plan at specified locations.
+
+    Parameters
+    ----------
+    locations : dict[int, str]
+        A dictionary mapping action indices to debug prefixes.
+    plan : multio.plans.Plan
+        The multio plan to modify.
+    """
+    for index, prefix in sorted(locations.items(), reverse=True):
+        plan.actions.insert(index, multio.plans.Print(stream="cout", prefix=prefix, only_fields=False))
+
+
 @main_argument("path")
 class MultioOutputGribPlugin(MultioOutputPlugin):
     """Multio output plugin for GRIB files.
@@ -308,12 +322,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
             ]
         )
         if debug:
-            plan.plans[0].actions.insert(
-                0, multio.plans.Print(stream="cout", prefix="MULTIO PRE-ENC DEBUG: ", only_fields=False)
-            )
-            plan.plans[0].actions.insert(
-                2, multio.plans.Print(stream="cout", prefix="MULTIO PST-ENC DEBUG: ", only_fields=False)
-            )
+            add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
 
         super().__init__(context, plan=plan, **kwargs)
 
@@ -358,12 +367,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
             ]
         )
         if debug:
-            plan.plans[0].actions.insert(
-                0, multio.plans.Print(stream="cout", prefix="MULTIO PRE-ENC DEBUG: ", only_fields=False)
-            )
-            plan.plans[0].actions.insert(
-                2, multio.plans.Print(stream="cout", prefix="MULTIO PST-ENC DEBUG: ", only_fields=False)
-            )
+            add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
 
         super().__init__(context, plan=plan, **kwargs)
 
