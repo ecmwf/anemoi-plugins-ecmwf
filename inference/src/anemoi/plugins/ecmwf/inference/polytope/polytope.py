@@ -82,8 +82,12 @@ def retrieve(
 
         LOG.debug("%s", _(r))
 
-        result += ekd.from_source("polytope", collection, r, stream=False)
-
+        # Temporarily disable debug logging in this context
+        logging.disable(logging.DEBUG)  # Due to polytope spamming logs
+        try:
+            result += ekd.from_source("polytope", collection, r, stream=False)
+        finally:
+            logging.disable(logging.NOTSET)
     return result
 
 
@@ -99,7 +103,7 @@ class PolytopeInputPlugin(MarsInput):
         collection: str | None = None,
         **kwargs: Any,
     ):
-        """Initialize the Polytope input plugin.
+        """Initialise the Polytope input plugin.
 
         Parameters
         ----------
@@ -140,12 +144,12 @@ class PolytopeInputPlugin(MarsInput):
 
         kwargs = self.kwargs.copy()
         kwargs.setdefault("expver", "0001")
+        kwargs.setdefault("grid", self.checkpoint.grid)
+        kwargs.setdefault("area", self.checkpoint.area)
 
         return retrieve(
             self.collection,
             requests,
-            self.checkpoint.grid,
-            self.checkpoint.area,
-            self.patch,
+            patch=self.patch,
             **kwargs,
         )
