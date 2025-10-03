@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.12...inference-0.1.13) (2025-10-02)
+
+
+### Features
+
+* **inference, polytope:** Allow for grid / area to be set in config ([#46](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/46)) ([61e5d97](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/61e5d972e67d64d20101678ae14c2055e32ad038))
+
 ## [0.1.12](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.11...inference-0.1.12) (2025-09-30)
 
 
