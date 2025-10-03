@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.13...inference-0.1.14) (2025-10-03)
+
+
+### Bug Fixes
+
+* **inference,opendata:** Override `optional_inputs` due to update ([#48](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/48)) ([8f8d3d8](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/8f8d3d8ba874cb92a80ea453fa97183c0e0d0cc0))
+
 ## [0.1.13](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.12...inference-0.1.13) (2025-10-02)
 
 
