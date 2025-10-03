@@ -21,16 +21,18 @@ LOG = logging.getLogger(__name__)
 class InferenceOrography(Orography):
     """Inference Orography Filter.
 
-    Patches the data request to replace `z` with `orog` if `z` is present.
+    Patches the data request to replace `z` with `gh` if `z` is present.
     """
+
+    optional_inputs = {"orography": "gh", "geopotential": "z"}  # use gh for orography
 
     def patch_data_request(self, data_request: Any) -> Any:
         param = data_request.get("param")
         if param is None:
             return data_request
 
-        if self.z in param and (data_request.get("levtype", "") == "pl" or data_request.get("levelist", [])):
-            data_request["param"] = [self.orog if p == self.z else p for p in param]
+        if self.geopotential in param and (data_request.get("levtype", "") == "pl" or data_request.get("levelist", [])):
+            data_request["param"] = [self.orography if p == self.geopotential else p for p in param]
         return data_request
 
 
