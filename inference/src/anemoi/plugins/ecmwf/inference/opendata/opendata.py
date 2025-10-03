@@ -147,6 +147,9 @@ class OpenDataInputPlugin(MarsInput):
         super().__init__(context, namer={"rules": rules_for_namer}, **kwargs)
         self.pre_processors.append(OrographyProcessor(context=context, orog="gh"))
 
+        if self.context.use_grib_paramid:
+            LOG.warning("`use_grib_paramid=True` is not supported for ECMWF Open Data and will be ignored.")
+
     def retrieve(self, variables: list[str], dates: list[Date]) -> Any:
         """Retrieve data for the given variables and dates.
 
@@ -166,7 +169,7 @@ class OpenDataInputPlugin(MarsInput):
         requests = self.checkpoint.mars_requests(
             variables=variables,
             dates=dates,
-            use_grib_paramid=self.context.use_grib_paramid,
+            use_grib_paramid=False,
             type="fc",
         )
 
