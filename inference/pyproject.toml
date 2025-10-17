@@ -39,7 +39,7 @@ classifiers = [
 
 dynamic = [ "version" ]
 dependencies = [
-  "anemoi-inference>=0.5.1",
+  "anemoi-inference==0.8",
 ]
 
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[multio,mir,polytope,opendata]" ]

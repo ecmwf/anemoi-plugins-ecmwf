@@ -23,7 +23,7 @@ def test_plugin():
         overrides=dict(input="opendata"),
     )
     runner = create_runner(config)
-    input = create_input(runner, config.input)
+    input = create_input(runner, config.input, variables=None)
     assert input is not None
 
 
