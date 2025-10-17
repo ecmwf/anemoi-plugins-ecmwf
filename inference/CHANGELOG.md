@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.15](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.14...inference-0.1.15) (2025-10-17)
+
+
+### Bug Fixes
+
+* Provide upper bound on anemoi-inference ([#50](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/50)) ([71ac485](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/71ac485b436aad59c96c821f75eeae7d8ec7bdcd))
+
 ## [0.1.14](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.13...inference-0.1.14) (2025-10-03)
 
 
