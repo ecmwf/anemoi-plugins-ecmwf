@@ -8,10 +8,14 @@
 # nor does it submit to any jurisdiction.
 
 
+import importlib.resources
 import logging
+from dataclasses import dataclass
+from string import Formatter
 from typing import Any
 
 import earthkit.data as ekd
+import yaml
 from anemoi.inference.context import Context
 from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.types import DataRequest
@@ -23,46 +27,205 @@ from .geopotential_height import OrographyProcessor
 
 LOG = logging.getLogger(__name__)
 
-SOIL_MAPPING = {"stl1": "sot", "stl2": "sot", "stl3": "sot", "swvl1": "vsw", "swvl2": "vsw", "swvl3": "vsw"}
+# Constants for mapping configuration
+POP_SENTINEL = "%POP%"  # Sentinel value to indicate key should be removed from request
+RESERVED_MAPPING_KEYS = {"param", "inverse"}  # Keys with special meaning in mappings
+
+MAPPINGS: dict[str, dict[str, dict[str, str]]] = yaml.safe_load(
+    importlib.resources.files("anemoi.plugins.ecmwf.inference.opendata").joinpath("mappings.yaml").read_text()
+)
 
 
-def _retrieve_soil(request: dict, soil_params: list[str]) -> ekd.FieldList:
-    """Retrieve soil data.
-
-    Map the soil parameters to the correct ECMWF parameter IDs and levels.
+def _merge_request_value(existing: Any, new_value: Any) -> list:
+    """Merge a new value into an existing request field.
 
     Parameters
     ----------
-    request : dict
-        Request for the soil data.
-    soil_params : list[str]
-        Parameters to be retrieved.
+    existing : Any
+        The existing value in the request (can be a list or scalar).
+    new_value : Any
+        The new value to merge.
+
+    Returns
+    -------
+    list
+        A list containing the merged unique values.
+    """
+    if isinstance(existing, list):
+        return list(set(existing) | {new_value})
+    return list({existing, new_value})
+
+
+def _apply_mapping_to_request(
+    base_request: dict[str, Any],
+    params_to_map: list[str],
+    mapping: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Apply parameter mappings to create a new request.
+
+    Parameters
+    ----------
+    base_request : dict[str, Any]
+        The base request to apply mappings to.
+    params_to_map : list[str]
+        List of parameter names to map.
+    mapping : dict[str, dict[str, Any]]
+        The mapping configuration for these parameters.
+
+    Returns
+    -------
+    dict[str, Any]
+        A new request with mappings applied.
+    """
+    new_request = base_request.copy()
+    new_request["param"] = [mapping[p]["param"] for p in params_to_map]
+
+    for param in params_to_map:
+        for key, value in mapping[param].items():
+            if key in RESERVED_MAPPING_KEYS:
+                continue
+            elif value == POP_SENTINEL:
+                new_request.pop(key, None)
+            elif key in new_request:
+                new_request[key] = _merge_request_value(new_request[key], value)
+            else:
+                new_request[key] = value
+
+    return new_request
+
+
+def _expand_request(request: dict[str, Any]) -> list[dict[str, Any]]:
+    """Expand request based on mappings.
+
+    Parameters
+    ----------
+    request : dict[str, Any]
+        The original request.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        The expanded requests.
+    """
+    expanded_requests = []
+    request = request.copy()
+
+    for group, mapping in MAPPINGS.items():
+        if any(param in mapping for param in request.get("param", [])):
+            params_to_map = [p for p in request["param"] if p in mapping]
+            request["param"] = [p for p in request["param"] if p not in params_to_map]  # Remove mapped params
+
+            new_request = _apply_mapping_to_request(request, params_to_map, mapping)
+            expanded_requests.append(new_request)
+
+    expanded_requests.append(request)
+    return expanded_requests
+
+
+@dataclass
+class InvertedMapping:
+    """Mapping for converting retrieved parameters back to expected names.
+
+    Attributes
+    ----------
+    true_param : str
+        Target parameter name (e.g., "stl1").
+    id_pattern : str
+        Pattern to match against actual field metadata (e.g., "{param}{levelist}").
+    expected_pattern : str
+        Expected pattern after substitution with mapping attributes.
+    request_attrs : dict
+        Additional attributes from the mapping configuration.
+    """
+
+    true_param: str
+    id_pattern: str
+    expected_pattern: str
+    request_attrs: dict
+
+    def matches(self, field_metadata: dict) -> bool:
+        """Check if this mapping applies to the given field metadata.
+
+        Parameters
+        ----------
+        field_metadata : dict
+            The metadata from the field to check.
+
+        Returns
+        -------
+        bool
+            True if this mapping matches the field, False otherwise.
+        """
+        # Extract all format keys from the id pattern
+        required_keys = [key[1] for key in Formatter().parse(self.id_pattern) if key[1] is not None]
+
+        # Check if all required keys are present in the metadata
+        if not all(key in field_metadata for key in required_keys):
+            return False
+
+        # Build expected metadata by applying mapping attributes
+        expected_metadata = field_metadata.copy()
+        expected_metadata.update(self.request_attrs)
+
+        # Check if patterns match after substitution
+        actual = self.id_pattern.format(**field_metadata)
+        expected = self.expected_pattern.format(**expected_metadata)
+        return actual == expected
+
+
+def _build_inverse_mappings() -> list[InvertedMapping]:
+    """Build inverse mappings from MAPPINGS configuration.
+
+    Returns
+    -------
+    list[InvertedMapping]
+        List of inverse mappings for parameter renaming.
+    """
+    inverse_mappings = []
+    for group, mapping in MAPPINGS.items():
+        for param, details in mapping.items():
+            inverse = details.get("inverse")
+            if inverse:
+                expected = inverse
+                if "==" in inverse:
+                    inverse, expected = inverse.split("==")
+                inverse_mappings.append(
+                    InvertedMapping(
+                        true_param=param,
+                        id_pattern=inverse,
+                        expected_pattern=expected,
+                        request_attrs=details.copy(),
+                    )
+                )
+    return inverse_mappings
+
+
+# Build inverse mappings once at module load time
+INVERSE_MAPPINGS = _build_inverse_mappings()
+
+
+def _rename_params(fieldlist: ekd.FieldList) -> ekd.FieldList:
+    """Rename params to match the expected format.
+
+    Parameters
+    ----------
+    fieldlist : ekd.FieldList
+        The fieldlist with parameters to rename.
 
     Returns
     -------
     ekd.FieldList
-        Soil data.
+        The fieldlist with renamed parameters.
     """
-    request = request.copy()
+    for field in fieldlist:
+        field_metadata = dict(field.metadata().as_namespace("mars"))
 
-    request["param"] = list(SOIL_MAPPING[s] for s in soil_params)
-    request["levelist"] = list({int(s[-1]) for s in soil_params})
-    request.pop("levtype")
+        for inv in INVERSE_MAPPINGS:
+            if inv.matches(field_metadata):
+                field._metadata = field.metadata().override(paramId=shortname_to_paramid(inv.true_param))  # type: ignore
+                break
 
-    soil_data = ekd.from_source("ecmwf-open-data", request)
-    assert isinstance(soil_data, ekd.FieldList), "Expected a FieldList from the soil data request"
-    return soil_data
-
-
-def rename_soildata(soil_data: ekd.FieldList) -> ekd.FieldList:
-    """Rename soil data param to match the expected format."""
-    for field in soil_data:
-        newname = {f"{v}{k[-1]}": k for k, v in SOIL_MAPPING.items()}[
-            f"{field.metadata()['param']}{field.metadata()['level']}"
-        ]
-        field._metadata = field.metadata().override(paramId=shortname_to_paramid(newname))  # type: ignore
-
-    return soil_data
+    return fieldlist
 
 
 def retrieve(
@@ -104,7 +267,9 @@ def retrieve(
         return ",".join(f"{k}={v}" for k, v in mars.items())
 
     result = ekd.SimpleFieldList()
-    for r in requests:
+    expanded_requests = [req for r in requests for req in _expand_request(r)]
+
+    for r in expanded_requests:
         r.update(kwargs)
         if r.get("class") in ("rd", "ea"):
             r["class"] = "od"
@@ -112,15 +277,10 @@ def retrieve(
         if patch:
             r = patch(r)
 
-        if any(k in r["param"] for k in SOIL_MAPPING.keys()):
-            requested_soil_variables = [k for k in SOIL_MAPPING.keys() if k in r["param"]]
-            r["param"] = [p for p in r["param"] if p not in requested_soil_variables]
-            result += rename_soildata(ekr.regrid(_retrieve_soil(r, requested_soil_variables), grid, area))
-
         LOG.debug("%s", _(r))
         result += ekr.regrid(ekd.from_source("ecmwf-open-data", r), grid, area)  # type: ignore
 
-    return result
+    return _rename_params(result)  # type: ignore
 
 
 class OpenDataInputPlugin(MarsInput):
@@ -133,7 +293,7 @@ class OpenDataInputPlugin(MarsInput):
         context: Context,
         **kwargs: Any,
     ) -> None:
-        """Initialize the OpenDataInput.
+        """Initialise the OpenDataInput.
 
         Parameters
         ----------

@@ -1,0 +1,48 @@
+# Mappings from MARS requests to opendata keys
+#
+# group_key: Variables that can be retrieved together
+#   key: incoming param
+#   value: dict of
+#       param: new name
+#       inverse: identifier for inverse mapping, can use format strings
+#       **any_keys to set, use '%POP%' to pop the key from the request
+
+
+soil_lvl1:
+  stl1:
+    param: sot
+    inverse: "{param}{levelist}"
+    levelist: 1
+    levtype: '%POP%'
+
+  swvl1:
+    param: vsw
+    inverse: "{param}{levelist}"
+    levelist: 1
+    levtype: '%POP%'
+
+soil_lvl2:
+  stl2:
+    param: sot
+    inverse: "{param}{levelist}"
+    levelist: 2
+    levtype: '%POP%'
+
+  swvl2:
+    param: vsw
+    inverse: "{param}{levelist}"
+    levelist: 2
+    levtype: '%POP%'
+
+soil_lvl3:
+  stl3:
+    param: sot
+    inverse: "{param}{levelist}"
+    levelist: 3
+    levtype: '%POP%'
+
+  swvl3:
+    param: vsw
+    inverse: "{param}{levelist}"
+    levelist: 3
+    levtype: '%POP%'
