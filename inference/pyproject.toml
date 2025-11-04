@@ -39,13 +39,13 @@ classifiers = [
 
 dynamic = [ "version" ]
 dependencies = [
-  "anemoi-inference==0.8,<0.8.1",
+  "anemoi-inference>=0.8.1",
 ]
 
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[multio,mir,polytope,opendata]" ]
 optional-dependencies.dynamics = [ "earthkit-regrid", "pillow" ]
-optional-dependencies.mir = [ "earthkit-data", "mir-python>=1.27.4.dev20250905" ]
-optional-dependencies.multio = [ "pymultio[all]>=2.5.1.dev20250627" ]
+optional-dependencies.mir = [ "earthkit-data", "mir-python>=1.27.10.5" ]
+optional-dependencies.multio = [ "pymultio[all]>=2.7.1.5" ]
 optional-dependencies.opendata = [
   "anemoi-plugins-ecmwf-inference[regrid]",
   "earthkit-data",

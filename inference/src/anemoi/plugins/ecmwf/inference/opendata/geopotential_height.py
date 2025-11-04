@@ -11,8 +11,8 @@
 import logging
 from typing import Any
 
-import earthkit.data as ekd
 from anemoi.inference.processor import Processor
+from anemoi.inference.types import State
 from anemoi.transform.filters.orog_to_z import Orography
 
 LOG = logging.getLogger(__name__)
@@ -52,20 +52,21 @@ class OrographyProcessor(Processor):
         super().__init__(context)
         self.filter = InferenceOrography(**kwargs)
 
-    def process(self, fields: ekd.FieldList) -> ekd.FieldList:
-        """Process the given fields using the InferenceOrography filter.
+    def process(self, state: State) -> State:
+        """Process the given state using the InferenceOrography filter.
 
         Parameters
         ----------
-        fields : ekd.FieldList
-            The fields to be processed.
+        state : State
+            The state containing fields to be processed.
 
         Returns
         -------
-        ekd.FieldList
-            The processed fields.
+        State
+            The processed state.
         """
-        return self.filter.forward(fields)
+        state["fields"] = self.filter.forward(state["fields"])
+        return state
 
     def patch_data_request(self, data_request: Any) -> Any:
         """Patch the data request using the filter.
