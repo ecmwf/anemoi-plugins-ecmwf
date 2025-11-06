@@ -15,6 +15,7 @@ import earthkit.data as ekd
 import tqdm
 from anemoi.inference.context import Context
 from anemoi.inference.processor import Processor
+from anemoi.inference.types import State
 
 if TYPE_CHECKING:
     from earthkit.data.readers.grib.codes import GribField
@@ -81,17 +82,18 @@ class RegridPreprocessor(Processor):
         self._grid = grid
         self._area = area
 
-    def process(self, fields: ekd.FieldList) -> ekd.FieldList:  # type: ignore
-        """Process the fields to replace NaNs with the mean value.
+    def process(self, state: State) -> State:  # type: ignore
+        """Process the fields by regridding them to the specified grid and area.
 
         Parameters
         ----------
-        fields : list
-            List of fields to process.
+        state : State
+            The state containing the fields to process.
 
         Returns
         -------
-        list
-            List of processed fields with NaNs replaced by the mean value.
+        State
+            The updated state with regridded fields.
         """
-        return regrid(fields, self._grid, self._area)
+        state["fields"] = regrid(state["fields"], self._grid, self._area)
+        return state
