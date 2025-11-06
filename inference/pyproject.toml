@@ -72,7 +72,6 @@ entry-points."anemoi.inference.outputs"."multio.grib" = "anemoi.plugins.ecmwf.in
 entry-points."anemoi.inference.outputs"."multio.plan" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputPlanPlugin"
 entry-points."anemoi.inference.pre_processors"."array_overlay" = "anemoi.plugins.ecmwf.inference.dynamics:ArrayOverlayPlugin"
 entry-points."anemoi.inference.pre_processors"."modify_value" = "anemoi.plugins.ecmwf.inference.dynamics:ModifyValuePlugin"
-
 entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.inference.regrid:RegridPreprocessor"
 
 [tool.setuptools.package-data]
