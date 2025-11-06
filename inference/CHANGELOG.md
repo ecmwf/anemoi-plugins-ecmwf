@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.17](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.16...inference-0.1.17) (2025-11-06)
+
+
+### Features
+
+* Add flexible mappings to opendata ([#55](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/55)) ([34d2a47](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/34d2a477cc4e027491d2deb014c562fc1c4fd760))
+
+
+### Bug Fixes
+
+* Upgrade to inference: 0.8.1 ([#54](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/54)) ([a006085](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/a00608589fa2418111943713a5f9647939f1b8b1))
+
 ## [0.1.16](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.15...inference-0.1.16) (2025-10-26)
 
 
