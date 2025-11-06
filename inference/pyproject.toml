@@ -42,7 +42,7 @@ dependencies = [
   "anemoi-inference>=0.8.1",
 ]
 
-optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[multio,mir,polytope,opendata]" ]
+optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[mir,multio,opendata,polytope]" ]
 optional-dependencies.dynamics = [ "earthkit-regrid", "pillow" ]
 optional-dependencies.mir = [ "earthkit-data", "mir-python>=1.27.10.5" ]
 optional-dependencies.multio = [ "pymultio[all]>=2.7.1.5" ]
@@ -76,6 +76,7 @@ entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.
 
 [tool.setuptools.package-data]
 "anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
+"anemoi.plugins.ecmwf.inference.opendata" = [ "*.yaml" ]
 
 [tool.setuptools_scm]
 root = ".."
