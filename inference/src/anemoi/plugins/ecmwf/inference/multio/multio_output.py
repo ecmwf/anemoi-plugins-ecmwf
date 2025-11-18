@@ -242,7 +242,12 @@ class MultioOutputPlugin(Output):
                 field = np.nan_to_num(field, nan=missing_value)  # type: ignore
 
             self._server.write_field(
-                {**metadata.model_dump(exclude_none=True, by_alias=True), "misc-missingValue": missing_value}, field
+                {
+                    **metadata.model_dump(exclude_none=True, by_alias=True),
+                    "misc-missingValue": missing_value,
+                    "misc-timeIncrementInSeconds": 0,
+                },
+                field,
             )
             if self._archiver:
                 self._archiver.add(_to_mars(metadata, self._user_defined_metadata))
