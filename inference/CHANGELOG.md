@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.16](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.15...inference-0.1.16) (2025-11-18)
+
+
+### Bug Fixes
+
+* Explicitly set misc-timeIncrementInSeconds to 0 ([#57](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/57)) ([6fc3ee4](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/6fc3ee43c11c332e6a71faba450edd1b3a47de0e))
+
 ## [0.1.15](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.14...inference-0.1.15) (2025-10-17)
 
 
