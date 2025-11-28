@@ -10,7 +10,6 @@
 import logging
 from datetime import timedelta
 from typing import Any
-from typing import Self
 
 import multio
 import numpy as np
@@ -51,7 +50,7 @@ class UserDefinedMetadata(BaseModel):
     """Generating process identifier"""
 
     @model_validator(mode="after")
-    def validate_number_of_forecasts(self) -> Self:
+    def validate_number_of_forecasts(self):
         if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
             raise ValueError("numberOfForecastsInEnsemble must be an integer if number is provided")
         return self
