@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.19](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.18...inference-0.1.19) (2025-11-28)
+
+
+### Bug Fixes
+
+* **inference multio:** Issue with model validation for ens number ([#60](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/60)) ([fbf4f20](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/fbf4f20f097d9c77fb659a549783665743095387))
+
 ## [0.1.18](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.17...inference-0.1.18) (2025-11-18)
 
 
