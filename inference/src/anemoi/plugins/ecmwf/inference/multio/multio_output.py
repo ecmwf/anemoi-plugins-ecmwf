@@ -21,7 +21,6 @@ from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
 from pydantic import BaseModel
 from pydantic import Field
-from pydantic import field_validator
 from pydantic import model_validator
 
 from .archive import ArchiveCollector
@@ -50,11 +49,11 @@ class UserDefinedMetadata(BaseModel):
     generatingProcessIdentifier: int | None = Field(None, serialization_alias="misc-generatingProcessIdentifier")
     """Generating process identifier"""
 
-    @field_validator("numberOfForecastsInEnsemble")
-    def validate_number_of_forecasts(cls, numberOfForecastsInEnsemble, values):
-        if isinstance(values.get("number"), int) and not isinstance(numberOfForecastsInEnsemble, int):
+    @model_validator(mode="after")
+    def validate_number_of_forecasts(self):
+        if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
             raise ValueError("numberOfForecastsInEnsemble must be an integer if number is provided")
-        return numberOfForecastsInEnsemble
+        return self
 
 
 class MultioMetadata(BaseModel):
