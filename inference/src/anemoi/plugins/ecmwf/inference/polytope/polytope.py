@@ -100,6 +100,7 @@ class PolytopeInputPlugin(MarsInput):
     def __init__(
         self,
         context: Context,
+        *,
         collection: str | None = None,
         **kwargs: Any,
     ):
