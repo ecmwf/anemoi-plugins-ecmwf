@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.20](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.19...inference-0.1.20) (2026-01-09)
+
+
+### Bug Fixes
+
+* **inference mir:** Missing template kwargs ([#63](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/63)) ([f00e41e](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/f00e41e0a4323d8d83d2d00e55a0c1b11b7ebd2f))
+
 ## [0.1.19](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.18...inference-0.1.19) (2025-11-28)
 
 
