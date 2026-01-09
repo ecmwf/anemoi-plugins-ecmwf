@@ -79,7 +79,7 @@ class MirTemplatesProvider(TemplateProvider):
 
         return buffer.getvalue()
 
-    def template(self, variable: str, lookup: dict[str, Any]) -> ekd.Field:
+    def template(self, variable: str, lookup: dict[str, Any], **kwargs) -> ekd.Field:
         """Get the template for the given variable and lookup.
 
         Parameters
@@ -88,6 +88,8 @@ class MirTemplatesProvider(TemplateProvider):
             The variable to get the template for.
         lookup : Dict[str, Any]
             The lookup dictionary.
+        kwargs
+            Extra arguments for specific template providers.
 
         Returns
         -------
