@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.21](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.20...inference-0.1.21) (2026-01-13)
+
+
+### Bug Fixes
+
+* **multio:** Allow empty `model` ([#65](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/65)) ([4233b72](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/4233b72a1fcd8f16489c387d229d4118250c0ae9))
+
 ## [0.1.20](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.19...inference-0.1.20) (2026-01-09)
 
 
