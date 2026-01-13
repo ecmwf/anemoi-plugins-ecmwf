@@ -40,7 +40,7 @@ class UserDefinedMetadata(BaseModel):
     """Class name, e.g. od, ai, ..."""
     expver: str | int
     """Experiment version, e.g. 0001"""
-    model: str
+    model: str | None = None
     """Model name, e.g. aifs-single, ..."""
     number: int | None = None
     """Ensemble number, e.g. 0,1,2"""
