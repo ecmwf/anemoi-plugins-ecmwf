@@ -9,6 +9,7 @@
 
 import logging
 from datetime import timedelta
+from functools import cached_property
 from typing import Any
 
 import multio
@@ -152,6 +153,10 @@ class MultioOutputPlugin(Output):
         )
         LOG.info("Using Multio plan:\n%s", dumped_plan)
 
+    @cached_property
+    def _is_accumulated_from_start(self) -> bool:
+        return any(isinstance(x, Accumulate) for x in self.context.create_post_processors())
+
     def open(self, state: State) -> None:
         if self._server is None:
             with multio.MultioPlan(self._plan):  # type: ignore
@@ -209,7 +214,7 @@ class MultioOutputPlugin(Output):
         }
 
         timespan = self.context.checkpoint.timestep.total_seconds() // 3600
-        if any(isinstance(x, Accumulate) for x in self.context.create_post_processors()):  # type: ignore
+        if self._is_accumulated_from_start:
             timespan = shared_metadata["step"]
 
         for param, field in state["fields"].items():
