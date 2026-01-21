@@ -11,6 +11,7 @@ Use with the grib output
 output:
   grib:
     path: data.grib
-    templates: 'mir'
+    templates:
+      - 'mir'
 
 ```
