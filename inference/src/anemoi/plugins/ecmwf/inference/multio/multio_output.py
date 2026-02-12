@@ -11,6 +11,8 @@ import logging
 from datetime import timedelta
 from functools import cached_property
 from typing import Any
+from typing import Literal
+from typing import get_args
 
 import multio
 import numpy as np
@@ -21,6 +23,7 @@ from anemoi.inference.post_processors.accumulate import Accumulate
 from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import model_validator
 
@@ -31,10 +34,14 @@ CONVERT_PARAM_TO_PARAMID = True
 
 LOG = logging.getLogger(__name__)
 
+ORIGIN = Literal["ORIGIN"]
+originkey = get_args(ORIGIN)[0]
+
 
 class UserDefinedMetadata(BaseModel):
-    stream: str
-    """Stream name, e.g. oper, enfo"""
+    model_config = ConfigDict(extra="forbid")
+    stream: str | ORIGIN
+    """Stream name, e.g. oper, enfo, or "origin" to get from variable metadata"""
     type: str
     """Type name, e.g. fc, an"""
     klass: str = Field(alias="class")
@@ -58,6 +65,7 @@ class UserDefinedMetadata(BaseModel):
 
 
 class MultioMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     param: int
     """Param ID, e.g. 130"""
     levtype: str
@@ -163,7 +171,11 @@ class MultioOutputPlugin(Output):
                 self._server = multio.Multio()
 
         self._server.open_connections()
-        self._server.write_parametrization(self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True))
+        user_metadata = self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True)
+        if user_metadata.get("stream") == originkey:
+            user_metadata.pop("stream")
+
+        self._server.write_parametrization(user_metadata)
 
     def write_initial_state(self, state: State) -> None:
         """Write the initial step of the state.
@@ -222,6 +234,10 @@ class MultioOutputPlugin(Output):
             if variable.is_computed_forcing:
                 continue
 
+            extra_keys = {}
+            if self._user_defined_metadata.stream == originkey:
+                extra_keys["stream"] = variable.grib_keys.get("stream", "oper")
+
             param = variable.grib_keys.get("param", param)
             if CONVERT_PARAM_TO_PARAMID:
                 param = shortname_to_paramid(param)
@@ -248,6 +264,7 @@ class MultioOutputPlugin(Output):
             self._server.write_field(
                 {
                     **metadata.model_dump(exclude_none=True, by_alias=True),
+                    **extra_keys,
                     "misc-missingValue": missing_value,
                     "misc-timeIncrementInSeconds": 0,
                 },
