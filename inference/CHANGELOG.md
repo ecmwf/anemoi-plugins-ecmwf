@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.21...inference-0.2.0) (2026-02-16)
+
+
+### Features
+
+* **inference multio:** Add `ORIGIN` magic string for stream in metadata ([#71](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/71)) ([4e25267](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/4e25267100210ddbd592b2a1da2cdb022da2382d))
+
+
+### Bug Fixes
+
+* **mir:** Update README.md ([#69](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/69)) ([b117fea](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/b117feae172f7fedd3b248971962ca2efec2255d))
+
 ## [0.1.21](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.20...inference-0.1.21) (2026-01-13)
 
 
