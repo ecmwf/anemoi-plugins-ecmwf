@@ -41,7 +41,7 @@ originkey = get_args(ORIGIN)[0]
 class UserDefinedMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
     stream: str | ORIGIN
-    """Stream name, e.g. oper, enfo, or "origin" to get from variable metadata"""
+    """Stream name, e.g. oper, enfo, or "ORIGIN" to get from variable metadata"""
     type: str
     """Type name, e.g. fc, an"""
     klass: str = Field(alias="class")
