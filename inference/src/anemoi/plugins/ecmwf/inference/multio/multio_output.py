@@ -20,11 +20,14 @@ from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
 from anemoi.inference.output import Output
 from anemoi.inference.post_processors.accumulate import Accumulate
+from anemoi.inference.types import ProcessorConfig
 from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import ValidationInfo
+from pydantic import field_validator
 from pydantic import model_validator
 
 from .archive import ArchiveCollector
@@ -78,9 +81,10 @@ class MultioMetadata(BaseModel):
     """Forecast step, e.g. 0,6,12,24"""
     grid: str
     """Grid name, e.g. n320, o96"""
+    area: str | None = None
+    """Area info, e.g. 90/-180/-90/180"""
     levelist: int | None = None
     """Level, e.g. 0,50,100"""
-
     timespan: int | None = None
     """Time span, e.g."""
 
@@ -91,15 +95,36 @@ class MultioMetadata(BaseModel):
     repres: str | None = None
     """Representation type"""
 
-    @model_validator(mode="after")
-    def set_repres(self):
-        if self.repres is None:
-            grid = self.grid.upper()
+    @field_validator("grid", mode="before")
+    @classmethod
+    def format_grid(cls, grid: str | list[float] | None) -> str | None:
+        if isinstance(grid, str):
+            return grid.upper()
+        if isinstance(grid, (tuple, list)):
+            if len(grid) != 2:
+                raise ValueError("Grid list must have exactly two elements for x and y dimensions.")
+            if grid[0] == grid[1]:
+                return str(grid[0])
+            return f"{grid[0]}x{grid[1]}"
+        return grid
+
+    @field_validator("area", mode="before")
+    @classmethod
+    def format_area(cls, area: str | list[float] | None) -> str | None:
+        if isinstance(area, list):
+            return "/".join(str(a) for a in area)
+        return area
+
+    @field_validator("repres", mode="after")
+    @classmethod
+    def set_repres(cls, repres: str, info: ValidationInfo) -> str:
+        if repres is None:
+            grid = info.data["grid"].upper()
             if any(grid.startswith(prefix) for prefix in ["N", "O"]):
-                self.repres = "gg"
+                repres = "gg"
             else:
-                self.repres = "ll"
-        return self
+                repres = "ll"
+        return repres
 
 
 def _to_mars(metadata: MultioMetadata, user_metadata: UserDefinedMetadata) -> dict[str, Any]:
@@ -136,14 +161,44 @@ class MultioOutputPlugin(Output):
         context: Context,
         plan: str | dict | multio.plans.Client | multio.plans.Server,
         *,
+        variables: list[str] | None = None,
+        post_processors: list[ProcessorConfig] | None = None,
         output_frequency: int | None = None,
         write_initial_state: bool | None = None,
         archive_requests: Config | None = None,
         initial_state_diagnostics_grib: str | None = None,
         **metadata: Any,
     ) -> None:
+        """Initialise the MultioOutputPlugin.
+
+        Parameters
+        ----------
+        context : Context
+            The context in which the output operates.
+        plan : str | dict | multio.plans.Client | multio.plans.Server
+            Multio plan to use for output, can be provided as a YAML string, a dictionary, or a multio plan object.
+        variables : list[str] | None, optional
+            List of variables to output, defaults to all, by default None
+        post_processors : Optional[List[ProcessorConfig]], default None
+            Post-processors to apply to the input
+        output_frequency : Optional[int], optional
+            The frequency at which to output states, by default None.
+        write_initial_state : Optional[bool], optional
+            Whether to write the initial state, by default None.
+        archive_requests : Config | None, optional
+            Whether to write an archive of what was written, by default None
+        initial_state_diagnostics_grib : str | None, optional
+            Path to the initial state diagnostics GRIB file, by default None
+
+        Raises
+        ------
+        TypeError
+            If metadata is invalid
+        """
         super().__init__(
             context,
+            variables=variables,
+            post_processors=post_processors,
             output_frequency=output_frequency,
             write_initial_state=write_initial_state,
         )
@@ -194,7 +249,7 @@ class MultioOutputPlugin(Output):
         if self._initial_state_diagnostics_grib:
             self._copy_initial_state_diagnostics(state)
 
-        return self.write_step(state)
+        return super().write_initial_state(state)
 
     def _copy_initial_state_diagnostics(self, state: State) -> None:
         import earthkit.data as ekd
@@ -218,9 +273,13 @@ class MultioOutputPlugin(Output):
         reference_date = self.reference_date or self.context.reference_date
         step = state["step"]
 
+        grid = state.get("_geography", {}).get("grid", self.context.checkpoint.grid)
+        area = state.get("_geography", {}).get("area", self.context.checkpoint.area)
+
         shared_metadata = {
             "step": int(step.total_seconds() // 3600),
-            "grid": str(self.context.checkpoint.grid).upper(),
+            "grid": grid,
+            "area": area,
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
             "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
         }
@@ -230,6 +289,9 @@ class MultioOutputPlugin(Output):
             timespan = shared_metadata["step"]
 
         for param, field in state["fields"].items():
+            if self.skip_variable(param):
+                continue
+
             variable = self.typed_variables[param]
             if variable.is_computed_forcing:
                 continue
