@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.0...inference-0.2.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* **multio:** Add keys to the encoder to account for missing values ([#76](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/76)) ([cbee5ca](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/cbee5cabafb84534c2fcb4367e647cae4b6e188b))
+
 ## [0.2.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.1.21...inference-0.2.0) (2026-02-16)
 
 
