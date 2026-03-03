@@ -258,14 +258,23 @@ class MultioOutputPlugin(Output):
             field = field.copy(order="C")
             missing_value = float(-999999.0)
 
+            missing_value_keys = {}
+            # Missing value keys
+
             if np.isnan(field).any():
                 field = np.nan_to_num(field, nan=missing_value)  # type: ignore
+
+                # Set missing values and bitmap keys
+                missing_value_keys = {
+                    "misc-missingValue": missing_value,
+                    "misc-bitmapPresent": True,
+                }
 
             self._server.write_field(
                 {
                     **metadata.model_dump(exclude_none=True, by_alias=True),
                     **extra_keys,
-                    "misc-missingValue": missing_value,
+                    **missing_value_keys,
                     "misc-timeIncrementInSeconds": 0,
                 },
                 field,

@@ -81,9 +81,6 @@ def test_multio_write_field_called(mock_multio_server, state: State) -> None:
                 "timespan" not in metadata
             ), f"Timespan should not be set for non-accumulated fields - {metadata['param']}"
 
-        # Check that missing value is set
-        assert "misc-missingValue" in metadata, "Missing value should be set in metadata"
-
     # Check that flush was called without arguments
     mock_multio_server.flush.assert_called_with()
 
