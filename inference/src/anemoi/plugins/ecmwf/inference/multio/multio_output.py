@@ -256,7 +256,7 @@ class MultioOutputPlugin(Output):
             # Removes ValueError: ndarray is not C-contiguous
             # Replace NaNs with a missing value
             field = field.copy(order="C")
-            missing_value = float(-999999.0)
+            missing_value = float(-999.99)
 
             missing_value_keys = {}
             # Missing value keys
@@ -281,8 +281,6 @@ class MultioOutputPlugin(Output):
             )
             if self._archiver:
                 self._archiver.add(_to_mars(metadata, self._user_defined_metadata))
-
-        self._server.flush()
 
     def close(self) -> None:
         if self._server is None:
