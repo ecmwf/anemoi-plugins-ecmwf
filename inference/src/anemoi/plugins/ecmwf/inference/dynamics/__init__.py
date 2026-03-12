@@ -11,3 +11,4 @@
 
 from .array_overlay import ArrayOverlayPlugin as ArrayOverlayPlugin
 from .modify_value import ModifyValuePlugin as ModifyValuePlugin
+from .regression_perturbation import RegressionPerturbationPlugin as RegressionPerturbationPlugin
