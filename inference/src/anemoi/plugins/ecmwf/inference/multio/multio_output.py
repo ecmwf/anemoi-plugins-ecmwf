@@ -256,7 +256,7 @@ class MultioOutputPlugin(Output):
             # Removes ValueError: ndarray is not C-contiguous
             # Replace NaNs with a missing value
             field = field.copy(order="C")
-            missing_value = float(-9999)
+            missing_value = float(-9999.99)
 
             missing_value_keys = {}
             # Missing value keys
@@ -267,8 +267,8 @@ class MultioOutputPlugin(Output):
                 # Set missing values and bitmap keys
                 missing_value_keys = {
                     "misc-missingValue": missing_value,
+                    "missingValue": missing_value,  # Yes both keys are needed, multio...
                     "misc-bitmapPresent": True,
-                    "misc-bitsPerValue": 24,
                 }
 
             self._server.write_field(
