@@ -48,6 +48,7 @@ optional-dependencies.mir = [ "earthkit-data", "mir-python>=1.27.10.5" ]
 optional-dependencies.multio = [ "pymultio[all]>=2.7.1.5" ]
 optional-dependencies.opendata = [
   "anemoi-plugins-ecmwf-inference[regrid]",
+  "anemoi-transform>=0.1.27",
   "earthkit-data",
   "earthkit-regrid",
   "ecmwf-opendata",
