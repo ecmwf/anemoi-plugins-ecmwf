@@ -287,6 +287,7 @@ class MultioOutputPlugin(Output):
         if self._server is None:
             raise RuntimeError("Multio server is not open to close, call `.open()` first.")
 
+        self._server.flush()
         self._server.close_connections()
         self._server = None
 
