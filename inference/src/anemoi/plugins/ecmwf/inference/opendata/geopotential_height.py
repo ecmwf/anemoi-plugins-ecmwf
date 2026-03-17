@@ -13,7 +13,7 @@ from typing import Any
 
 from anemoi.inference.processor import Processor
 from anemoi.inference.types import State
-from anemoi.transform.filters.orog_to_z import Orography
+from anemoi.transform.filters.fields.orog_to_z import Orography
 
 LOG = logging.getLogger(__name__)
 
