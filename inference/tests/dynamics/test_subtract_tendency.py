@@ -32,7 +32,7 @@ from anemoi.plugins.ecmwf.inference.dynamics.subtract_tendency import (
 # ---- SubtractTendency tests with synthetic GRIB ----
 
 
-def _write_grib_fields(path, param_names, values_list, *, levels=None):
+def _write_grib_fields(path, param_names, values_list, *, levels=None) -> None:
     """Write a minimal GRIB file with given fields using eccodes.
 
     Parameters
