@@ -19,6 +19,7 @@ from typing import Any
 
 import earthkit.data as ekd
 import numpy as np
+import torch
 from anemoi.inference.processor import Processor
 from anemoi.inference.types import State
 
@@ -119,7 +120,7 @@ class SubtractTendencyPlugin(Processor):
 
         return tendency
 
-    def _get_tendency_tensor(self, name: str, reference) -> "Tensor":
+    def _get_tendency_tensor(self, name: str, reference) -> "torch.Tensor":
         """Return the tendency for *name* as a torch tensor on the same device/dtype."""
         import torch
 
