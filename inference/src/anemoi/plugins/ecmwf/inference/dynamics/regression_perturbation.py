@@ -76,11 +76,11 @@ class RegressionPerturbationPlugin(Processor):
     """Compute regression-based initial-condition perturbations on-the-fly.
 
     Implements the Hakim & Masanam (2023) climatological regression method:
-    ERA5 samples are loaded, a localized linear regression is computed against
+    data samples are loaded, a localized linear regression is computed against
     a reference variable at a chosen point, and the resulting perturbation
     field is applied to the model initial conditions.
 
-    The perturbation is computed on the ERA5 source grid (``era5_grid``) and
+    The perturbation is computed on the data source grid (``data_grid``) and
     regridded to the model target grid (``grid`` or checkpoint grid) via
     ``earthkit.regrid``.
 
@@ -90,9 +90,8 @@ class RegressionPerturbationPlugin(Processor):
     pre_processors:
         - regression_perturbation:
             season: "JAS"
-            data_path: "/path/to/era5/grib/"
-            era5_grid: "N320"
-            grid: "O96"
+            data_path: "/path/to/data/grib/"
+            data_grid: "N320"
             ylat: 15.0
             xlon: 320.0
             xlev: 5
@@ -111,7 +110,7 @@ class RegressionPerturbationPlugin(Processor):
         context,
         season: str,
         data_path: str,
-        era5_grid: str | list[float],
+        data_grid: str | list[float],
         ylat: float,
         xlon: float,
         xlev: int,
@@ -122,7 +121,6 @@ class RegressionPerturbationPlugin(Processor):
         param_sfc: list[str],
         method: VALID_METHODS = "add",
         file_glob_suffix: str = ".grib",
-        grid: str | list[float] | None = None,
         max_samples: int | None = None,
         rescale: float = 1.0,
     ):
@@ -134,8 +132,7 @@ class RegressionPerturbationPlugin(Processor):
 
         self._season = season
         self._data_path = data_path
-        self._era5_grid = era5_grid
-        self._grid = grid
+        self._data_grid = data_grid
         self._ylat = ylat
         self._xlon = xlon
         self._xlev = xlev
@@ -156,10 +153,10 @@ class RegressionPerturbationPlugin(Processor):
 
     @property
     def _target_grid(self):
-        return self._grid if self._grid is not None else self.checkpoint.grid
+        return self._data_grid if self._data_grid is not None else self.checkpoint.grid
 
-    def _glob_era5_files(self) -> np.ndarray:
-        """Glob ERA5 GRIB files for the configured season."""
+    def _glob_data_files(self) -> np.ndarray:
+        """Global GRIB files for the configured season."""
         months = SEASON_MONTHS[self._season]
         all_files: list[str] = []
         for month in months:
@@ -167,7 +164,7 @@ class RegressionPerturbationPlugin(Processor):
             all_files.extend(glob.glob(pattern))
         if not all_files:
             raise FileNotFoundError(
-                f"No ERA5 files found in {self._data_path} for season {self._season} "
+                f"No data files found in {self._data_path} for season {self._season} "
                 f"with suffix {self._file_glob_suffix}"
             )
         return np.sort(all_files)
@@ -176,9 +173,9 @@ class RegressionPerturbationPlugin(Processor):
         """Run the full climatological regression and return perturbation arrays.
 
         Returns a dict mapping (shortName, level) -> 1-D perturbation array
-        on the ERA5 grid. Level is None for surface variables.
+        on the data grid. Level is None for surface variables.
         """
-        dates = self._glob_era5_files()
+        dates = self._glob_data_files()
 
         nvars_pl = len(self._param_pl)
         nlevs = len(self._level_pl)
@@ -270,7 +267,7 @@ class RegressionPerturbationPlugin(Processor):
                 regf_sfc[v, j] = slope * self._amp + intercept
             regf_sfc[v, :] *= locfunc[nonzeros]
 
-        # --- expand to full ERA5 grid ---
+        # --- expand to full data grid ---
         perturbation_map: dict[tuple[str, int | None], np.ndarray] = {}
 
         for vi, param in enumerate(self._param_pl):
@@ -292,14 +289,14 @@ class RegressionPerturbationPlugin(Processor):
         raw_map = self._compute_regression()
 
         target_grid = self._target_grid
-        need_regrid = self._era5_grid != target_grid
+        need_regrid = self._data_grid != target_grid
         if need_regrid:
-            LOG.info("Regridding perturbations from %s to %s", self._era5_grid, target_grid)
+            LOG.info("Regridding perturbations from %s to %s", self._data_grid, target_grid)
 
         result: dict[tuple[str, int | None], np.ndarray] = {}
         for key, arr in raw_map.items():
             if need_regrid:
-                arr = ekr.interpolate(arr, {"grid": self._era5_grid}, {"grid": target_grid})
+                arr = ekr.interpolate(arr, {"grid": self._data_grid}, {"grid": target_grid})
             result[key] = arr
         return result
 
@@ -336,6 +333,6 @@ class RegressionPerturbationPlugin(Processor):
         return (
             f"RegressionPerturbationPlugin(season='{self._season}', "
             f"ylat={self._ylat}, xlon={self._xlon}, locrad={self._locrad}, "
-            f"amp={self._amp}, rescale={self._rescale}, era5_grid='{self._era5_grid}', "
+            f"amp={self._amp}, rescale={self._rescale}, data_grid='{self._data_grid}', "
             f"grid='{self._target_grid}', method='{self._method}')"
         )
