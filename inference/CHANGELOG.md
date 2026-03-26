@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.1...inference-0.2.2) (2026-03-18)
+
+
+### Bug Fixes
+
+* Small values being rounded when using high missingValue ([#78](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/78)) ([a4067c1](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/a4067c1cefa165741f79fb412dad1aa3f74773cd))
+
 ## [0.2.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.0...inference-0.2.1) (2026-03-03)
 
 
