@@ -7,13 +7,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-"""Mid-processor that subtracts precomputed climatological mean tendencies.
+"""Plugin that subtracts precomputed tendencies.
 
 At every autoregressive step the model predicts the *full* next state.
-This processor removes the climatological mean tendency so that only the
-anomaly (deviation from the seasonal mean evolution) is fed back into the
-next step — replicating the logic previously done externally by
-``tendency.py`` inside a shell loop.
+This processor removes the tendency so that only the
+anomaly is fed back into the next step.
 """
 
 import logging
@@ -27,8 +25,8 @@ from anemoi.inference.types import State
 LOG = logging.getLogger(__name__)
 
 
-class SubtractMeanTendencyPlugin(Processor):
-    """Subtract precomputed mean tendencies from model output each step.
+class SubtractTendencyPlugin(Processor):
+    """Subtract precomputed tendencies from model output each step.
 
     This is a **mid-processor**: it runs inside the autoregressive loop
     *after* the model prediction and *before* the output is fed back as
@@ -39,9 +37,9 @@ class SubtractMeanTendencyPlugin(Processor):
     context : Context
         The inference runner context.
     tend_pl_path : str
-        Path to the pressure-level mean tendency GRIB file.
+        Path to the pressure-level tendency GRIB file.
     tend_sfc_path : str
-        Path to the surface mean tendency GRIB file.
+        Path to the surface tendency GRIB file.
     param_pl : list[str]
         Pressure-level parameter short names (e.g. ``["z", "q", "t", "u", "v", "w"]``).
     level_pl : list[int]
@@ -54,7 +52,7 @@ class SubtractMeanTendencyPlugin(Processor):
     .. code-block:: yaml
 
         mid_processors:
-          - subtract_mean_tendency:
+          - subtract_tendency:
               tend_pl_path: "/path/to/tend_pl_JAS_o96.grib"
               tend_sfc_path: "/path/to/tend_sfc_JAS_o96.grib"
               param_pl: ["z", "q", "t", "u", "v", "w"]
@@ -82,7 +80,7 @@ class SubtractMeanTendencyPlugin(Processor):
         # Load tendency GRIB data and build lookup: variable_name -> 1-D numpy array
         self._tendency_np = self._load_tendencies()
         LOG.info(
-            "SubtractMeanTendency: loaded %d tendency fields from %s and %s",
+            "SubtractTendency: loaded %d tendency fields from %s and %s",
             len(self._tendency_np),
             tend_pl_path,
             tend_sfc_path,
@@ -133,7 +131,7 @@ class SubtractMeanTendencyPlugin(Processor):
         return self._tendency_torch[name]
 
     def process(self, state: State) -> State:
-        """Subtract the mean tendency from each matching field in the state."""
+        """Subtract the tendency from each matching field in the state."""
         state = state.copy()
 
         for name, tend_np in self._tendency_np.items():
@@ -147,7 +145,7 @@ class SubtractMeanTendencyPlugin(Processor):
 
     def __repr__(self) -> str:
         return (
-            f"SubtractMeanTendencyPlugin("
+            f"SubtractTendencyPlugin("
             f"pl={self._tend_pl_path!r}, sfc={self._tend_sfc_path!r}, "
             f"n_fields={len(self._tendency_np)})"
         )
