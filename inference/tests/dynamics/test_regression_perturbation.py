@@ -150,16 +150,13 @@ class TestRegressionPerturbationInit:
         plugin = _make_regression_plugin(MagicMock(), rescale=20.0)
         assert plugin._rescale == 20.0
 
-    def test_target_grid_from_checkpoint(self):
-        mock_ctx = MagicMock()
-        mock_ctx.checkpoint = MagicMock()
-        mock_ctx.checkpoint.grid = "O96"
-        plugin = _make_regression_plugin(mock_ctx, grid=None)
+    def test_target_grid_uses_data_grid(self):
+        plugin = _make_regression_plugin(MagicMock(), data_grid="O96")
         assert plugin._target_grid == "O96"
 
-    def test_target_grid_override(self):
-        plugin = _make_regression_plugin(MagicMock(), grid="N320")
-        assert plugin._target_grid == "N320"
+    def test_target_grid_different_value(self):
+        plugin = _make_regression_plugin(MagicMock(), data_grid="N640")
+        assert plugin._target_grid == "N640"
 
 
 class TestRegressionPerturbationApply:
@@ -218,7 +215,7 @@ class TestRegressionPerturbationApply:
         np.testing.assert_allclose(result.to_numpy(), 110.0)
 
     def test_repr_contains_key_info(self):
-        plugin = _make_regression_plugin(MagicMock(), grid="O96")
+        plugin = _make_regression_plugin(MagicMock())
         r = repr(plugin)
         assert "RegressionPerturbationPlugin" in r
         assert "JAS" in r

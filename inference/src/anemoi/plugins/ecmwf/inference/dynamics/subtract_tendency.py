@@ -119,7 +119,7 @@ class SubtractTendencyPlugin(Processor):
 
         return tendency
 
-    def _get_tendency_tensor(self, name: str, reference) -> "torch.Tensor":
+    def _get_tendency_tensor(self, name: str, reference) -> "Tensor":
         """Return the tendency for *name* as a torch tensor on the same device/dtype."""
         import torch
 
