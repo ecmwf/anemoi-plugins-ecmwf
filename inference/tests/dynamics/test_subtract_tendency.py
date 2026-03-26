@@ -23,11 +23,7 @@ import numpy as np
 import pytest
 import torch
 from anemoi.inference.context import Context
-
-from anemoi.plugins.ecmwf.inference.dynamics.subtract_tendency import (
-    SubtractTendencyPlugin,
-)
-
+from anemoi.plugins.ecmwf.inference.dynamics.subtract_tendency import SubtractTendencyPlugin
 
 # ---- SubtractTendency tests with synthetic GRIB ----
 
@@ -97,9 +93,7 @@ class TestSubtractTendency:
             "level_pl": level_pl,
             "param_sfc": param_sfc,
             "n_gridpoints": n_gridpoints,
-            "pl_values": {
-                f"{p}_{lev}": v for p, lev, v in zip(pl_params, pl_levels, pl_values)
-            },
+            "pl_values": {f"{p}_{lev}": v for p, lev, v in zip(pl_params, pl_levels, pl_values)},
             "sfc_values": {p: v for p, v in zip(param_sfc, sfc_values)},
         }
 
@@ -116,10 +110,7 @@ class TestSubtractTendency:
 
     def test_loads_correct_number_of_fields(self, tendency_files):
         plugin = self._make_plugin(tendency_files)
-        expected = (
-            len(tendency_files["param_pl"]) * len(tendency_files["level_pl"])
-            + len(tendency_files["param_sfc"])
-        )
+        expected = len(tendency_files["param_pl"]) * len(tendency_files["level_pl"]) + len(tendency_files["param_sfc"])
         assert len(plugin._tendency_np) == expected
 
     def test_tendency_keys(self, tendency_files):
@@ -147,9 +138,7 @@ class TestSubtractTendency:
 
         for name in plugin._tendency_np:
             expected = originals[name] - torch.from_numpy(plugin._tendency_np[name])
-            torch.testing.assert_close(
-                new_state["fields"][name], expected, rtol=1e-5, atol=1e-6
-            )
+            torch.testing.assert_close(new_state["fields"][name], expected, rtol=1e-5, atol=1e-6)
 
     def test_process_leaves_unknown_fields_unchanged(self, tendency_files):
         plugin = self._make_plugin(tendency_files)

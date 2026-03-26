@@ -95,10 +95,7 @@ class SubtractTendencyPlugin(Processor):
         tendency: dict[str, np.ndarray] = {}
 
         # --- Pressure levels ---
-        tend_pl = (
-            ekd.from_source("file", self._tend_pl_path)
-            .order_by(param=self._param_pl, level=self._level_pl)
-        )
+        tend_pl = ekd.from_source("file", self._tend_pl_path).order_by(param=self._param_pl, level=self._level_pl)
         tend_pl_values = tend_pl.values  # shape (n_fields, n_gridpoints)
 
         idx = 0
@@ -109,10 +106,7 @@ class SubtractTendencyPlugin(Processor):
                 idx += 1
 
         # --- Surface ---
-        tend_sfc = (
-            ekd.from_source("file", self._tend_sfc_path)
-            .order_by(param=self._param_sfc)
-        )
+        tend_sfc = ekd.from_source("file", self._tend_sfc_path).order_by(param=self._param_sfc)
         tend_sfc_values = tend_sfc.values  # shape (n_fields, n_gridpoints)
 
         for i, param in enumerate(self._param_sfc):
@@ -126,9 +120,7 @@ class SubtractTendencyPlugin(Processor):
 
         if name not in self._tendency_torch:
             arr = self._tendency_np[name]
-            self._tendency_torch[name] = torch.from_numpy(arr).to(
-                device=reference.device, dtype=reference.dtype
-            )
+            self._tendency_torch[name] = torch.from_numpy(arr).to(device=reference.device, dtype=reference.dtype)
         return self._tendency_torch[name]
 
     def process(self, state: State) -> State:

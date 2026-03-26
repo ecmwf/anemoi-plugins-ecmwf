@@ -22,12 +22,9 @@ import earthkit.data as ekd
 import numpy as np
 import pytest
 from anemoi.inference.context import Context
-
-from anemoi.plugins.ecmwf.inference.dynamics.regression_perturbation import (
-    RegressionPerturbationPlugin,
-    _gaspari_cohn,
-    _haversine,
-)
+from anemoi.plugins.ecmwf.inference.dynamics.regression_perturbation import RegressionPerturbationPlugin
+from anemoi.plugins.ecmwf.inference.dynamics.regression_perturbation import _gaspari_cohn
+from anemoi.plugins.ecmwf.inference.dynamics.regression_perturbation import _haversine
 
 # ---- unit tests for helpers ----
 
@@ -87,6 +84,7 @@ class TestGaspariCohn:
         # Non-increasing from center outward
         for i in range(1, n):
             assert cov[i] <= cov[i - 1] + 1e-12
+
 
 def _make_regression_plugin(mocker, **overrides):
     """Create a RegressionPerturbationPlugin with a mocked context."""

@@ -59,13 +59,16 @@ def _gaspari_cohn(lat_vec, lon_vec, bplat, bplon, locrad):
 
     cov = np.ones(lat_vec.shape[0], dtype=np.float64)
 
-    cov[ind_inner] = (
-        ((-0.25 * r[ind_inner] + 0.5) * r[ind_inner] + 0.625) * r[ind_inner] - (5.0 / 3.0)
-    ) * (r[ind_inner] ** 2) + 1.0
+    cov[ind_inner] = (((-0.25 * r[ind_inner] + 0.5) * r[ind_inner] + 0.625) * r[ind_inner] - (5.0 / 3.0)) * (
+        r[ind_inner] ** 2
+    ) + 1.0
 
     cov[ind_outer] = (
-        (((r[ind_outer] / 12.0 - 0.5) * r[ind_outer] + 0.625) * r[ind_outer] + 5.0 / 3.0) * r[ind_outer] - 5.0
-    ) * r[ind_outer] + 4.0 - 2.0 / (3.0 * r[ind_outer])
+        ((((r[ind_outer] / 12.0 - 0.5) * r[ind_outer] + 0.625) * r[ind_outer] + 5.0 / 3.0) * r[ind_outer] - 5.0)
+        * r[ind_outer]
+        + 4.0
+        - 2.0 / (3.0 * r[ind_outer])
+    )
 
     cov[ind_out] = 0.0
     cov[cov < 0.0] = 0.0
@@ -147,9 +150,9 @@ class RegressionPerturbationPlugin(Processor):
         self._max_samples = max_samples
 
         # Build filter criteria for apply_function_to_fields
-        self._fields: list[dict[str, Any]] = [
-            {"shortName": p, "level": lev} for p in param_pl for lev in level_pl
-        ] + [{"shortName": p} for p in param_sfc]
+        self._fields: list[dict[str, Any]] = [{"shortName": p, "level": lev} for p in param_pl for lev in level_pl] + [
+            {"shortName": p} for p in param_sfc
+        ]
 
     @property
     def _target_grid(self):
