@@ -57,6 +57,7 @@ def test_multio_write_field_called(mock_multio_server, state: State) -> None:
     assert hasattr(output, "_server") and output._server is mock_multio_server
 
     output.write_step(state)
+    output.close()
 
     # Check that write_field was called with metadata and field data
     mock_multio_server.write_field.assert_called()
