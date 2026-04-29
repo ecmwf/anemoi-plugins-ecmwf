@@ -7,6 +7,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
 
@@ -15,6 +16,10 @@ import numpy as np
 from anemoi.inference.processor import Processor
 
 from ._operate_on_fields import apply_function_to_fields
+
+if TYPE_CHECKING:
+    from anemoi.inference.context import Context
+    from anemoi.inference.metadata import Metadata
 
 VALID_METHODS = Literal["add", "subtract", "multiply", "divide", "replace"]
 METHOD_FUNCTIONS = {
@@ -41,8 +46,17 @@ class ModifyValuePlugin(Processor):
     ```
     """
 
-    def __init__(self, context, fields: list[dict[str, Any]], value: float | str, method: VALID_METHODS = "add"):
-        super().__init__(context)
+    def __init__(
+        self,
+        context: "Context",
+        metadata: "Metadata",
+        *,
+        fields: list[dict[str, Any]],
+        value: float | str,
+        method: VALID_METHODS = "add",
+    ):
+        super().__init__(context, metadata)
+
         self.method = method
         if isinstance(value, str):
             value = np.load(value)

@@ -14,6 +14,7 @@ from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
 from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.inputs.mars import postproc
+from anemoi.inference.metadata import Metadata
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
 
@@ -24,7 +25,7 @@ def retrieve(
     collection: str,
     requests: list[dict[str, Any]],
     grid: str | list[float] | None,
-    area: list[float] | None,
+    area: list[float] | str | None,
     patch: Any | None = None,
     **kwargs: Any,
 ) -> Any:
@@ -38,7 +39,7 @@ def retrieve(
         The list of requests to be retrieved.
     grid : Optional[Union[str, List[float]]]
         The grid for the retrieval.
-    area : Optional[List[float]]
+    area : Optional[Union[List[float], str]]
         The area for the retrieval.
     patch : Optional[Any], optional
         Optional patch for the request, by default None.
@@ -100,7 +101,9 @@ class PolytopeInputPlugin(MarsInput):
     def __init__(
         self,
         context: Context,
-        collection: str | None = None,
+        metadata: Metadata,
+        *,
+        collection: str = "ecmwf-mars",
         **kwargs: Any,
     ):
         """Initialise the Polytope input plugin.
@@ -109,13 +112,15 @@ class PolytopeInputPlugin(MarsInput):
         ----------
         context : Context
             The context for the input plugin.
+        metadata : Metadata
+            The metadata associated with the input plugin.
         collection : Optional[str], optional
             The collection to use for retrieval, by default 'ecmwf-mars'.
         **kwargs : Any
             Additional keyword arguments.
         """
-        super().__init__(context, **kwargs)
-        self.collection = collection or "ecmwf-mars"
+        super().__init__(context, metadata, **kwargs)
+        self.collection = collection
 
     def retrieve(self, variables: list[str], dates: list[Date]) -> Any:
         """Retrieve data for the given variables and dates.
@@ -132,7 +137,7 @@ class PolytopeInputPlugin(MarsInput):
         Any
             The retrieved data.
         """
-        requests = self.checkpoint.mars_requests(
+        requests = self.metadata.mars_requests(
             variables=variables,
             dates=dates,
             use_grib_paramid=self.context.use_grib_paramid,
@@ -144,8 +149,8 @@ class PolytopeInputPlugin(MarsInput):
 
         kwargs = self.kwargs.copy()
         kwargs.setdefault("expver", "0001")
-        kwargs.setdefault("grid", self.checkpoint.grid)
-        kwargs.setdefault("area", self.checkpoint.area)
+        kwargs.setdefault("grid", self.metadata.grid)
+        kwargs.setdefault("area", self.metadata.area)
 
         return retrieve(
             self.collection,

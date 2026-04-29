@@ -18,6 +18,7 @@ import earthkit.data as ekd
 import yaml
 from anemoi.inference.context import Context
 from anemoi.inference.inputs.mars import MarsInput
+from anemoi.inference.metadata import Metadata
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
 from anemoi.utils.grib import shortname_to_paramid
@@ -231,7 +232,7 @@ def _rename_params(fieldlist: ekd.FieldList) -> ekd.FieldList:
 def retrieve(
     requests: list[dict[str, Any]],
     grid: str | list[float] | None,
-    area: list[float] | None,
+    area: list[float] | str | None,
     patch: Any | None = None,
     **kwargs: Any,
 ) -> ekd.FieldList:
@@ -243,7 +244,7 @@ def retrieve(
         The list of requests to be retrieved.
     grid : Optional[Union[str, list[float]]]
         The grid for the retrieval.
-    area : Optional[list[float]]
+    area : Optional[Union[list[float], str]]
         The area for the retrieval.
     patch : Optional[Any], optional
         Optional patch for the request, by default None.
@@ -291,6 +292,7 @@ class OpenDataInputPlugin(MarsInput):
     def __init__(
         self,
         context: Context,
+        metadata: Metadata,
         **kwargs: Any,
     ) -> None:
         """Initialise the OpenDataInput.
@@ -299,13 +301,15 @@ class OpenDataInputPlugin(MarsInput):
         ----------
         context : Any
             The context in which the input is used.
+        metadata : Metadata
+            The metadata associated with the input.
         """
         rules_for_namer = [
             ({"levtype": "sol"}, "{param}"),
         ]
         kwargs.pop("namer", None)  # Ensure namer is not passed to MarsInput
-        super().__init__(context, namer={"rules": rules_for_namer}, **kwargs)
-        self.pre_processors.append(OrographyProcessor(context=context, orog="gh"))
+        super().__init__(context, metadata=metadata, namer={"rules": rules_for_namer}, **kwargs)
+        self.pre_processors.append(OrographyProcessor(context=context, metadata=metadata, orog="gh"))
 
         if self.context.use_grib_paramid:
             LOG.warning("`use_grib_paramid=True` is not supported for ECMWF Open Data and will be ignored.")
@@ -326,7 +330,7 @@ class OpenDataInputPlugin(MarsInput):
             The retrieved data.
         """
 
-        requests = self.checkpoint.mars_requests(
+        requests = self.metadata.mars_requests(
             variables=variables,
             dates=dates,
             use_grib_paramid=False,
@@ -337,11 +341,11 @@ class OpenDataInputPlugin(MarsInput):
             raise ValueError(f"No requests for {variables} ({dates})")
 
         kwargs = self.kwargs.copy()
+        kwargs.setdefault("grid", self.metadata.grid)
+        kwargs.setdefault("area", self.metadata.area)
 
         return retrieve(
             requests,
-            self.checkpoint.grid,
-            self.checkpoint.area,
             patch=self.patch_data_request,
             **kwargs,
         )

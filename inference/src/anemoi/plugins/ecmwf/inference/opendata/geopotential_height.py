@@ -9,6 +9,7 @@
 
 
 import logging
+from typing import TYPE_CHECKING
 from typing import Any
 
 from anemoi.inference.processor import Processor
@@ -16,6 +17,10 @@ from anemoi.inference.types import State
 from anemoi.transform.filters.fields.orog_to_z import Orography
 
 LOG = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from anemoi.inference.context import Context
+    from anemoi.inference.metadata import Metadata
 
 
 class InferenceOrography(Orography):
@@ -39,17 +44,19 @@ class InferenceOrography(Orography):
 class OrographyProcessor(Processor):
     """A processor that applies the InferenceOrography filter to the given fields."""
 
-    def __init__(self, context: Any, **kwargs: Any) -> None:
+    def __init__(self, context: "Context", metadata: "Metadata", **kwargs: Any) -> None:
         """Initialize the OrographyProcessor.
 
         Parameters
         ----------
-        context : object
+        context : Context
             The context in which the filter is being used.
+        metadata : Metadata
+            The metadata associated with the processor.
         **kwargs : dict
             Additional keyword arguments to pass to the filter.
         """
-        super().__init__(context)
+        super().__init__(context, metadata)
         self.filter = InferenceOrography(**kwargs)
 
     def process(self, state: State) -> State:
