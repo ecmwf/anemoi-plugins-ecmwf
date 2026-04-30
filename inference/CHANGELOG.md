@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.2...inference-0.2.3) (2026-04-30)
+
+
+### Bug Fixes
+
+* **polytope:** Add missing keys with defaults ([#84](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/84)) ([5a449be](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/5a449be54113fa81731293890e32b5b4f7d4acba))
+
 ## [0.2.2](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.1...inference-0.2.2) (2026-03-18)
 
 
