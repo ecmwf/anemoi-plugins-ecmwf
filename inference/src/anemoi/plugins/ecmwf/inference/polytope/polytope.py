@@ -144,6 +144,9 @@ class PolytopeInputPlugin(MarsInput):
 
         kwargs = self.kwargs.copy()
         kwargs.setdefault("expver", "0001")
+        kwargs.setdefault("stream", "oper")
+        kwargs.setdefault("class", "od")
+        kwargs.setdefault("step", 0)
         kwargs.setdefault("grid", self.checkpoint.grid)
         kwargs.setdefault("area", self.checkpoint.area)
 
