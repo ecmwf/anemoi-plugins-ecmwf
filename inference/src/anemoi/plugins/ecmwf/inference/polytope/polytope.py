@@ -149,8 +149,12 @@ class PolytopeInputPlugin(MarsInput):
 
         kwargs = self.kwargs.copy()
         kwargs.setdefault("expver", "0001")
+        
         kwargs.setdefault("grid", self.metadata.grid)
         kwargs.setdefault("area", self.metadata.area)
+        kwargs.setdefault("stream", "oper")
+        kwargs.setdefault("class", "od")
+        kwargs.setdefault("step", 0)
 
         return retrieve(
             self.collection,
