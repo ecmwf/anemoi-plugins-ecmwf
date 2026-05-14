@@ -18,8 +18,10 @@ import multio
 import numpy as np
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
+from anemoi.inference.metadata import Metadata
 from anemoi.inference.output import Output
 from anemoi.inference.post_processors.accumulate import Accumulate
+from anemoi.inference.types import ProcessorConfig
 from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
 from pydantic import BaseModel
@@ -134,16 +136,22 @@ class MultioOutputPlugin(Output):
     def __init__(
         self,
         context: Context,
+        metadata: Metadata,
         plan: str | dict | multio.plans.Client | multio.plans.Server,
         *,
+        variables: list[str] | None = None,
+        post_processors: list[ProcessorConfig] | None = None,
         output_frequency: int | None = None,
         write_initial_state: bool | None = None,
         archive_requests: Config | None = None,
         initial_state_diagnostics_grib: str | None = None,
-        **metadata: Any,
+        **user_metadata: Any,
     ) -> None:
         super().__init__(
             context,
+            metadata=metadata,
+            variables=variables,
+            post_processors=post_processors,
             output_frequency=output_frequency,
             write_initial_state=write_initial_state,
         )
@@ -152,9 +160,9 @@ class MultioOutputPlugin(Output):
         self._initial_state_diagnostics_grib = initial_state_diagnostics_grib
 
         try:
-            self._user_defined_metadata = UserDefinedMetadata(**metadata)
+            self._user_defined_metadata = UserDefinedMetadata(**user_metadata)
         except TypeError as e:
-            raise TypeError(f"Invalid metadata: {e}") from e
+            raise TypeError(f"Invalid user_metadata: {e}") from e
 
         dumped_plan = (
             self._plan.dump_yaml() if isinstance(self._plan, multio.plans.plans.MultioBaseModel) else self._plan
@@ -163,7 +171,7 @@ class MultioOutputPlugin(Output):
 
     @cached_property
     def _is_accumulated_from_start(self) -> bool:
-        return any(isinstance(x, Accumulate) for x in self.context.create_post_processors())
+        return any(isinstance(x, Accumulate) for k in self.context.post_processors for x in self.context.post_processors[k])  # type: ignore[reportAttributeAccessIssue]
 
     def open(self, state: State) -> None:
         if self._server is None:
@@ -200,7 +208,7 @@ class MultioOutputPlugin(Output):
         import earthkit.data as ekd
 
         ds = ekd.from_source("file", self._initial_state_diagnostics_grib)
-        namer = self.context.checkpoint.default_namer()
+        namer = self.metadata.default_namer()
 
         LOG.info(f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:")
         for field in ds:  # type: ignore
@@ -220,12 +228,12 @@ class MultioOutputPlugin(Output):
 
         shared_metadata = {
             "step": int(step.total_seconds() // 3600),
-            "grid": str(self.context.checkpoint.grid).upper(),
+            "grid": str(self.metadata.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
             "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
         }
 
-        timespan = self.context.checkpoint.timestep.total_seconds() // 3600
+        timespan = self.metadata.timestep.total_seconds() // 3600
         if self._is_accumulated_from_start:
             timespan = shared_metadata["step"]
 
@@ -320,6 +328,8 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
     def __init__(
         self,
         context: Context,
+        metadata: Metadata,
+        *,
         path: str,
         append: bool = False,
         per_server: bool = False,
@@ -332,6 +342,8 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
         ----------
         context : Context
             Model Runner
+        metadata : Metadata
+            Metadata for the output plugin
         path : str
             Path to write to
         append : bool
@@ -348,7 +360,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
                 multio.plans.Plan(
                     name="output-to-file",
                     actions=[
-                        multio.plans.EncodeMTG(geo_from_atlas=True),
+                        multio.plans.EncodeMTG(),
                         multio.plans.Sink(
                             sinks=[
                                 multio.plans.sinks.File(
@@ -365,7 +377,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
         if debug:
             add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
 
-        super().__init__(context, plan=plan, **kwargs)
+        super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
 
 @main_argument("fdb_config")
@@ -376,13 +388,17 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
     It is a subclass of the MultioOutputPlugin class.
     """
 
-    def __init__(self, context: Context, fdb_config: str, debug: bool = False, **kwargs: Any) -> None:
+    def __init__(
+        self, context: Context, metadata: Metadata, fdb_config: str, *, debug: bool = False, **kwargs: Any
+    ) -> None:
         """Multio FDB Output Plugin.
 
         Parameters
         ----------
         context : Context
             Model Runner
+        metadata : Metadata
+            Metadata for the output plugin
         fdb_config : str
             FDB Configuration file
         debug : bool, optional
@@ -395,7 +411,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
                 multio.plans.Plan(
                     name="output-to-fdb",
                     actions=[
-                        multio.plans.EncodeMTG(geo_from_atlas=True),
+                        multio.plans.EncodeMTG(),
                         multio.plans.Sink(
                             sinks=[
                                 multio.plans.sinks.FDB(
@@ -410,7 +426,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
         if debug:
             add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
 
-        super().__init__(context, plan=plan, **kwargs)
+        super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
 
 @main_argument("plan")
@@ -418,7 +434,13 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
     """Multio output plugin to write with a plan."""
 
     def __init__(
-        self, context: Context, plan: str | dict, *, sinks: list[multio.plans.sinks.SINKS] | None = None, **kwargs: Any
+        self,
+        context: Context,
+        metadata: Metadata,
+        plan: str | dict,
+        *,
+        sinks: list[multio.plans.sinks.SINKS] | None = None,
+        **kwargs: Any,
     ) -> None:
         """Multio FDB Output Plugin.
 
@@ -426,6 +448,8 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
         ----------
         context : Context
             Model Runner
+        metadata : Metadata
+            Metadata for the output plugin
         plan : str | dict
             Multio Plan
         sinks : list[multio.plans.sinks.SINKS] | None
@@ -444,7 +468,7 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
                 p.actions.append(multio.plans.Sink(sinks=sinks))
             plan = realised_plan  # type: ignore
 
-        super().__init__(context, plan=plan, **kwargs)
+        super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
 
 class MultioDisambiguousOutputPlugin(MultioOutputPlugin):

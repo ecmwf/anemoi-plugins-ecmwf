@@ -8,6 +8,7 @@
 # nor does it submit to any jurisdiction.
 
 
+from collections import defaultdict
 from pathlib import Path
 
 from anemoi.inference.inputs import create_input
@@ -17,15 +18,12 @@ from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
 
 
 @fake_checkpoints
-def test_plugin():
+def test_plugin(mock_metadata) -> None:
     config = MockRunConfiguration.load(
         (Path(__file__).parent / "configs/simple.yaml").absolute(),
         overrides=dict(input="opendata"),
     )
     runner = create_runner(config)
-    input = create_input(runner, config.input, variables=None)
+    runner.pre_processors = defaultdict(list)
+    input = create_input(runner, config.input, mock_metadata, variables=[])
     assert input is not None
-
-
-if __name__ == "__main__":
-    test_plugin()

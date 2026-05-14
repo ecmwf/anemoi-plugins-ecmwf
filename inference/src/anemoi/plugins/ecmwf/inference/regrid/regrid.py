@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import earthkit.data as ekd
 import tqdm
 from anemoi.inference.context import Context
+from anemoi.inference.metadata import Metadata
 from anemoi.inference.processor import Processor
 from anemoi.inference.types import State
 
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-def _mir_regrid(field: "GribField", grid, area) -> "GribField":
+def _mir_regrid(field: "GribField", grid: str | list[float], area: str | list[float] | None) -> "GribField":
     import io
 
     import mir
@@ -45,7 +46,7 @@ def _mir_regrid(field: "GribField", grid, area) -> "GribField":
     return ekd.from_source("memory", buffer.getvalue())[0]  # type: ignore
 
 
-def regrid(fields: ekd.FieldList, grid, area) -> ekd.FieldList:
+def regrid(fields: ekd.FieldList, grid: str | list[float], area: str | list[float] | None) -> ekd.FieldList:
     """Regrid a list of fields to a specified grid and area.
 
     TO BE REPLACED WITH EARTHKIT-REGRID
@@ -66,19 +67,23 @@ class RegridPreprocessor(Processor):
     i.e. mars, cds, opendata, grib files, etc.
     """
 
-    def __init__(self, context: Context, grid: str | list[float], area: str | list[float] | None = None) -> None:
+    def __init__(
+        self, context: Context, metadata: Metadata, *, grid: str | list[float], area: str | list[float] | None = None
+    ) -> None:
         """Initialize the Regridding processor.
 
         Parameters
         ----------
         context : Context
             The context in which the processor operates.
+        metadata : Metadata
+            The metadata associated with the dataset this processor is handling.
         grid : str | list[float]
             The target grid for regridding.
         area : str | list[float] | None, optional
             The target area for regridding, by default None
         """
-        super().__init__(context)
+        super().__init__(context, metadata=metadata)
         self._grid = grid
         self._area = area
 
