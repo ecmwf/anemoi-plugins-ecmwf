@@ -9,4 +9,5 @@
 
 """Anemoi Inference Regridding Plugin"""
 
+from .regrid import RegridPostprocessor as RegridPostprocessor
 from .regrid import RegridPreprocessor as RegridPreprocessor

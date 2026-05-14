@@ -9,55 +9,16 @@
 
 
 import logging
-from typing import TYPE_CHECKING
 
-import earthkit.data as ekd
-import tqdm
+import earthkit.geo as ekg
 from anemoi.inference.context import Context
 from anemoi.inference.metadata import Metadata
+from anemoi.inference.post_processors.earthkit_state import unwrap_state
+from anemoi.inference.post_processors.earthkit_state import wrap_state
 from anemoi.inference.processor import Processor
 from anemoi.inference.types import State
 
-if TYPE_CHECKING:
-    from earthkit.data.readers.grib.codes import GribField
-
 LOG = logging.getLogger(__name__)
-
-
-def _mir_regrid(field: "GribField", grid: str | list[float], area: str | list[float] | None) -> "GribField":
-    import io
-
-    import mir
-    from earthkit.data import create_encoder
-
-    encoder = create_encoder("grib")
-    message = encoder.encode(field).to_bytes()
-
-    mir_input = mir.GribMemoryInput(message)  # type: ignore
-    job_args = {"grid": grid}
-    if area:
-        job_args["area"] = area
-
-    job = mir.Job(**job_args)  # type: ignore
-    buffer = io.BytesIO()
-
-    job.execute(mir_input, buffer)
-
-    return ekd.from_source("memory", buffer.getvalue())[0]  # type: ignore
-
-
-def regrid(fields: ekd.FieldList, grid: str | list[float], area: str | list[float] | None) -> ekd.FieldList:
-    """Regrid a list of fields to a specified grid and area.
-
-    TO BE REPLACED WITH EARTHKIT-REGRID
-    """
-    if isinstance(grid, (list, tuple)):
-        grid = "/".join(map(str, grid))
-    if isinstance(area, (list, tuple)):
-        area = "/".join(map(str, area))
-
-    result = list(map(lambda f: _mir_regrid(f, grid, area), tqdm.tqdm(fields, desc="Regridding fields")))  # type: ignore
-    return ekd.FieldList.from_fields(result)
 
 
 class RegridPreprocessor(Processor):
@@ -70,7 +31,7 @@ class RegridPreprocessor(Processor):
     def __init__(
         self, context: Context, metadata: Metadata, *, grid: str | list[float], area: str | list[float] | None = None
     ) -> None:
-        """Initialize the Regridding processor.
+        """Initialise the Regridding processor.
 
         Parameters
         ----------
@@ -100,5 +61,48 @@ class RegridPreprocessor(Processor):
         State
             The updated state with regridded fields.
         """
-        state["fields"] = regrid(state["fields"], self._grid, self._area)
+        state["fields"] = ekg.regrid(state["fields"], {"grid": self._grid, "area": self._area})
+        return state
+
+
+class RegridPostprocessor(Processor):
+    """Regrid an output state"""
+
+    def __init__(
+        self, context: Context, metadata: Metadata, *, grid: str | list[float], area: str | list[float] | None = None
+    ) -> None:
+        """Initialise the Regridding processor.
+
+        Parameters
+        ----------
+        context : Context
+            The context in which the processor operates.
+        metadata : Metadata
+            The metadata associated with the dataset this processor is handling.
+        grid : str | list[float]
+            The target grid for regridding.
+        area : str | list[float] | None, optional
+            The target area for regridding, by default None
+        """
+        super().__init__(context, metadata=metadata)
+        self._grid = grid
+        self._area = area
+
+    def process(self, state: State) -> State:  # type: ignore
+        """Process the fields by regridding them to the specified grid and area.
+
+        Parameters
+        ----------
+        state : State
+            The state containing the fields to process.
+
+        Returns
+        -------
+        State
+            The updated state with regridded fields.
+        """
+        fieldlist = wrap_state(state)
+        fieldlist = ekg.regrid(fieldlist, {"grid": self._grid, "area": self._area})
+
+        state = unwrap_state(fieldlist, state, namer=self.metadata.default_namer())
         return state
