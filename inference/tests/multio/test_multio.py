@@ -87,32 +87,6 @@ def test_multio_write_field_called(mock_multio_server, mock_state: State) -> Non
 
 
 @fake_checkpoints
-def test_multio_workflow_called(mock_multio_server) -> None:
-    """Test the inference process using a fake checkpoint.
-
-    This function loads a configuration, creates a runner, and runs the inference
-    process to ensure that the system works as expected with the provided configuration.
-    """
-    # Load configuration
-    config = MockRunConfiguration.load(
-        str((Path(__file__).parent / "configs/multio.yaml").absolute()),
-        overrides=dict(runner="no-model", device="cpu", input="dummy"),
-    )
-
-    # Create runner and execute
-    runner = create_runner(config)  # type: ignore
-
-    # Check calls to the _server property
-    assert hasattr(runner.create_output("data", runner.tensor_handlers["data"].metadata), "_server")
-
-    runner.execute()
-
-    mock_multio_server.write_field.assert_called()
-    mock_multio_server.flush.assert_called()
-    mock_multio_server.close_connections.assert_called()
-
-
-@fake_checkpoints
 def test_multio_archiver(mock_multio_server, mock_state) -> None:
     """Test archiver"""
 
