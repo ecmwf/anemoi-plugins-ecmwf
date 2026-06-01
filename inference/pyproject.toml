@@ -77,6 +77,7 @@ entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.
 [tool.setuptools.package-data]
 "anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
 "anemoi.plugins.ecmwf.inference.opendata" = [ "*.yaml" ]
+"anemoi.plugins.ecmwf.inference.regrid.named" = [ "*/*.npz" ]
 
 [tool.setuptools_scm]
 root = ".."

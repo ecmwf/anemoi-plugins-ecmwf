@@ -18,3 +18,9 @@ pre_processors:
       grid: N320
       area: 89.785/0.0/-89.785/359.719
 ```
+
+## Named Grids
+
+Included within the regrid module are some extra named grids, that can be used in place of the `grid` key.
+
+- meps: MetCoOp Ensemble Prediction System grid
