@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.3...inference-0.3.0) (2026-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* Update all plugins to work with multi-dataset in inference ([#83](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/83))
+
+### Features
+
+* **regrid:** add named grid support with lat/lon regridding ([#87](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/87)) ([48229a8](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/48229a8a66d02bcc62d5150920b32cc5b1a7a61f))
+* **regrid:** enhance checkpoint grid handling in regridding processor ([#88](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/88)) ([d936ff4](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d936ff4b3eff80f5971f4f3baf9462d7460d44b4))
+* Update all plugins to work with multi-dataset in inference ([#83](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/83)) ([ff0be3d](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ff0be3d0cbb13851e600b3dc7a099400db7755f9))
+
 ## [0.2.3](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.2...inference-0.2.3) (2026-04-30)
 
 
