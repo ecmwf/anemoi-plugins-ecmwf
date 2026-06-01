@@ -137,18 +137,18 @@ class RegridPreprocessor(Processor):
                 resolved_grid = named_regrid.gridspec["grid"]
 
             elif grid.lower().startswith(CHECKPOINT_SENTINEL):
-                coord_path = grid[len(CHECKPOINT_SENTINEL) :].lstrip(":")
+                coord_path = grid.lstrip(f"{CHECKPOINT_SENTINEL}:")
                 if (
-                    f"{coord_path}/latitude" not in self.metadata.supporting_arrays
-                    or f"{coord_path}/longitude" not in self.metadata.supporting_arrays
+                    f"{coord_path}/latitudes" not in self.metadata.supporting_arrays
+                    or f"{coord_path}/longitudes" not in self.metadata.supporting_arrays
                 ):
                     raise ValueError(
-                        f"Checkpoint grid specified but metadata does not contain 'latitude' and 'longitude' supporting arrays. "
+                        f"Checkpoint grid specified but metadata does not contain '{coord_path}/latitudes' and '{coord_path}/longitudes' supporting arrays. "
                         f"Available supporting arrays: {list(self.metadata.supporting_arrays.keys())}"
                     )
-                ckpt_lat = self.metadata.supporting_arrays[f"{coord_path}/latitude"].tolist()
-                ckpt_lon = self.metadata.supporting_arrays[f"{coord_path}/longitude"].tolist()
-                resolved_grid = {"latitude": ckpt_lat, "longitude": ckpt_lon}
+                ckpt_lat = self.metadata.supporting_arrays[f"{coord_path}/latitudes"].tolist()
+                ckpt_lon = self.metadata.supporting_arrays[f"{coord_path}/longitudes"].tolist()
+                resolved_grid = {"latitudes": ckpt_lat, "longitudes": ckpt_lon}
             else:
                 resolved_grid = grid
         else:
