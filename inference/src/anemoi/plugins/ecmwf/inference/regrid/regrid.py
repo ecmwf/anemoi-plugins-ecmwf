@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+CHECKPOINT_SENTINEL = "checkpoint"
+
 GridSpec = str | list[float] | tuple[float, ...] | dict[str, list[float]]
 
 
@@ -99,7 +101,7 @@ class RegridPreprocessor(Processor):
         grid: GridSpec | dict[str, str],
         area: str | list[float] | tuple[float, ...] | None = None,
     ) -> None:
-        """Initialize the Regridding processor.
+        """Initialise the Regridding processor.
 
         Parameters
         ----------
@@ -129,9 +131,26 @@ class RegridPreprocessor(Processor):
                     "Grid dict values must be all strings (file paths) or all lists (coordinates), "
                     f"got mixed types: {[type(v).__name__ for v in values]}"
                 )
-        elif isinstance(grid, str) and grid.lower() in KNOWN_GRIDS:
-            named_regrid = NamedRegrid(grid)
-            resolved_grid = named_regrid.gridspec["grid"]
+        elif isinstance(grid, str):
+            if grid.lower() in KNOWN_GRIDS:
+                named_regrid = NamedRegrid(grid)
+                resolved_grid = named_regrid.gridspec["grid"]
+
+            elif grid.lower().startswith(CHECKPOINT_SENTINEL):
+                coord_path = grid[len(CHECKPOINT_SENTINEL) :].lstrip(":")
+                if (
+                    f"{coord_path}/latitude" not in self.metadata.supporting_arrays
+                    or f"{coord_path}/longitude" not in self.metadata.supporting_arrays
+                ):
+                    raise ValueError(
+                        f"Checkpoint grid specified but metadata does not contain 'latitude' and 'longitude' supporting arrays. "
+                        f"Available supporting arrays: {list(self.metadata.supporting_arrays.keys())}"
+                    )
+                ckpt_lat = self.metadata.supporting_arrays[f"{coord_path}/latitude"].tolist()
+                ckpt_lon = self.metadata.supporting_arrays[f"{coord_path}/longitude"].tolist()
+                resolved_grid = {"latitude": ckpt_lat, "longitude": ckpt_lon}
+            else:
+                resolved_grid = grid
         else:
             resolved_grid = grid
 
