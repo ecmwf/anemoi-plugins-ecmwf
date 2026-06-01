@@ -21,12 +21,25 @@ class TestKnownGrids:
         """The 'meps' grid should be available as a named grid."""
         assert "meps" in KNOWN_GRIDS
 
+    def test_no_non_grid_entries(self):
+        """KNOWN_GRIDS should not contain non-grid entries like __init__.py or .gitignore."""
+        for name in KNOWN_GRIDS:
+            assert not name.startswith(".")
+            assert not name.startswith("_")
+            assert not name.endswith(".py")
+
 
 class TestNamedRegrid:
     def test_unknown_grid_raises(self):
         """Instantiating with an unknown grid name raises ValueError."""
         with pytest.raises(ValueError, match="Unknown grid name"):
             NamedRegrid("nonexistent_grid_name")
+
+    def test_case_insensitive(self):
+        """Grid names are case-insensitive."""
+        grid = NamedRegrid("MEPS")
+        assert grid.name == "meps"
+        assert len(grid.latitudes) > 0
 
     def test_meps_latitudes(self):
         """Latitudes for the meps grid are loaded as a list of floats."""

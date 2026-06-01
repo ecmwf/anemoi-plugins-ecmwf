@@ -13,7 +13,13 @@ from typing import Literal
 
 import numpy as np
 
-KNOWN_GRIDS = [f.name for f in importlib.resources.files("anemoi.plugins.ecmwf.inference.regrid.named").iterdir()]
+_NAMED_PKG = "anemoi.plugins.ecmwf.inference.regrid.named"
+
+KNOWN_GRIDS = [
+    f.name
+    for f in importlib.resources.files(_NAMED_PKG).iterdir()
+    if f.is_dir() and (f / "latitudes.npz").is_file() and (f / "longitudes.npz").is_file()
+]
 
 
 @dataclass
@@ -21,13 +27,16 @@ class NamedRegrid:
     name: str
 
     def __post_init__(self):
+        self.name = self.name.lower()
         if self.name not in KNOWN_GRIDS:
             raise ValueError(f"Unknown grid name: {self.name}")
 
     def _open_coord(self, name: Literal["latitudes", "longitudes"]) -> np.ndarray:
         """Open the specified coordinate array for this grid name."""
-        with importlib.resources.path("anemoi.plugins.ecmwf.inference.regrid.named", "") as p:
-            return np.load(p / self.name / f"{name}.npz")["data"]
+        ref = importlib.resources.files(_NAMED_PKG) / self.name / f"{name}.npz"
+        with importlib.resources.as_file(ref) as path:
+            with np.load(path) as f:
+                return f["data"]
 
     @property
     def latitudes(self) -> list[float]:

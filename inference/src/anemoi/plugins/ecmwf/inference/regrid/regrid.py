@@ -27,10 +27,10 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+GridSpec = str | list[float] | tuple[float, ...] | dict[str, list[float]]
 
-def _mir_regrid(
-    field: "GribField", grid: str | list[float] | dict[str, list[float]], area: str | list[float] | None
-) -> "GribField":
+
+def _mir_regrid(field: "GribField", grid: GridSpec, area: str | list[float] | None) -> "GribField":
     import io
 
     import mir
@@ -53,7 +53,9 @@ def _mir_regrid(
 
 
 def regrid(
-    fields: ekd.FieldList, grid: str | list[float] | dict[str, list[float]], area: str | list[float] | None
+    fields: ekd.FieldList,
+    grid: GridSpec,
+    area: str | list[float] | tuple[float, ...] | None,
 ) -> ekd.FieldList:
     """Regrid a list of fields to a specified grid and area.
 
@@ -64,7 +66,12 @@ def regrid(
     if isinstance(area, (list, tuple)):
         area = "/".join(map(str, area))
 
-    result = list(map(lambda f: _mir_regrid(f, grid, area), tqdm.tqdm(fields, desc="Regridding fields")))  # type: ignore
+    result = list(
+        map(
+            lambda f: _mir_regrid(f, grid, area),
+            tqdm.tqdm(fields, desc="Regridding fields"),
+        )
+    )  # type: ignore
 
     return ekd.FieldList.from_fields(result)
 
@@ -89,8 +96,8 @@ class RegridPreprocessor(Processor):
         context: Context,
         metadata: Metadata,
         *,
-        grid: str | list[float] | dict[str, list[float] | str],
-        area: str | list[float] | None = None
+        grid: GridSpec | dict[str, str],
+        area: str | list[float] | tuple[float, ...] | None = None,
     ) -> None:
         """Initialize the Regridding processor.
 
@@ -100,15 +107,28 @@ class RegridPreprocessor(Processor):
             The context in which the processor operates.
         metadata : Metadata
             The metadata associated with the dataset this processor is handling.
-        grid : str | list[float]
-            The target grid for regridding.
-        area : str | list[float] | None, optional
+        grid : str | list[float] | tuple[float, ...] | dict[str, list[float]] | dict[str, str]
+            The target grid for regridding. Can be a grid string (e.g. "O32"),
+            a list/tuple of increments, a named grid (e.g. "meps"),
+            a dict of coordinate file paths, or a dict of coordinate lists.
+        area : str | list[float] | tuple[float, ...] | None, optional
             The target area for regridding, by default None
         """
         super().__init__(context, metadata=metadata)
 
-        if isinstance(grid, dict) and all(isinstance(v, str) for v in grid.values()):
-            resolved_grid = _open_coord_files(grid)  # type: ignore
+        if isinstance(grid, dict):
+            values = list(grid.values())
+            all_str = all(isinstance(v, str) for v in values)
+            all_list = all(isinstance(v, list) for v in values)
+            if all_str:
+                resolved_grid = _open_coord_files(grid)  # type: ignore
+            elif all_list:
+                resolved_grid = grid  # type: ignore
+            else:
+                raise ValueError(
+                    "Grid dict values must be all strings (file paths) or all lists (coordinates), "
+                    f"got mixed types: {[type(v).__name__ for v in values]}"
+                )
         elif isinstance(grid, str) and grid.lower() in KNOWN_GRIDS:
             named_regrid = NamedRegrid(grid)
             resolved_grid = named_regrid.gridspec["grid"]
