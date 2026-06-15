@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.3.0...inference-0.3.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **inference-polytope:** patch request reference in metadata calls ([#89](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/89)) ([ea64936](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ea64936a3dba62146fdb37a66c419ea3e52f4d65))
+
 ## [0.3.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.3...inference-0.3.0) (2026-06-01)
 
 
