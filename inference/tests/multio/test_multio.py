@@ -121,9 +121,9 @@ def test_multio_archiver(mock_multio_server, mock_state) -> None:
 
     output.write_step(mock_state)
 
-    assert output._archiver is not None
+    assert output._archiver is not None  # ty: ignore[unresolved-attribute]
 
-    archiver = output._archiver
+    archiver = output._archiver  # ty: ignore[unresolved-attribute]
     assert archiver.expect == 3  # Three fields in the state
     request = archiver.request
 

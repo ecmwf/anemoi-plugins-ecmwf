@@ -9,6 +9,7 @@
 
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Callable
 from typing import Literal
 
 import earthkit.data as ekd
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     from anemoi.inference.metadata import Metadata
 
 VALID_METHODS = Literal["add", "subtract", "multiply", "divide", "replace"]
-METHOD_FUNCTIONS = {
+METHOD_FUNCTIONS: dict[str, Callable[..., np.ndarray]] = {
     "add": np.add,
     "subtract": np.subtract,
     "multiply": np.multiply,
@@ -71,9 +72,9 @@ class ModifyValuePlugin(Processor):
         data = field.to_numpy()
         data = METHOD_FUNCTIONS[self.method](data, self.value)
 
-        return ekd.ArrayField(data, field.metadata())  # type: ignore
+        return ekd.ArrayField(data, field.metadata())
 
-    def process(self, fields: ekd.FieldList) -> ekd.FieldList:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def process(self, fields: ekd.FieldList) -> ekd.FieldList:  # ty: ignore[invalid-method-override]
         """Process the fields and apply the value modification."""
         return apply_function_to_fields(
             self._modify_value,

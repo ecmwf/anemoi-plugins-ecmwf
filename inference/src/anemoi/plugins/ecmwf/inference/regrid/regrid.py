@@ -73,7 +73,7 @@ def regrid(
             lambda f: _mir_regrid(f, grid, area),
             tqdm.tqdm(fields, desc="Regridding fields"),
         )
-    )  # type: ignore
+    )
 
     return ekd.FieldList.from_fields(result)
 
@@ -118,6 +118,7 @@ class RegridPreprocessor(Processor):
         """
         super().__init__(context, metadata=metadata)
 
+        resolved_grid: GridSpec
         if isinstance(grid, dict):
             values = list(grid.values())
             all_str = all(isinstance(v, str) for v in values)
@@ -157,7 +158,7 @@ class RegridPreprocessor(Processor):
         self._grid = resolved_grid
         self._area = area
 
-    def process(self, state: State) -> State:  # type: ignore
+    def process(self, state: State) -> State:
         """Process the fields by regridding them to the specified grid and area.
 
         Parameters

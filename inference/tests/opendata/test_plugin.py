@@ -20,10 +20,10 @@ from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
 @fake_checkpoints
 def test_plugin(mock_metadata) -> None:
     config = MockRunConfiguration.load(
-        (Path(__file__).parent / "configs/simple.yaml").absolute(),
+        (Path(__file__).parent / "configs/simple.yaml").absolute(),  # ty: ignore[invalid-argument-type]
         overrides=dict(input="opendata"),
     )
-    runner = create_runner(config)
+    runner = create_runner(config)  # ty: ignore[invalid-argument-type]
     runner.pre_processors = defaultdict(list)
-    input = create_input(runner, config.input, mock_metadata, variables=[])
+    input = create_input(runner, config.input, mock_metadata, variables=[])  # ty: ignore[unresolved-attribute]
     assert input is not None

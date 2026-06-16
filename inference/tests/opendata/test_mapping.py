@@ -160,7 +160,7 @@ def test_rename_params_stl(mock_shortname_to_paramid):
     mock_fieldlist = [mock_field]
 
     # Execute
-    _ = _rename_params(mock_fieldlist)
+    _ = _rename_params(mock_fieldlist)  # ty: ignore[invalid-argument-type]
 
     # Verify
     mock_shortname_to_paramid.assert_called_once_with("stl1")
@@ -184,7 +184,7 @@ def test_rename_params_swvl(mock_shortname_to_paramid):
     mock_fieldlist = [mock_field]
 
     # Execute
-    _ = _rename_params(mock_fieldlist)
+    _ = _rename_params(mock_fieldlist)  # ty: ignore[invalid-argument-type]
 
     # Verify
     mock_shortname_to_paramid.assert_called_once_with("swvl1")
@@ -194,7 +194,11 @@ def test_rename_params_swvl(mock_shortname_to_paramid):
 def test_rename_params_multiple_fields(mock_shortname_to_paramid):
     """Test renaming multiple soil fields."""
     # Setup
-    mock_shortname_to_paramid.side_effect = [139, 170, 39]  # paramIds for stl1, stl2, swvl1
+    mock_shortname_to_paramid.side_effect = [
+        139,
+        170,
+        39,
+    ]  # paramIds for stl1, stl2, swvl1
 
     # Field 1: sot level 1
     mock_metadata1 = MagicMock()
@@ -220,7 +224,7 @@ def test_rename_params_multiple_fields(mock_shortname_to_paramid):
     mock_fieldlist = [mock_field1, mock_field2, mock_field3]
 
     # Execute
-    _ = _rename_params(mock_fieldlist)
+    _ = _rename_params(mock_fieldlist)  # ty: ignore[invalid-argument-type]
 
     # Verify
     assert mock_shortname_to_paramid.call_count == 3

@@ -27,13 +27,14 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+Image: Any = None
 _PILLOW_AVAILABLE = False
 try:
     from PIL import Image
 
     _PILLOW_AVAILABLE = True
 except ImportError:
-    Image = None
+    pass
 
 
 VALID_METHODS = Literal["add", "multiply", "replace"]
@@ -161,7 +162,7 @@ class ArrayOverlayPlugin(Processor):
         else:
             raise ValueError(f"Unknown method {self._method}.")
 
-        return ekd.ArrayField(data, field.metadata())  # type: ignore
+        return ekd.ArrayField(data, field.metadata())
 
     def process(self, fields):  # type: ignore
         return apply_function_to_fields(

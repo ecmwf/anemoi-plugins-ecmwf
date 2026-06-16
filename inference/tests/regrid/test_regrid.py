@@ -247,7 +247,7 @@ class TestRegridPreprocessor:
         mock_regridded = MagicMock()
         mock_regrid.return_value = mock_regridded
 
-        state: State = {"fields": mock_fields}  # type: ignore
+        state: State = {"fields": mock_fields}
         result = proc.process(state)
 
         mock_regrid.assert_called_once_with(mock_fields, "O32", "global")
@@ -259,7 +259,7 @@ class TestRegridPreprocessor:
         proc = self._make_processor(mocker, "O32")
         mock_regrid.return_value = MagicMock()
 
-        state: State = {"fields": MagicMock(), "date": "2024-01-01", "step": 6}  # type: ignore
+        state: State = {"fields": MagicMock(), "date": "2024-01-01", "step": 6}
         result = proc.process(state)
 
         assert result["date"] == "2024-01-01"

@@ -126,7 +126,6 @@ def _to_mars(metadata: MultioMetadata, user_metadata: UserDefinedMetadata) -> di
 
 
 class MultioOutputPlugin(Output):
-
     api_version = "1.0.0"
     schema = None
 
@@ -171,7 +170,11 @@ class MultioOutputPlugin(Output):
 
     @cached_property
     def _is_accumulated_from_start(self) -> bool:
-        return any(isinstance(x, Accumulate) for k in self.context.post_processors for x in self.context.post_processors[k])  # type: ignore[reportAttributeAccessIssue]
+        return any(
+            isinstance(x, Accumulate)
+            for k in self.context.post_processors  # ty: ignore[unresolved-attribute]
+            for x in self.context.post_processors[k]  # ty: ignore[unresolved-attribute]
+        )
 
     def open(self, state: State) -> None:
         if self._server is None:
@@ -226,7 +229,7 @@ class MultioOutputPlugin(Output):
         reference_date = self.reference_date or self.context.reference_date
         step = state["step"]
 
-        shared_metadata = {
+        shared_metadata: dict[str, Any] = {
             "step": int(step.total_seconds() // 3600),
             "grid": str(self.metadata.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
@@ -270,7 +273,7 @@ class MultioOutputPlugin(Output):
             # Missing value keys
 
             if np.isnan(field).any():
-                field = np.nan_to_num(field, nan=missing_value)  # type: ignore
+                field = np.nan_to_num(field, nan=missing_value)
 
                 # Set missing values and bitmap keys
                 missing_value_keys = {
@@ -375,7 +378,10 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
             ]
         )
         if debug:
-            add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
+            add_debug(
+                {0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "},
+                plan.plans[0],
+            )
 
         super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
@@ -389,7 +395,13 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
     """
 
     def __init__(
-        self, context: Context, metadata: Metadata, fdb_config: str, *, debug: bool = False, **kwargs: Any
+        self,
+        context: Context,
+        metadata: Metadata,
+        fdb_config: str,
+        *,
+        debug: bool = False,
+        **kwargs: Any,
     ) -> None:
         """Multio FDB Output Plugin.
 
@@ -415,7 +427,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
                         multio.plans.Sink(
                             sinks=[
                                 multio.plans.sinks.FDB(
-                                    config=fdb_config,
+                                    config=fdb_config,  # ty: ignore[invalid-argument-type]
                                 )
                             ]
                         ),
@@ -424,7 +436,10 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
             ]
         )
         if debug:
-            add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
+            add_debug(
+                {0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "},
+                plan.plans[0],
+            )
 
         super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
@@ -459,7 +474,9 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
         """
         if sinks:
             realised_plan = (
-                multio.plans.Client(**plan) if isinstance(plan, dict) else multio.plans.Client.from_yamlfile(plan)
+                multio.plans.Client(**plan)
+                if isinstance(plan, dict)
+                else multio.plans.Client.from_yamlfile(plan)  # ty: ignore[invalid-argument-type]
             )
             if any(isinstance(action, multio.plans.sinks.SINKS) for p in realised_plan.plans for action in p.actions):
                 raise ValueError("The plan already contains sinks, cannot add additional sinks.")

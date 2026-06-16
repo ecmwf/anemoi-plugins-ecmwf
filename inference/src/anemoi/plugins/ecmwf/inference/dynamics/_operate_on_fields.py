@@ -24,13 +24,15 @@ def filter_matches(metadata: dict[str, Any], filter_criteria: list[dict[str, Any
 
 
 def apply_function_to_fields(
-    func: Callable[[ekd.Field], ekd.Field], fields: ekd.FieldList, filter: list[dict[str, Any]]
+    func: Callable[[ekd.Field], ekd.Field],
+    fields: ekd.FieldList,
+    filter: list[dict[str, Any]],
 ) -> ekd.FieldList:
     """Apply a function to fields in a FieldList based on metadata filter criteria."""
     result = []
     for field in fields:
         metadata = dict(field.metadata())
         if filter_matches(metadata, filter or []):
-            field = func(field)  # type: ignore
+            field = func(field)
         result.append(field)
     return ekd.SimpleFieldList(result)

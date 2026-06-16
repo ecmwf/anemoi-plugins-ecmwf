@@ -223,7 +223,7 @@ def _rename_params(fieldlist: ekd.FieldList) -> ekd.FieldList:
 
         for inv in INVERSE_MAPPINGS:
             if inv.matches(field_metadata):
-                field._metadata = field.metadata().override(paramId=shortname_to_paramid(inv.true_param))  # type: ignore
+                field._metadata = field.metadata().override(paramId=shortname_to_paramid(inv.true_param))
                 break
 
     return fieldlist
@@ -281,7 +281,7 @@ def retrieve(
         LOG.debug("%s", _(r))
         result += ekr.regrid(ekd.from_source("ecmwf-open-data", r), grid, area)  # type: ignore
 
-    return _rename_params(result)  # type: ignore
+    return _rename_params(result)
 
 
 class OpenDataInputPlugin(MarsInput):

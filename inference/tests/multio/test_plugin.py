@@ -42,8 +42,8 @@ def test_plugin(plugin, kwargs, mock_metadata):
         str((Path(__file__).parent / "configs/simple.yaml").absolute()),
         overrides=dict(output={plugin: {**kwargs, **FAKE_METADATA_KEYS}}),
     )
-    runner = create_runner(config)
-    output = create_output(runner, config.output, mock_metadata, variables=[])
+    runner = create_runner(config)  # ty: ignore[invalid-argument-type]
+    output = create_output(runner, config.output, mock_metadata, variables=[])  # ty: ignore[unresolved-attribute]
     assert output is not None
 
 

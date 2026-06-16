@@ -69,6 +69,10 @@ repos:
   hooks:
   - id: pyproject-fmt
     args: ["--max-supported-python", "3.13"]
+- repo: https://github.com/astral-sh/ty-pre-commit
+  rev: v0.0.49
+  hooks:
+  - id: ty
 - repo: https://github.com/jshwi/docsig # Check docstrings against function sig
   rev: v0.71.0
   hooks:

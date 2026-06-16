@@ -14,7 +14,17 @@ from anemoi.plugins.ecmwf.inference.multio.multio_output import UserDefinedMetad
 
 def test_ensemble_validation():
     """Test that ValueError is raised when ensemble size does not match."""
-    with pytest.raises(ValueError, match="numberOfForecastsInEnsemble must be an integer if number is provided"):
+    with pytest.raises(
+        ValueError,
+        match="numberOfForecastsInEnsemble must be an integer if number is provided",
+    ):
         UserDefinedMetadata(
-            **{"stream": "oper", "type": "fc", "class": "od", "expver": "1", "model": "test_model", "number": 1}
+            **{  # ty: ignore[invalid-argument-type]
+                "stream": "oper",
+                "type": "fc",
+                "class": "od",
+                "expver": "1",
+                "model": "test_model",
+                "number": 1,
+            }
         )

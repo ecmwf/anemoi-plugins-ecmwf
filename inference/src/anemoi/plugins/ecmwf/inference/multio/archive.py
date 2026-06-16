@@ -30,7 +30,7 @@ class ArchiveCollector:
     def __init__(self, config: Config) -> None:
         self.expect = 0
         self._config = config
-        self._request = defaultdict(set)
+        self._request: defaultdict[str, set[Any]] = defaultdict(set)
 
     def add(self, field: dict[str, Any]) -> None:
         """Add a field to the archive request.
