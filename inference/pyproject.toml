@@ -91,6 +91,6 @@ fallback_version = "0.0.0"
 [tool.pytest.ini_options]
 testpaths = "tests"
 addopts = [
-  "--numprocesses=8",
+  #"--numprocesses=8",
   "--strict-config",
 ]
