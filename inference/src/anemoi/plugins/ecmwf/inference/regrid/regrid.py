@@ -7,13 +7,13 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-
+import functools
 import logging
-from typing import TYPE_CHECKING
+from typing import TypeVar
 
 import earthkit.data as ekd
 import numpy as np
-import tqdm
+import tqdm.auto as tqdm
 from anemoi.inference.context import Context
 from anemoi.inference.metadata import Metadata
 from anemoi.inference.processor import Processor
@@ -22,43 +22,38 @@ from anemoi.inference.types import State
 from .named import KNOWN_GRIDS
 from .named import NamedRegrid
 
-if TYPE_CHECKING:
-    from earthkit.data.readers.grib.codes import GribField
-
 LOG = logging.getLogger(__name__)
-
 CHECKPOINT_SENTINEL = "checkpoint"
 
 GridSpec = str | list[float] | tuple[float, ...] | dict[str, list[float]]
+Field = TypeVar("Field", ekd.Field, ekd.FieldList)
 
 
-def _mir_regrid(field: "GribField", grid: GridSpec, area: str | list[float] | None) -> "GribField":
+def _mir_regrid(fields: "ekd.Field", grid: GridSpec, area: str | list[float] | None) -> "ekd.FieldList":
     import io
 
     import mir
-    from earthkit.data import create_encoder
 
-    encoder = create_encoder("grib")
-    message = encoder.encode(field).to_bytes()
-
-    mir_input = mir.GribMemoryInput(message)  # type: ignore
     job_args = {"grid": grid}
     if area:
         job_args["area"] = area
+    job = mir.Job(**job_args, edition=2)  # type: ignore
 
-    job = mir.Job(**job_args)  # type: ignore
-    buffer = io.BytesIO()
+    input_buffer = io.BytesIO()
+    output_buffer = io.BytesIO()
+    fields.to_target("file", input_buffer)
 
-    job.execute(mir_input, buffer)
-
-    return ekd.from_source("memory", buffer.getvalue())[0]  # type: ignore
+    job.execute(mir.GribMemoryInput(input_buffer.getvalue()), output_buffer)  # type: ignore
+    return ekd.from_source("memory", output_buffer.getvalue())[0]  # type: ignore
 
 
 def regrid(
-    fields: ekd.FieldList,
+    fields: Field,
     grid: GridSpec,
     area: str | list[float] | tuple[float, ...] | None,
-) -> ekd.FieldList:
+    *,
+    verbose: bool = True,
+) -> Field:
     """Regrid a list of fields to a specified grid and area.
 
     TO BE REPLACED WITH EARTHKIT-REGRID
@@ -68,14 +63,27 @@ def regrid(
     if isinstance(area, (list, tuple)):
         area = "/".join(map(str, area))
 
-    result = list(
-        map(
-            lambda f: _mir_regrid(f, grid, area),
-            tqdm.tqdm(fields, desc="Regridding fields"),
-        )
-    )  # type: ignore
+    if isinstance(grid, (int, float)):
+        grid = f"{grid}/{grid}"
 
-    return ekd.FieldList.from_fields(result)
+    single_field = False
+    if isinstance(fields, ekd.Field):
+        field_list = [fields]
+        single_field = True
+    else:
+        field_list = list(fields)  # type: ignore[reportArgumentType]
+
+    results = list(
+        tqdm.tqdm(
+            map(functools.partial(_mir_regrid, grid=grid, area=area), field_list),
+            total=len(field_list),
+            desc="Regridding fields",
+            disable=not verbose,
+        )
+    )
+    result_fieldlist = ekd.FieldList.from_fields(results)
+
+    return result_fieldlist[0] if single_field else result_fieldlist  # type: ignore[reportReturnType]
 
 
 def _open_coord_files(grid: dict[str, str]) -> dict[str, list[float]]:

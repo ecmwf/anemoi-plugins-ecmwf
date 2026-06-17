@@ -74,8 +74,8 @@ class TestRegridFunction:
 
         mock_mir_regrid.assert_called_once()
         call_args = mock_mir_regrid.call_args
-        assert call_args[0][1] == "0.25/0.25"
-        assert call_args[0][2] is None
+        assert call_args.kwargs["grid"] == "0.25/0.25"
+        assert call_args.kwargs["area"] is None
 
     @patch("anemoi.plugins.ecmwf.inference.regrid.regrid._mir_regrid")
     def test_tuple_grid_converted_to_string(self, mock_mir_regrid):
@@ -92,7 +92,7 @@ class TestRegridFunction:
             regrid(mock_fieldlist, (0.5, 0.5), None)
 
         call_args = mock_mir_regrid.call_args
-        assert call_args[0][1] == "0.5/0.5"
+        assert call_args.kwargs["grid"] == "0.5/0.5"
 
     @patch("anemoi.plugins.ecmwf.inference.regrid.regrid._mir_regrid")
     def test_area_list_converted_to_string(self, mock_mir_regrid):
@@ -109,8 +109,8 @@ class TestRegridFunction:
             regrid(mock_fieldlist, "O32", [90, -180, -90, 180])
 
         call_args = mock_mir_regrid.call_args
-        assert call_args[0][1] == "O32"
-        assert call_args[0][2] == "90/-180/-90/180"
+        assert call_args.kwargs["grid"] == "O32"
+        assert call_args.kwargs["area"] == "90/-180/-90/180"
 
     @patch("anemoi.plugins.ecmwf.inference.regrid.regrid._mir_regrid")
     def test_string_grid_passed_through(self, mock_mir_regrid):
@@ -127,7 +127,7 @@ class TestRegridFunction:
             regrid(mock_fieldlist, "N320", None)
 
         call_args = mock_mir_regrid.call_args
-        assert call_args[0][1] == "N320"
+        assert call_args.kwargs["grid"] == "N320"
 
     @patch("anemoi.plugins.ecmwf.inference.regrid.regrid._mir_regrid")
     def test_regrids_all_fields(self, mock_mir_regrid):
