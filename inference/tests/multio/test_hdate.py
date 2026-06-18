@@ -10,9 +10,9 @@
 """Tests for the hindcast date (hdate) logic in MultioOutputPlugin.
 
 The hdate mechanism swaps the year of the reference date with a
-``hindcast_reference_date`` year, writing the original date into the
+``hindcast_reference_year`` year, writing the original date into the
 ``hdate`` metadata key.  For example, given reference_date=2025-06-10
-and hindcast_reference_date=2026:
+and hindcast_reference_year=2026:
 
     date  -> 20260610   (year replaced)
     hdate -> 20250610   (original date preserved)
@@ -44,7 +44,7 @@ from anemoi.plugins.ecmwf.inference.multio.multio_output import _handle_hindcast
 
 
 class TestUserDefinedMetadataHdate:
-    """Tests for hindcast_reference_date on UserDefinedMetadata."""
+    """Tests for hindcast_reference_year on UserDefinedMetadata."""
 
     BASE_KWARGS = {
         "stream": "oper",
@@ -54,22 +54,22 @@ class TestUserDefinedMetadataHdate:
     }
 
     def test_valid_hindcast_year(self):
-        meta = UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_date=2026)
-        assert meta.hindcast_reference_date == 2026
+        meta = UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_year=2026)
+        assert meta.hindcast_reference_year == 2026
 
     def test_hindcast_none_accepted(self):
-        meta = UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_date=None)
-        assert meta.hindcast_reference_date is None
+        meta = UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_year=None)
+        assert meta.hindcast_reference_year is None
 
     def test_hindcast_year_too_short(self):
         """A 2-digit year should not be accepted as a valid hindcast year."""
         with pytest.raises(ValueError):
-            UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_date=26)
+            UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_year=26)
 
     def test_hindcast_year_full_date_rejected_by_length(self):
         """A full YYYYMMDD int (8 digits) should be caught by the 4-digit check."""
         with pytest.raises(ValueError):
-            UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_date=20260610)
+            UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_year=20260610)
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ class TestHandleTime:
         assert hdate == 20191231
 
     def test_none_hindcast_returns_original(self):
-        """When hindcast_reference_date is None, date is unchanged and hdate is None."""
+        """When hindcast_reference_year is None, date is unchanged and hdate is None."""
         original = datetime(2025, 6, 10, 12, 0, 0)
         ref_date, hdate = _handle_hindcast_date(original, None)
         assert ref_date is original
@@ -155,7 +155,7 @@ def _make_state(ref_date: datetime, step_hours: int = 6) -> State:
 
 
 def _make_hdate_output_override(hindcast_year: int) -> dict:
-    """Build an output override dict with hindcast_reference_date set."""
+    """Build an output override dict with hindcast_reference_year set."""
     return {
         "multio": {
             "path": "/dev/null",
@@ -164,7 +164,7 @@ def _make_hdate_output_override(hindcast_year: int) -> dict:
             "class": "ai",
             "type": "pf",
             "model": "test",
-            "hindcast_reference_date": hindcast_year,
+            "hindcast_reference_year": hindcast_year,
             "number": 0,
             "numberOfForecastsInEnsemble": 51,
         }
@@ -262,7 +262,7 @@ def test_write_step_hdate_preserves_time(mock_multio_server):
 
 @fake_checkpoints
 def test_write_step_no_hdate_when_not_configured(mock_multio_server):
-    """When hindcast_reference_date is None, hdate should not appear in metadata."""
+    """When hindcast_reference_year is None, hdate should not appear in metadata."""
     state = _make_state(datetime(2025, 6, 10))
     calls = _create_output_and_write(mock_multio_server, state)
 
