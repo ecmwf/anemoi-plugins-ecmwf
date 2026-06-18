@@ -87,3 +87,17 @@ output:
       # number: 1
       # numberOfForecastsInEnsemble: 50
 ```
+
+### Hindcasts
+
+To use the multio output for hindcasts, simply set `hindcast_reference_year` in the user provided metadata.
+This will then be used as the year in the date key, and `hdate` inserted into the multio write.
+
+```yaml
+output:
+  multio.grib:
+      path: 'output.grib'
+      ...
+      hindcast_reference_year: 2026
+
+```
