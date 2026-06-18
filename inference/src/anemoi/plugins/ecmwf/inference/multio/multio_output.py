@@ -8,6 +8,7 @@
 # nor does it submit to any jurisdiction.
 
 import logging
+from datetime import datetime
 from datetime import timedelta
 from functools import cached_property
 from typing import Any
@@ -27,6 +28,7 @@ from anemoi.utils.grib import shortname_to_paramid
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import field_validator
 from pydantic import model_validator
 
 from .archive import ArchiveCollector
@@ -54,6 +56,12 @@ class UserDefinedMetadata(BaseModel):
     """Model name, e.g. aifs-single, ..."""
     number: int | None = None
     """Ensemble number, e.g. 0,1,2"""
+    hindcast_reference_date: int | None = None
+    """Hindcast reference date, e.g. 2020
+        If set, this will be used as the date in the output metadata instead of the state reference date,
+        and the actual initial condition date will be written in the hdate key.
+    """
+
     numberOfForecastsInEnsemble: int | None = Field(None, serialization_alias="misc-numberOfForecastsInEnsemble")
     """Number of ensembles in the forecast, e.g. 50"""
     generatingProcessIdentifier: int | None = Field(None, serialization_alias="misc-generatingProcessIdentifier")
@@ -64,6 +72,12 @@ class UserDefinedMetadata(BaseModel):
         if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
             raise ValueError("numberOfForecastsInEnsemble must be an integer if number is provided")
         return self
+
+    @field_validator("hindcast_reference_date")
+    def validate_hindcast_reference_date(cls, v):
+        if v is not None and (not isinstance(v, int) or len(str(v)) != 4):
+            raise ValueError("hindcast_reference_date must be a 4-digit year, e.g. 2020")
+        return v
 
 
 class MultioMetadata(BaseModel):
@@ -82,7 +96,8 @@ class MultioMetadata(BaseModel):
     """Grid name, e.g. n320, o96"""
     levelist: int | None = None
     """Level, e.g. 0,50,100"""
-
+    hdate: int | None = None
+    """Hindcast initial condition date, e.g. 20200101, only used if hindcast_reference_date is provided in the user metadata"""
     timespan: int | None = None
     """Time span, e.g."""
 
@@ -123,6 +138,20 @@ def _to_mars(metadata: MultioMetadata, user_metadata: UserDefinedMetadata) -> di
         mars_dict["number"] = user_metadata.number
 
     return mars_dict
+
+
+def _handle_hindcast_date(date: datetime, hindcast_reference_date: int | None) -> tuple[datetime, int | None]:
+    """Handle the date and time for the output metadata, taking into account the hindcast reference date if provided."""
+    if hindcast_reference_date is not None:
+        if date.day == 29 and date.month == 2:
+            hdate = int(f"{hindcast_reference_date}0228")
+        else:
+            hdate = int(date.strftime("%Y%m%d"))
+        # If hindcast_reference_date is provided, use it as the year of the date in the output metadata and write the actual reference date in the hdate key
+        reference_date = datetime.fromisoformat(f"{hindcast_reference_date}{date.strftime('%m%dT%H:%M:%S')}")
+        return reference_date, hdate
+    else:
+        return date, None
 
 
 class MultioOutputPlugin(Output):
@@ -180,6 +209,8 @@ class MultioOutputPlugin(Output):
 
         self._server.open_connections()
         user_metadata = self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True)
+        user_metadata.pop("hindcast_reference_date")
+
         if user_metadata.get("stream") == originkey:
             user_metadata.pop("stream")
 
@@ -224,6 +255,12 @@ class MultioOutputPlugin(Output):
             raise RuntimeError("Multio server is not open, call `.open()` first.")
 
         reference_date = self.reference_date or self.context.reference_date
+        if not isinstance(reference_date, datetime):
+            raise ValueError("Reference date must be a datetime object.")
+
+        reference_date, hdate = _handle_hindcast_date(
+            reference_date, self._user_defined_metadata.hindcast_reference_date
+        )
         step = state["step"]
 
         shared_metadata = {
@@ -231,6 +268,7 @@ class MultioOutputPlugin(Output):
             "grid": str(self.metadata.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
             "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
+            "hdate": hdate,
         }
 
         timespan = self.metadata.timestep.total_seconds() // 3600
