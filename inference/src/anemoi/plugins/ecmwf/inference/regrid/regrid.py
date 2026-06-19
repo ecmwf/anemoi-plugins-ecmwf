@@ -73,8 +73,9 @@ def regrid(
     else:
         field_list = list(fields)  # type: ignore[reportArgumentType]
 
-    gridding_summary = f"grid: {str(grid)!r}, area: {str(area)!r}"
-    LOG.info(f"Starting regridding of {len(field_list)} fields to {gridding_summary}.")
+    if verbose:
+        gridding_summary = f"grid: {str(grid)!r}, area: {str(area)!r}"
+        LOG.info(f"Starting regridding of {len(field_list)} fields to {gridding_summary}.")
 
     results = list(
         tqdm.tqdm(
