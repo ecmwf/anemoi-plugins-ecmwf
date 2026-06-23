@@ -74,6 +74,11 @@ entry-points."anemoi.inference.pre_processors"."array_overlay" = "anemoi.plugins
 entry-points."anemoi.inference.pre_processors"."modify_value" = "anemoi.plugins.ecmwf.inference.dynamics:ModifyValuePlugin"
 entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.inference.regrid:RegridPreprocessor"
 
+[dependency-groups]
+dev = [
+  "anemoi-plugins-ecmwf-inference[tests]",
+]
+
 [tool.setuptools.package-data]
 "anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
 "anemoi.plugins.ecmwf.inference.opendata" = [ "*.yaml" ]
@@ -87,6 +92,9 @@ git_describe_command = "git describe --dirty --tags --long --match 'inference-[0
 tag_regex = "^inference-(?P<version>[vV]?[0-9]+[^-]*)"
 version_file = "src/anemoi/plugins/ecmwf/inference/_version.py"
 fallback_version = "0.0.0"
+
+[tool.uv.sources]
+anemoi-plugins-ecmwf-inference = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = "tests"

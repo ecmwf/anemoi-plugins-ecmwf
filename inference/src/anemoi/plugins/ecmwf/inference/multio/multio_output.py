@@ -8,6 +8,7 @@
 # nor does it submit to any jurisdiction.
 
 import logging
+from datetime import datetime
 from datetime import timedelta
 from functools import cached_property
 from typing import Any
@@ -27,6 +28,7 @@ from anemoi.utils.grib import shortname_to_paramid
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import field_validator
 from pydantic import model_validator
 
 from .archive import ArchiveCollector
@@ -54,6 +56,12 @@ class UserDefinedMetadata(BaseModel):
     """Model name, e.g. aifs-single, ..."""
     number: int | None = None
     """Ensemble number, e.g. 0,1,2"""
+    hindcast_reference_date: datetime | None = None
+    """Hindcast reference date, e.g. 20200101
+        If set, this will be used as the date in the output metadata instead of the state reference date,
+        and the actual initial condition date will be written in the hdate key.
+    """
+
     numberOfForecastsInEnsemble: int | None = Field(None, serialization_alias="misc-numberOfForecastsInEnsemble")
     """Number of ensembles in the forecast, e.g. 50"""
     generatingProcessIdentifier: int | None = Field(None, serialization_alias="misc-generatingProcessIdentifier")
@@ -64,6 +72,21 @@ class UserDefinedMetadata(BaseModel):
         if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
             raise ValueError("numberOfForecastsInEnsemble must be an integer if number is provided")
         return self
+
+    @field_validator("hindcast_reference_date", mode="before")
+    def validate_hindcast_reference_date(cls, v):
+        if isinstance(v, str):
+            try:
+                v = datetime.fromisoformat(v) if "-" in v else datetime(int(v[:4]), int(v[4:6]), int(v[6:8]))
+            except ValueError as e:
+                raise ValueError(
+                    "hindcast_reference_date must be an 8-digit datetime string in the format YYYYMMDD"
+                ) from e
+        elif isinstance(v, int):
+            v = datetime.fromisoformat(str(v))
+        if v is not None and not isinstance(v, datetime):
+            raise ValueError("hindcast_reference_date must be a datetime object")
+        return v
 
 
 class MultioMetadata(BaseModel):
@@ -82,7 +105,8 @@ class MultioMetadata(BaseModel):
     """Grid name, e.g. n320, o96"""
     levelist: int | None = None
     """Level, e.g. 0,50,100"""
-
+    hdate: int | None = None
+    """Hindcast initial condition date, e.g. 20200101, only used if hindcast_reference_date is provided in the user metadata"""
     timespan: int | None = None
     """Time span, e.g."""
 
@@ -180,6 +204,8 @@ class MultioOutputPlugin(Output):
 
         self._server.open_connections()
         user_metadata = self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True)
+        user_metadata.pop("hindcast_reference_date", None)
+
         if user_metadata.get("stream") == originkey:
             user_metadata.pop("stream")
 
@@ -224,6 +250,20 @@ class MultioOutputPlugin(Output):
             raise RuntimeError("Multio server is not open, call `.open()` first.")
 
         reference_date = self.reference_date or self.context.reference_date
+        href_date = self._user_defined_metadata.hindcast_reference_date
+
+        if not isinstance(reference_date, datetime):
+            raise ValueError("Reference date must be a datetime object.")
+
+        reference_date, hdate = (
+            (
+                datetime.fromisoformat(f"{href_date.strftime('%Y%m%d')}T{reference_date.strftime('%H%M%S')}"),
+                reference_date,
+            )
+            if href_date is not None
+            else (reference_date, None)
+        )
+
         step = state["step"]
 
         shared_metadata = {
@@ -231,6 +271,7 @@ class MultioOutputPlugin(Output):
             "grid": str(self.metadata.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
             "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
+            "hdate": int(hdate.strftime("%Y%m%d")) if hdate is not None else None,
         }
 
         timespan = self.metadata.timestep.total_seconds() // 3600
