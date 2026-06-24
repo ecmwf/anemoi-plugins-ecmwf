@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.3.1...inference-0.4.0) (2026-06-23)
+
+
+### Features
+
+* **inference/multio:** implement hindcast date logic in MultioOutputPlugin ([#92](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/92)) ([c535677](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/c53567719d798c220bb6112ae88c85c0e0bcdcc0))
+
 ## [0.3.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.3.0...inference-0.3.1) (2026-06-15)
 
 
