@@ -19,6 +19,7 @@ import multio
 import numpy as np
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
+from anemoi.inference.decorators import supports_parallel_output
 from anemoi.inference.metadata import Metadata
 from anemoi.inference.output import Output
 from anemoi.inference.post_processors.accumulate import Accumulate
@@ -359,6 +360,7 @@ def add_debug(locations: dict[int, str], plan: multio.plans.Plan) -> None:
 
 
 @main_argument("path")
+@supports_parallel_output("path")
 class MultioOutputGribPlugin(MultioOutputPlugin):
     """Multio output plugin for GRIB files.
 
