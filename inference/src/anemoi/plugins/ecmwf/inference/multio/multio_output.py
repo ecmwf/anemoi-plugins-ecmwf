@@ -424,6 +424,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
 
 
 @main_argument("fdb_config")
+@supports_parallel_output("-ignore-parallel-output-suffix")
 class MultioOutputFDBPlugin(MultioOutputPlugin):
     """Multio output plugin to write to FDB.
 
@@ -473,6 +474,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
 
 
 @main_argument("plan")
+@supports_parallel_output("-ignore-parallel-output-suffix")
 class MultioOutputPlanPlugin(MultioOutputPlugin):
     """Multio output plugin to write with a plan."""
 
