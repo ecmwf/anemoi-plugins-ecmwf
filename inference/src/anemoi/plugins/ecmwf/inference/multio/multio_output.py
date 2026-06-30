@@ -424,7 +424,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
 
 
 @main_argument("fdb_config")
-@supports_parallel_output("-ignore-parallel-output-suffix")
+@supports_parallel_output("-ignore-parallel-output-suffix")  # Used to ignore the suffix kwarg
 class MultioOutputFDBPlugin(MultioOutputPlugin):
     """Multio output plugin to write to FDB.
 
@@ -474,7 +474,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
 
 
 @main_argument("plan")
-@supports_parallel_output("-ignore-parallel-output-suffix")
+@supports_parallel_output("-ignore-parallel-output-suffix")  # Used to ignore the suffix kwarg
 class MultioOutputPlanPlugin(MultioOutputPlugin):
     """Multio output plugin to write with a plan."""
 
@@ -488,6 +488,8 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
         **kwargs: Any,
     ) -> None:
         """Multio FDB Output Plugin.
+
+        Note: if using the parallel output, this plan can only sensibly write to an FDB, not a file.
 
         Parameters
         ----------
