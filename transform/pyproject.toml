@@ -1,0 +1,79 @@
+# (C) Copyright 2025- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+[build-system]
+requires = [ "setuptools>=60", "setuptools-scm>=8" ]
+
+[project]
+name = "anemoi-plugins-ecmwf-transform"
+
+description = "Plugins for anemoi.transform as built by ECMWF"
+readme = "README.md"
+
+keywords = [
+  "anemoi-transform",
+]
+
+license = { file = "LICENSE" }
+authors = [
+  { name = "European Centre for Medium-Range Weather Forecasts (ECMWF)", email = "software.support@ecmwf.int" },
+]
+requires-python = ">=3.11"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+dynamic = [ "version" ]
+dependencies = [
+  "anemoi-transform",
+]
+
+# optional-dependencies.all = [ "" ]
+
+optional-dependencies.tests = [
+  "anemoi-plugins-ecmwf-transform[all]",
+  "pytest",
+  "pytest-mock",
+  "pytest-xdist",
+]
+urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
+
+## Entry Points
+entry-points."anemoi.transform.filters.fields".compute_tv = "anemoi.plugins.ecmwf.transform.compute_tv.compute_tv:ComputeTV"
+
+[dependency-groups]
+dev = [
+  "anemoi-plugins-ecmwf-transform[tests]",
+]
+
+[tool.setuptools_scm]
+root = ".."
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+git_describe_command = "git describe --dirty --tags --long --match 'transform-[0-9]*'"
+tag_regex = "^transform-(?P<version>[vV]?[0-9]+[^-]*)"
+version_file = "src/anemoi/plugins/ecmwf/transform/_version.py"
+fallback_version = "0.0.0"
+
+[tool.uv.sources]
+anemoi-plugins-ecmwf-transform = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+addopts = [
+  #"--numprocesses=8",
+  "--strict-config",
+]
