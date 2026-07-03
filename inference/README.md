@@ -12,6 +12,7 @@ This package includes all plugins developed for anemoi inference developed by EC
 | `mir`     | Use mir to create grib templates   |
 | `regrid`  | Use `earthkit-regrid` to preprocess|
 | `dynamics`| Use `earthkit-regrid` to preprocess|
+| `compute_tv`| Replace `T` with virtual temperature `Tv` on model levels |
 
 See the underlying code for a more detailed `README`.
 
