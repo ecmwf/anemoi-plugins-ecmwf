@@ -6,6 +6,7 @@ This package includes all plugins developed for anemoi transform developed by EC
 
 | Plugin    | Description                        |
 |-----------|------------------------------------|
+| VirtualTemperature | Compute VirtualTemperature from q and t |
 
 
 See the underlying code for a more detailed `README`.
