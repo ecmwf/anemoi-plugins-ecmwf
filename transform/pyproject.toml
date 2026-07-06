@@ -51,8 +51,9 @@ optional-dependencies.tests = [
 ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
 
-## Entry Points
+entry-points."anemoi.transform.filters.fields".uv_to_vordiv = "anemoi.plugins.ecmwf.transform.vordiv_to_uv:UVToVordiv"
 entry-points."anemoi.transform.filters.fields".virtual_temperature = "anemoi.plugins.ecmwf.transform.virtual_temperature:VirtualTemperature"
+entry-points."anemoi.transform.filters.fields".vordiv_to_uv = "anemoi.plugins.ecmwf.transform.vordiv_to_uv:VordivToUV"
 
 [dependency-groups]
 dev = [
