@@ -151,9 +151,7 @@ class ectrans4py(CalculationBackend):
         div = np.atleast_2d(np.ascontiguousarray(divergence))
 
         if vor.shape[-1] != kspec2:
-            raise ValueError(
-                f"Spectral dimension mismatch: got {vor.shape[-1]}, " f"expected {kspec2} for T{self.trunc}"
-            )
+            raise ValueError(f"Spectral dimension mismatch: got {vor.shape[-1]}, expected {kspec2} for T{self.trunc}")
 
         u, v = self._rt.lib.inv_trans_uv_dist4py(
             kspec2,
@@ -205,7 +203,6 @@ class ctrans4py(CalculationBackend):
     @classmethod
     def available(cls) -> tuple[bool, str]:
         try:
-
             return True, "ctrans4py is available"
         except Exception as e:
             return False, f"ctrans4py is not available: {e}"
@@ -221,7 +218,20 @@ class ctrans4py(CalculationBackend):
         self._lib.init_env(omp_num_threads=cores)
 
     def vordiv_to_uv(self, vorticity: np.ndarray, divergence: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        return self._lib.vordiv_to_uv(vorticity, divergence, self.trunc)
+        grid = self._lib.detect_grid(np.asarray(self.kloen, dtype=np.int32))
+        squeezed = vorticity.ndim == 1
+        vor = np.atleast_2d(np.ascontiguousarray(vorticity, dtype=np.float64))
+        div = np.atleast_2d(np.ascontiguousarray(divergence, dtype=np.float64))
+
+        tr = self._lib.Transform(self.trunc, grid=grid, nlev=vor.shape[0])
+        try:
+            u, v = tr.vordiv_to_uv(vor, div)
+        finally:
+            tr.close()
+
+        if squeezed:
+            return u.squeeze(0), v.squeeze(0)
+        return u, v
 
     def uv_to_vordiv(
         self, u_component_of_wind: np.ndarray, v_component_of_wind: np.ndarray

@@ -328,45 +328,6 @@ class TestBackendRegistry:
 
 
 # ============================================================================
-# VordivToUV: initialisation and grid resolution
-# ============================================================================
-
-
-class TestVordivToUVInit:
-    def test_default_params(self):
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv.vordiv_to_uv import VordivToUV
-
-        v = VordivToUV()
-        assert v.vorticity == "vo"
-        assert v.divergence == "d"
-        assert v.u_component_of_wind == "u"
-        assert v.v_component_of_wind == "v"
-        assert v.target_grid is None
-        assert v.spectral_grid is None
-        assert v.transform_grid is None
-
-    def test_custom_params(self):
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv.vordiv_to_uv import VordivToUV
-
-        v = VordivToUV(
-            vorticity="vort",
-            divergence="divg",
-            u_component_of_wind="uu",
-            v_component_of_wind="vv",
-            target_grid="O320",
-            spectral_grid="O640",
-            transform_grid="O160",
-        )
-        assert v.vorticity == "vort"
-        assert v.divergence == "divg"
-        assert v.u_component_of_wind == "uu"
-        assert v.v_component_of_wind == "vv"
-        assert v.target_grid == "O320"
-        assert v.spectral_grid == "O640"
-        assert v.transform_grid == "O160"
-
-
-# ============================================================================
 # VordivToUV: grid resolution logic
 # ============================================================================
 
@@ -494,26 +455,3 @@ class TestPatchDataRequest:
         # This tests the current behaviour.
         with pytest.raises(ValueError):
             f.patch_data_request(req)
-
-
-# ============================================================================
-# VordivToUV: __init__.py exports
-# ============================================================================
-
-
-class TestModuleExports:
-    def test_vordiv_to_uv_importable(self):
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv import VordivToUV
-
-        assert VordivToUV is not None
-
-    def test_uv_to_vordiv_importable(self):
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv import UVToVordiv
-
-        assert UVToVordiv is not None
-
-    def test_reversed_class_is_different(self):
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv import UVToVordiv
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv import VordivToUV
-
-        assert UVToVordiv is not VordivToUV

@@ -8,7 +8,6 @@
 # nor does it submit to any jurisdiction.
 
 import logging
-import time
 from collections.abc import Iterator
 
 import earthkit.data as ekd
@@ -142,7 +141,7 @@ class VordivToUV(MatchingFieldsFilter):
         return backend_class(kloen, trunc)
 
     def forward_transform(
-        self, vorticity: ekd.Field, divergence: ekd.Field
+        self, vorticity: ekd.FieldList, divergence: ekd.FieldList
     ) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
         grid, trunc = self._resolve_forward_grid(vorticity)
         backend = self._make_backend(grid, trunc)
@@ -162,16 +161,11 @@ class VordivToUV(MatchingFieldsFilter):
                 self.transform_grid,
             )
 
-        start = time.time()
         u, v = backend.vordiv_to_uv(vor_np, div_np)
-        end = time.time()
-        LOG.debug("Forward transform took %.3f seconds", end - start)
 
-        for level in range(len(u.shape) - 1):
-            u_lev = u[..., level, :]
-            v_lev = v[..., level, :]
-            yield self.new_field_from_numpy(u_lev, template=vorticity, param=self.u_component_of_wind)
-            yield self.new_field_from_numpy(v_lev, template=vorticity, param=self.v_component_of_wind)
+        for i, f in enumerate(vorticity):  # type: ignore[reportArgumentType]
+            yield self.new_field_from_numpy(u[i], template=f, param=self.u_component_of_wind)
+            yield self.new_field_from_numpy(v[i], template=f, param=self.v_component_of_wind)
 
     def backward_transform(
         self, u_component_of_wind: ekd.Field, v_component_of_wind: ekd.Field
@@ -179,8 +173,10 @@ class VordivToUV(MatchingFieldsFilter):
         grid, trunc = self._resolve_backward_grid()
         backend = self._make_backend(grid, trunc)
         vor, div = backend.uv_to_vordiv(u_component_of_wind.to_numpy(), v_component_of_wind.to_numpy())
-        yield self.new_field_from_numpy(vor, template=u_component_of_wind, param=self.vorticity)
-        yield self.new_field_from_numpy(div, template=v_component_of_wind, param=self.divergence)
+
+        for i, f in enumerate(u_component_of_wind):  # type: ignore[reportArgumentType]
+            yield self.new_field_from_numpy(vor[i], template=f, param=self.vorticity)
+            yield self.new_field_from_numpy(div[i], template=f, param=self.divergence)
 
     def patch_data_request(self, data_request: dict) -> dict:
         if any(

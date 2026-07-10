@@ -143,6 +143,8 @@ def grid_to_trunc(grid: str) -> int:
         return int(grid[1:]) - 1
     elif prefix == "N" or prefix == "F":
         return 2 * int(grid[1:]) - 1
+    elif prefix == "T":
+        return int(grid[1:])
     else:
         raise ValueError(f"Unknown grid type: {grid}")
 
