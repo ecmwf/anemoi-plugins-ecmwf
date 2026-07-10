@@ -19,7 +19,6 @@ class VirtualTemperature(MatchingFieldsFilter):
     MATCHING = MatchingSpec(
         select="param",
         forward=("specific_humidity", "temperature"),
-        skip_partial=True,
         return_inputs="all",
     )
 
