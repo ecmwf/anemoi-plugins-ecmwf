@@ -106,8 +106,8 @@ class ectrans4py(CalculationBackend):
         except Exception as e:
             return False, f"ectrans4py is not available: {e}"
 
-    def __init__(self, kloen: np.ndarray, trunc: int):
-        super().__init__(kloen, trunc)
+    def __init__(self, kloen: np.ndarray, trunc: int, grid: str | None = None):
+        super().__init__(kloen, trunc, grid)
         self._rt = _EctransRuntime()
         self._info = self._rt.resolution(self.trunc, self.kloen)
 

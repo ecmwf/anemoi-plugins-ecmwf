@@ -462,14 +462,27 @@ class TestPatchDataRequest:
 # ============================================================================
 
 
+def _available_backend_names():
+    """Return list of backend names that are currently available."""
+    available = []
+    for name, cls in BACKENDS.items():
+        ok, _ = cls.available()
+        if ok:
+            available.append(name)
+    return available
+
+
 def _any_spectral_backend_available():
-    """Check if any spectral backend (ctrans4py or ectrans4py) is available."""
-    for name in ["ctrans4py", "ectrans4py"]:
-        if name in BACKENDS:
-            ok, _ = BACKENDS[name].available()
-            if ok:
-                return True
-    return False
+    """Check if any spectral backend is available."""
+    return len(_available_backend_names()) > 0
+
+
+@pytest.fixture(params=_available_backend_names() or ["none_available"], ids=lambda x: x)
+def backend_name(request):
+    """Parametrised fixture yielding each available backend name."""
+    if request.param == "none_available":
+        pytest.skip("No spectral backend available")
+    return request.param
 
 
 @pytest.mark.skipif(
@@ -479,15 +492,13 @@ def _any_spectral_backend_available():
 class TestVordivToUVIntegration:
     """Integration tests that run the actual spectral transform."""
 
-    def _make_filter(self, **kwargs):
-        from anemoi.plugins.ecmwf.transform.spectral.vordiv_to_uv import VordivToUV
-
-        return VordivToUV(**kwargs)
-
-    def test_vordiv_to_uv_produces_gridpoint_fields(self):
-        """Forward transform produces u/v fields on the target grid."""
+    def _make_backend(self, grid, trunc, backend_name):
         from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
 
+        return make_backend(grid, trunc, order=[backend_name])
+
+    def test_vordiv_to_uv_produces_gridpoint_fields(self, backend_name):
+        """Forward transform produces u/v fields on the target grid."""
         trunc = 21
         grid = "O22"
         kloen = grid_to_pl(grid)
@@ -495,7 +506,7 @@ class TestVordivToUVIntegration:
 
         # Create synthetic spectral vorticity and divergence (zero = no wind)
         nspec = nspec_from_trunc(trunc)
-        backend = make_backend(grid, trunc)
+        backend = self._make_backend(grid, trunc, backend_name)
 
         vor = np.zeros(nspec, dtype=np.float64)
         div = np.zeros(nspec, dtype=np.float64)
@@ -508,13 +519,11 @@ class TestVordivToUVIntegration:
         np.testing.assert_allclose(u, 0.0, atol=1e-10)
         np.testing.assert_allclose(v, 0.0, atol=1e-10)
 
-    def test_nonzero_vorticity_produces_nonzero_wind(self):
+    def test_nonzero_vorticity_produces_nonzero_wind(self, backend_name):
         """Non-zero vorticity produces non-zero u/v."""
-        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
-
         trunc = 21
         grid = "O22"
-        backend = make_backend(grid, trunc)
+        backend = self._make_backend(grid, trunc, backend_name)
 
         nspec = nspec_from_trunc(trunc)
         np.random.seed(42)
@@ -530,15 +539,13 @@ class TestVordivToUVIntegration:
         assert np.isfinite(u).all()
         assert np.isfinite(v).all()
 
-    def test_batched_vordiv_to_uv(self):
+    def test_batched_vordiv_to_uv(self, backend_name):
         """Batched transform handles multiple levels."""
-        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
-
         trunc = 21
         grid = "O22"
         kloen = grid_to_pl(grid)
         ngptot = kloen.sum()
-        backend = make_backend(grid, trunc)
+        backend = self._make_backend(grid, trunc, backend_name)
 
         nspec = nspec_from_trunc(trunc)
         nfields = 3
@@ -553,18 +560,30 @@ class TestVordivToUVIntegration:
         assert np.isfinite(u).all()
         assert np.isfinite(v).all()
 
-    def test_uv_to_vordiv_round_trip(self):
+    def test_uv_to_vordiv_round_trip(self, backend_name):
         """Round-trip: vordiv -> uv -> vordiv recovers original (within tolerance)."""
-        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
+        if backend_name == "mir":
+            pytest.skip("mir backend does not support uv_to_vordiv")
 
         trunc = 21
         grid = "O22"
-        backend = make_backend(grid, trunc)
+        backend = self._make_backend(grid, trunc, backend_name)
 
         nspec = nspec_from_trunc(trunc)
         np.random.seed(99)
         vor_orig = np.random.randn(nspec) * 1e-5
         div_orig = np.random.randn(nspec) * 1e-5
+
+        # Imaginary parts at m=0 must be zero for valid spectral data.
+        # m=0 coefficients are stored as (real, imag) pairs at indices
+        # 0..2*(trunc+1)-1; the odd indices are the imaginary parts.
+        # The n=0,m=0 coefficient (index 0, global mean) is also lost in
+        # the round-trip as it has no gridpoint wind expression.
+        m0_len = 2 * (trunc + 1)
+        vor_orig[0] = 0.0
+        div_orig[0] = 0.0
+        vor_orig[1:m0_len:2] = 0.0
+        div_orig[1:m0_len:2] = 0.0
 
         # Forward: spectral vor/div -> gridpoint u/v
         u, v = backend.vordiv_to_uv(vor_orig, div_orig)
@@ -576,10 +595,8 @@ class TestVordivToUVIntegration:
         np.testing.assert_allclose(vor_back, vor_orig, rtol=1e-4, atol=1e-10)
         np.testing.assert_allclose(div_back, div_orig, rtol=1e-4, atol=1e-10)
 
-    def test_truncate_before_transform(self):
+    def test_truncate_before_transform(self, backend_name):
         """Pre-truncation reduces spectral content but still produces valid output."""
-        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
-
         # Create data at higher truncation
         trunc_in = 42
         trunc_out = 21
@@ -594,7 +611,7 @@ class TestVordivToUVIntegration:
         vor_trunc = truncate_spectral(vor, trunc_out)
         div_trunc = truncate_spectral(div, trunc_out)
 
-        backend = make_backend(grid_out, trunc_out)
+        backend = self._make_backend(grid_out, trunc_out, backend_name)
         u, v = backend.vordiv_to_uv(vor_trunc, div_trunc)
 
         kloen = grid_to_pl(grid_out)

@@ -67,8 +67,8 @@ def get_backend(order: list[str] | None = None) -> type[CalculationBackend]:
     raise RuntimeError("No available backend found:\n" + "\n".join(error_messages))
 
 
-def make_backend(grid: str, trunc: int) -> CalculationBackend:
-    """Create the first available backend for the given grid and truncation.
+def make_backend(grid: str, trunc: int, order: list[str] | None = None) -> CalculationBackend:
+    """Create a backend for the given grid and truncation, ordered based on order, or the first available.
 
     Falls back to the octahedral grid of the same truncation if the grid's
     pl array is not available in the lookup.
@@ -77,7 +77,7 @@ def make_backend(grid: str, trunc: int) -> CalculationBackend:
 
     from ..utils import grid_to_pl
 
-    backend_class = get_backend()
+    backend_class = get_backend(order)
 
     try:
         kloen = grid_to_pl(grid)

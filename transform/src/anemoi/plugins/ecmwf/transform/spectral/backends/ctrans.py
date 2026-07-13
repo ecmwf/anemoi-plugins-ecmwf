@@ -45,8 +45,8 @@ class ctrans4py(CalculationBackend):
         except Exception as e:
             return False, f"ctrans4py is not available: {e}"
 
-    def __init__(self, kloen: np.ndarray, trunc: int):
-        super().__init__(kloen, trunc)
+    def __init__(self, kloen: np.ndarray, trunc: int, grid: str | None = None):
+        super().__init__(kloen, trunc, grid)
         import os
 
         import ctrans4py  # type: ignore[reportMissingImports]
