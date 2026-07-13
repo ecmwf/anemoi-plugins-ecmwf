@@ -7,86 +7,21 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import functools
 import logging
-from typing import TypeVar
 
-import earthkit.data as ekd
 import numpy as np
-import tqdm.auto as tqdm
 from anemoi.inference.context import Context
 from anemoi.inference.metadata import Metadata
 from anemoi.inference.processor import Processor
 from anemoi.inference.types import State
+from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
+from anemoi.plugins.ecmwf.transform.regrid.backend import GridSpec
 
 from .named import KNOWN_GRIDS
 from .named import NamedRegrid
 
 LOG = logging.getLogger(__name__)
 CHECKPOINT_SENTINEL = "checkpoint"
-
-GridSpec = str | list[float] | tuple[float, ...] | dict[str, list[float]]
-Field = TypeVar("Field", ekd.Field, ekd.FieldList)
-
-
-def _mir_regrid(fields: "ekd.Field", grid: GridSpec, area: str | list[float] | None) -> "ekd.FieldList":
-    import io
-
-    import mir
-
-    job_args = {"grid": grid}
-    if area:
-        job_args["area"] = area
-    job = mir.Job(**job_args, edition=2)  # type: ignore
-
-    input_buffer = io.BytesIO()
-    output_buffer = io.BytesIO()
-    fields.to_target("file", input_buffer)
-
-    job.execute(mir.GribMemoryInput(input_buffer.getvalue()), output_buffer)  # type: ignore
-    return ekd.from_source("memory", output_buffer.getvalue())[0]  # type: ignore
-
-
-def regrid(
-    fields: Field,
-    grid: GridSpec,
-    area: str | list[float] | tuple[float, ...] | None,
-    *,
-    verbose: bool = True,
-) -> Field:
-    """Regrid a list of fields to a specified grid and area.
-
-    TO BE REPLACED WITH EARTHKIT-REGRID
-    """
-    if isinstance(grid, (list, tuple)):
-        grid = "/".join(map(str, grid))
-    if isinstance(area, (list, tuple)):
-        area = "/".join(map(str, area))
-
-    if isinstance(grid, (int, float)):
-        grid = f"{grid}/{grid}"
-
-    single_field = False
-    if isinstance(fields, ekd.Field):
-        field_list = [fields]
-        single_field = True
-    else:
-        field_list = list(fields)  # type: ignore[reportArgumentType]
-
-    gridding_summary = f"grid: {str(grid)!r}, area: {str(area)!r}"
-    LOG.info(f"Starting regridding of {len(field_list)} fields to {gridding_summary}.")
-
-    results = list(
-        tqdm.tqdm(
-            map(functools.partial(_mir_regrid, grid=grid, area=area), field_list),
-            total=len(field_list),
-            desc="Regridding fields",
-            disable=not verbose,
-        )
-    )
-    result_fieldlist = ekd.FieldList.from_fields(results)
-
-    return result_fieldlist[0] if single_field else result_fieldlist  # type: ignore[reportReturnType]
 
 
 def _open_coord_files(grid: dict[str, str]) -> dict[str, list[float]]:
@@ -109,7 +44,7 @@ class RegridPreprocessor(Processor):
         context: Context,
         metadata: Metadata,
         *,
-        grid: GridSpec | dict[str, str],
+        grid: GridSpec | dict[str, str] | None = None,
         area: str | list[float] | tuple[float, ...] | None = None,
     ) -> None:
         """Initialise the Regridding processor.
@@ -142,6 +77,7 @@ class RegridPreprocessor(Processor):
                     "Grid dict values must be all strings (file paths) or all lists (coordinates), "
                     f"got mixed types: {[type(v).__name__ for v in values]}"
                 )
+
         elif isinstance(grid, str):
             if grid.lower() in KNOWN_GRIDS:
                 named_regrid = NamedRegrid(grid)
@@ -162,11 +98,12 @@ class RegridPreprocessor(Processor):
                 resolved_grid = {"latitudes": ckpt_lat, "longitudes": ckpt_lon}
             else:
                 resolved_grid = grid
+        elif grid is None:
+            resolved_grid = metadata.grid
         else:
             resolved_grid = grid
 
-        self._grid = resolved_grid
-        self._area = area
+        self._regrid = MIRRegrid(grid=resolved_grid, area=area)
 
     def process(self, state: State) -> State:  # type: ignore
         """Process the fields by regridding them to the specified grid and area.
@@ -181,5 +118,10 @@ class RegridPreprocessor(Processor):
         State
             The updated state with regridded fields.
         """
-        state["fields"] = regrid(state["fields"], self._grid, self._area)
+        state["fields"] = self._regrid.forward(state["fields"])
+        state["latitudes"] = next(iter(state["fields"])).metadata().geography.latitudes()
+        state["longitudes"] = next(iter(state["fields"])).metadata().geography.longitudes()
         return state
+
+    def __repr__(self) -> str:
+        return f"RegridPreprocessor({self._regrid!r})"
