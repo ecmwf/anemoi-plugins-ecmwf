@@ -26,7 +26,7 @@ class TestMirRegrid:
 
     def test_empty_fieldlist_returns_early(self):
         """Empty fieldlists are returned immediately without calling MIR."""
-        empty = ekd.FieldList()
+        empty = ekd.SimpleFieldList()
         result = mir_regrid(empty, "O32")
         assert len(result) == 0
 

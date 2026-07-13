@@ -89,7 +89,7 @@ class TestMIRRegridForward:
 
     def test_forward_empty_fieldlist(self):
         """forward() with empty fields returns empty."""
-        empty = ekd.FieldList()
+        empty = ekd.SimpleFieldList()
         r = MIRRegrid(grid="O16")
         result = r.forward(empty)
         assert len(result) == 0
