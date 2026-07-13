@@ -48,7 +48,8 @@ def make_grib_fieldlist(
     Parameters
     ----------
     grid : str
-        Grid name (e.g. "O32", "O16").
+        Grid name (e.g. "O32", "O16"). Currently only octahedral grids are
+        supported for sample creation.
     nfields : int
         Number of fields to create.
     base_value : float
@@ -67,14 +68,20 @@ def make_grib_fieldlist(
     import earthkit.data as ekd
     import eccodes
 
-    sample_id = eccodes.codes_grib_new_from_samples("reduced_gg_pl_640_grib2")
+    # Parse the grid string to extract N (Gaussian number)
+    prefix = grid[0].upper()
+    n = int(grid[1:])
+
+    if prefix == "O":
+        sample_name = f"reduced_gg_pl_{n}_grib2"
+    else:
+        sample_name = "reduced_gg_pl_640_grib2"
+
+    sample_id = eccodes.codes_grib_new_from_samples(sample_name)
     try:
-        eccodes.codes_set(sample_id, "gridType", "reduced_gg")
-        eccodes.codes_set(sample_id, "gridName", grid)
         eccodes.codes_set(sample_id, "paramId", param_id)
         eccodes.codes_set(sample_id, "dataDate", 20240101)
         eccodes.codes_set(sample_id, "dataTime", 0)
-        eccodes.codes_set(sample_id, "edition", 2)
 
         npoints = eccodes.codes_get_size(sample_id, "values")
         messages = []

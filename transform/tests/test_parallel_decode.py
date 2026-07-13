@@ -25,7 +25,7 @@ class TestFieldsToNumpyParallel:
 
     def test_empty_fieldlist(self):
         """Empty fieldlist returns empty array."""
-        empty = ekd.FieldList()
+        empty = ekd.from_source("memory", b"")
         result = fields_to_numpy_parallel(empty)
         assert result.shape == (0, 0)
 

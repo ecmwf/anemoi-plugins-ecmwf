@@ -73,6 +73,11 @@ class mir(CalculationBackend):
             ec.codes_set(sample, "pentagonalResolutionParameterK", self.trunc)
             ec.codes_set(sample, "pentagonalResolutionParameterM", self.trunc)
             ec.codes_set(sample, "paramId", param_id)
+            ec.codes_set(sample, "packingType", "spectral_complex")
+            ec.codes_set(sample, "JS", self.trunc)
+            ec.codes_set(sample, "KS", self.trunc)
+            ec.codes_set(sample, "MS", self.trunc)
+            ec.codes_set(sample, "bitsPerValue", 24)
             ec.codes_set_values(sample, spectral_data.astype(np.float64))
             return ec.codes_get_message(sample)
         finally:
