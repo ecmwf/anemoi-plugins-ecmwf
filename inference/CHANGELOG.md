@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.4.0...inference-0.5.0) (2026-07-03)
+
+
+### Features
+
+* **inference/multio:** Enable parallel output ([#95](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/95)) ([30595e3](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/30595e37fe1f7a248b5fc179a4419a69d7f8335f))
+
 ## [0.4.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.3.1...inference-0.4.0) (2026-06-23)
 
 
