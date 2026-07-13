@@ -47,23 +47,15 @@ def test_virtual_temperature_returns_inputs(mock_fields: ekd.FieldList):
     params = sorted(result.metadata("param"))
     assert params == ["msl", "q", "t", "vtmp"]
 
-    np.testing.assert_array_equal(
-        result.sel(param="q")[0].to_numpy(), mock_fields.sel(param="q")[0].to_numpy()
-    )
-    np.testing.assert_array_equal(
-        result.sel(param="t")[0].to_numpy(), mock_fields.sel(param="t")[0].to_numpy()
-    )
-    np.testing.assert_array_equal(
-        result.sel(param="msl")[0].to_numpy(), mock_fields.sel(param="msl")[0].to_numpy()
-    )
+    np.testing.assert_array_equal(result.sel(param="q")[0].to_numpy(), mock_fields.sel(param="q")[0].to_numpy())
+    np.testing.assert_array_equal(result.sel(param="t")[0].to_numpy(), mock_fields.sel(param="t")[0].to_numpy())
+    np.testing.assert_array_equal(result.sel(param="msl")[0].to_numpy(), mock_fields.sel(param="msl")[0].to_numpy())
 
 
 def test_virtual_temperature_custom_names():
     q = np.random.uniform(0.0, 0.02, size=NPOINTS)
     t = np.random.uniform(220.0, 310.0, size=NPOINTS)
-    fields = ekd.FieldList.from_fields(
-        [make_field("spec_hum", q), make_field("temp", t)]
-    )
+    fields = ekd.FieldList.from_fields([make_field("spec_hum", q), make_field("temp", t)])
 
     result = VirtualTemperature(
         virtual_temperature="virt_t",
