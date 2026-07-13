@@ -52,7 +52,7 @@ optional-dependencies.tests = [
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
 
 ## Entry Points
-entry-points."anemoi.transform.filters.fields".compute_tv = "anemoi.plugins.ecmwf.transform.compute_tv.compute_tv:ComputeTV"
+entry-points."anemoi.transform.filters.fields".virtual_temperature = "anemoi.plugins.ecmwf.transform.virtual_temperature:VirtualTemperature"
 
 [dependency-groups]
 dev = [
