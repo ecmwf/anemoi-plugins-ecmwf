@@ -14,8 +14,8 @@ import earthkit.data as ekd
 from anemoi.transform.filters.fields.matching import MatchingFieldsFilter
 from anemoi.transform.filters.fields.matching import MatchingSpec
 
-from .backends import CalculationBackend
-from .backends import get_backend
+from ..utils import fields_to_numpy_parallel
+from .backends import make_backend
 
 LOG = logging.getLogger(__name__)
 
@@ -119,35 +119,15 @@ class VordivToUV(MatchingFieldsFilter):
 
         raise ValueError("spectral_grid or transform_grid must be set for " "u/v -> vor/div backward transform")
 
-    def _make_backend(self, grid: str, trunc: int) -> CalculationBackend:
-        """Create a backend for the given grid and truncation."""
-        import warnings
-
-        from .utils import grid_to_pl
-
-        backend_class = get_backend()
-
-        try:
-            kloen = grid_to_pl(grid)
-        except ValueError:
-            fallback_grid = f"O{trunc + 1}"
-            warnings.warn(
-                f"Grid '{grid}' pl not available in lookup. "
-                f"Falling back to '{fallback_grid}' (same truncation T{trunc}).",
-                stacklevel=3,
-            )
-            kloen = grid_to_pl(fallback_grid)
-
-        return backend_class(kloen, trunc)
-
     def forward_transform(
         self, vorticity: ekd.FieldList, divergence: ekd.FieldList
     ) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
-        grid, trunc = self._resolve_forward_grid(vorticity)
-        backend = self._make_backend(grid, trunc)
 
-        vor_np = vorticity.to_numpy()
-        div_np = divergence.to_numpy()
+        grid, trunc = self._resolve_forward_grid(vorticity)
+        backend = make_backend(grid, trunc)
+
+        vor_np = fields_to_numpy_parallel(vorticity)
+        div_np = fields_to_numpy_parallel(divergence)
 
         # Pre-truncate spectral fields if transform_grid sets a lower truncation
         if self.transform_grid is not None:
@@ -171,7 +151,7 @@ class VordivToUV(MatchingFieldsFilter):
         self, u_component_of_wind: ekd.Field, v_component_of_wind: ekd.Field
     ) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
         grid, trunc = self._resolve_backward_grid()
-        backend = self._make_backend(grid, trunc)
+        backend = make_backend(grid, trunc)
         vor, div = backend.uv_to_vordiv(u_component_of_wind.to_numpy(), v_component_of_wind.to_numpy())
 
         for i, f in enumerate(u_component_of_wind):  # type: ignore[reportArgumentType]

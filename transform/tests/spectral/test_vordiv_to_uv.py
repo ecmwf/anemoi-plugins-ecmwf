@@ -14,16 +14,16 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.backends import BACKENDS
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.backends import CalculationBackend
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.backends import get_backend
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.utils import _classic_reduced_pl
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.utils import _truncation_indices
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.utils import grid_to_pl
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.utils import grid_to_trunc
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.utils import nspec_from_trunc
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.utils import trunc_from_nspec
-from anemoi.plugins.ecmwf.transform.vordiv_to_uv.utils import truncate_spectral
+from anemoi.plugins.ecmwf.transform.spectral.backends import BACKENDS
+from anemoi.plugins.ecmwf.transform.spectral.backends import CalculationBackend
+from anemoi.plugins.ecmwf.transform.spectral.backends import get_backend
+from anemoi.plugins.ecmwf.transform.spectral.utils import _classic_reduced_pl
+from anemoi.plugins.ecmwf.transform.spectral.utils import _truncation_indices
+from anemoi.plugins.ecmwf.transform.spectral.utils import grid_to_pl
+from anemoi.plugins.ecmwf.transform.spectral.utils import grid_to_trunc
+from anemoi.plugins.ecmwf.transform.spectral.utils import nspec_from_trunc
+from anemoi.plugins.ecmwf.transform.spectral.utils import trunc_from_nspec
+from anemoi.plugins.ecmwf.transform.spectral.utils import truncate_spectral
 
 # ============================================================================
 # Utils: grid_to_pl
@@ -334,7 +334,7 @@ class TestBackendRegistry:
 
 class TestResolveForwardGrid:
     def _make_filter(self, **kwargs):
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv.vordiv_to_uv import VordivToUV
+        from anemoi.plugins.ecmwf.transform.spectral.vordiv_to_uv import VordivToUV
 
         return VordivToUV(**kwargs)
 
@@ -365,7 +365,7 @@ class TestResolveForwardGrid:
 
 class TestResolveBackwardGrid:
     def _make_filter(self, **kwargs):
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv.vordiv_to_uv import VordivToUV
+        from anemoi.plugins.ecmwf.transform.spectral.vordiv_to_uv import VordivToUV
 
         return VordivToUV(**kwargs)
 
@@ -400,7 +400,7 @@ class TestResolveBackwardGrid:
 
 class TestPatchDataRequest:
     def _make_filter(self, **kwargs):
-        from anemoi.plugins.ecmwf.transform.vordiv_to_uv.vordiv_to_uv import VordivToUV
+        from anemoi.plugins.ecmwf.transform.spectral.vordiv_to_uv import VordivToUV
 
         return VordivToUV(**kwargs)
 
@@ -455,3 +455,151 @@ class TestPatchDataRequest:
         # This tests the current behaviour.
         with pytest.raises(ValueError):
             f.patch_data_request(req)
+
+
+# ============================================================================
+# Integration: VordivToUV forward_transform with real spectral backend
+# ============================================================================
+
+
+def _any_spectral_backend_available():
+    """Check if any spectral backend (ctrans4py or ectrans4py) is available."""
+    for name in ["ctrans4py", "ectrans4py"]:
+        if name in BACKENDS:
+            ok, _ = BACKENDS[name].available()
+            if ok:
+                return True
+    return False
+
+
+@pytest.mark.skipif(
+    not _any_spectral_backend_available(),
+    reason="No spectral backend (ctrans4py/ectrans4py) available",
+)
+class TestVordivToUVIntegration:
+    """Integration tests that run the actual spectral transform."""
+
+    def _make_filter(self, **kwargs):
+        from anemoi.plugins.ecmwf.transform.spectral.vordiv_to_uv import VordivToUV
+
+        return VordivToUV(**kwargs)
+
+    def test_vordiv_to_uv_produces_gridpoint_fields(self):
+        """Forward transform produces u/v fields on the target grid."""
+        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
+
+        trunc = 21
+        grid = "O22"
+        kloen = grid_to_pl(grid)
+        ngptot = kloen.sum()
+
+        # Create synthetic spectral vorticity and divergence (zero = no wind)
+        nspec = nspec_from_trunc(trunc)
+        backend = make_backend(grid, trunc)
+
+        vor = np.zeros(nspec, dtype=np.float64)
+        div = np.zeros(nspec, dtype=np.float64)
+
+        u, v = backend.vordiv_to_uv(vor, div)
+
+        # Zero vor/div should give zero u/v
+        assert u.shape[-1] == ngptot
+        assert v.shape[-1] == ngptot
+        np.testing.assert_allclose(u, 0.0, atol=1e-10)
+        np.testing.assert_allclose(v, 0.0, atol=1e-10)
+
+    def test_nonzero_vorticity_produces_nonzero_wind(self):
+        """Non-zero vorticity produces non-zero u/v."""
+        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
+
+        trunc = 21
+        grid = "O22"
+        backend = make_backend(grid, trunc)
+
+        nspec = nspec_from_trunc(trunc)
+        np.random.seed(42)
+        vor = np.random.randn(nspec) * 1e-5
+        div = np.random.randn(nspec) * 1e-5
+
+        u, v = backend.vordiv_to_uv(vor, div)
+
+        # Should produce non-zero wind
+        assert np.abs(u).max() > 0
+        assert np.abs(v).max() > 0
+        # Values should be finite
+        assert np.isfinite(u).all()
+        assert np.isfinite(v).all()
+
+    def test_batched_vordiv_to_uv(self):
+        """Batched transform handles multiple levels."""
+        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
+
+        trunc = 21
+        grid = "O22"
+        kloen = grid_to_pl(grid)
+        ngptot = kloen.sum()
+        backend = make_backend(grid, trunc)
+
+        nspec = nspec_from_trunc(trunc)
+        nfields = 3
+        np.random.seed(123)
+        vor = np.random.randn(nfields, nspec) * 1e-5
+        div = np.random.randn(nfields, nspec) * 1e-5
+
+        u, v = backend.vordiv_to_uv(vor, div)
+
+        assert u.shape == (nfields, ngptot)
+        assert v.shape == (nfields, ngptot)
+        assert np.isfinite(u).all()
+        assert np.isfinite(v).all()
+
+    def test_uv_to_vordiv_round_trip(self):
+        """Round-trip: vordiv -> uv -> vordiv recovers original (within tolerance)."""
+        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
+
+        trunc = 21
+        grid = "O22"
+        backend = make_backend(grid, trunc)
+
+        nspec = nspec_from_trunc(trunc)
+        np.random.seed(99)
+        vor_orig = np.random.randn(nspec) * 1e-5
+        div_orig = np.random.randn(nspec) * 1e-5
+
+        # Forward: spectral vor/div -> gridpoint u/v
+        u, v = backend.vordiv_to_uv(vor_orig, div_orig)
+
+        # Backward: gridpoint u/v -> spectral vor/div
+        vor_back, div_back = backend.uv_to_vordiv(u, v)
+
+        # Should recover original spectral coefficients
+        np.testing.assert_allclose(vor_back, vor_orig, rtol=1e-4, atol=1e-10)
+        np.testing.assert_allclose(div_back, div_orig, rtol=1e-4, atol=1e-10)
+
+    def test_truncate_before_transform(self):
+        """Pre-truncation reduces spectral content but still produces valid output."""
+        from anemoi.plugins.ecmwf.transform.spectral.backends import make_backend
+
+        # Create data at higher truncation
+        trunc_in = 42
+        trunc_out = 21
+        grid_out = "O22"
+
+        nspec_in = nspec_from_trunc(trunc_in)
+        np.random.seed(42)
+        vor = np.random.randn(nspec_in) * 1e-5
+        div = np.random.randn(nspec_in) * 1e-5
+
+        # Truncate to lower resolution
+        vor_trunc = truncate_spectral(vor, trunc_out)
+        div_trunc = truncate_spectral(div, trunc_out)
+
+        backend = make_backend(grid_out, trunc_out)
+        u, v = backend.vordiv_to_uv(vor_trunc, div_trunc)
+
+        kloen = grid_to_pl(grid_out)
+        ngptot = kloen.sum()
+        assert u.shape[-1] == ngptot
+        assert v.shape[-1] == ngptot
+        assert np.isfinite(u).all()
+        assert np.isfinite(v).all()

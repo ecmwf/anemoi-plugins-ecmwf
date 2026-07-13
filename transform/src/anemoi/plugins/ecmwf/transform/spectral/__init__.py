@@ -8,8 +8,9 @@
 # nor does it submit to any jurisdiction.
 
 
+from .sh_to_gg import ShToGg
 from .vordiv_to_uv import VordivToUV
 
 UVToVordiv = VordivToUV.reversed()
 
-__all__ = ["VordivToUV", "UVToVordiv"]
+__all__ = ["VordivToUV", "UVToVordiv", "ShToGg"]

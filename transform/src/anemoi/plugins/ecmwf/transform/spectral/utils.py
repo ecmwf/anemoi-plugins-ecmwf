@@ -17,7 +17,7 @@ def grid_to_pl(grid: str) -> np.ndarray:
 
     - Octahedral (O): starts at 20, increments by 4 per row, N rows per hemisphere, mirrored.
     - Full (F): every row has 4*N points, 2*N rows total.
-    - Classic reduced (N): irregular progression, looked up from a table.
+    - Classic reduced (N): irregular progression, looked up from a table. #TODO: Move into earthkit
       Only a subset of common N grids are included.
 
     Parameters
