@@ -111,6 +111,7 @@ class RegressionPerturbationPlugin(Processor):
     def __init__(
         self,
         context,
+        metadata,
         season: str,
         data_path: str,
         data_grid: str | list[float],
@@ -127,7 +128,7 @@ class RegressionPerturbationPlugin(Processor):
         max_samples: int | None = None,
         rescale: float = 1.0,
     ):
-        super().__init__(context)
+        super().__init__(context, metadata)
         if season not in SEASON_MONTHS:
             raise ValueError(f"Invalid season: {season}. Must be one of {list(SEASON_MONTHS)}")
         if method not in METHOD_FUNCTIONS:

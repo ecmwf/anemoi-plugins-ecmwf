@@ -64,13 +64,14 @@ class SubtractTendencyPlugin(Processor):
     def __init__(
         self,
         context: Any,
+        metadata,
         tend_pl_path: str,
         tend_sfc_path: str,
         param_pl: list[str],
         level_pl: list[int],
         param_sfc: list[str],
     ) -> None:
-        super().__init__(context)
+        super().__init__(context, metadata)
 
         self._tend_pl_path = tend_pl_path
         self._tend_sfc_path = tend_sfc_path

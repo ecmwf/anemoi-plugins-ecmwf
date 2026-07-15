@@ -68,13 +68,14 @@ class ArrayOverlayPlugin(Processor):
     def __init__(
         self,
         context,
+        metadata,
         overlay: PathLike,
         fields: list[dict[str, Any]],
         rescale: float = 1,
         method: VALID_METHODS = "add",
         invert: bool = False,
     ):
-        super().__init__(context)
+        super().__init__(context, metadata)
 
         self._overlay = overlay
         self._fields = fields
