@@ -43,7 +43,7 @@ def _haversine(lon1, lat1, lon2, lat2):
 
 
 def _gaspari_cohn(lat_vec, lon_vec, bplat, bplon, locrad):
-    """Compute Gaspari-Cohn localization function on the grid.
+    """Compute Gaspari-Cohn localisation function on the grid.
 
     Returns a 1-D array (same length as lat_vec) with values in [0, 1].
     """
@@ -80,7 +80,7 @@ class RegressionPerturbationPlugin(Processor):
     """Compute regression-based initial-condition perturbations on-the-fly.
 
     Implements the Hakim & Masanam (2023) climatological regression method:
-    data samples are loaded, a localized linear regression is computed against
+    data samples are loaded, a localised linear regression is computed against
     a reference variable at a chosen point, and the resulting perturbation
     field is applied to the model initial conditions.
 
