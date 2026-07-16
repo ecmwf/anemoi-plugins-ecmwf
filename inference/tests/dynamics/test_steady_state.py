@@ -12,7 +12,6 @@
 from types import SimpleNamespace
 
 import numpy as np
-import pytest
 import torch
 
 from anemoi.inference.tensors import TensorHandler
