@@ -38,7 +38,7 @@ classifiers = [
 
 dynamic = [ "version" ]
 dependencies = [
-  "anemoi-inference>=0.8.1",
+  "anemoi-inference>=0.11",
 ]
 
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[mir,multio,opendata,polytope]" ]
@@ -77,9 +77,15 @@ entry-points."anemoi.inference.pre_processors"."modify_value" = "anemoi.plugins.
 entry-points."anemoi.inference.pre_processors"."regression-perturbation" = "anemoi.plugins.ecmwf.inference.dynamics:RegressionPerturbationPlugin"
 entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.inference.regrid:RegridPreprocessor"
 
+[dependency-groups]
+dev = [
+  "anemoi-plugins-ecmwf-inference[tests]",
+]
+
 [tool.setuptools.package-data]
 "anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
 "anemoi.plugins.ecmwf.inference.opendata" = [ "*.yaml" ]
+"anemoi.plugins.ecmwf.inference.regrid.named" = [ "*/*.npz" ]
 
 [tool.setuptools_scm]
 root = ".."
@@ -90,9 +96,12 @@ tag_regex = "^inference-(?P<version>[vV]?[0-9]+[^-]*)"
 version_file = "src/anemoi/plugins/ecmwf/inference/_version.py"
 fallback_version = "0.0.0"
 
+[tool.uv.sources]
+anemoi-plugins-ecmwf-inference = { workspace = true }
+
 [tool.pytest.ini_options]
 testpaths = "tests"
 addopts = [
-  "--numprocesses=8",
+  #"--numprocesses=8",
   "--strict-config",
 ]

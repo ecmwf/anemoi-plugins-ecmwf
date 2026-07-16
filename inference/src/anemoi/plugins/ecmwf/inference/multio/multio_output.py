@@ -8,6 +8,7 @@
 # nor does it submit to any jurisdiction.
 
 import logging
+from datetime import datetime
 from datetime import timedelta
 from functools import cached_property
 from typing import Any
@@ -18,13 +19,17 @@ import multio
 import numpy as np
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
+from anemoi.inference.decorators import supports_parallel_output
+from anemoi.inference.metadata import Metadata
 from anemoi.inference.output import Output
 from anemoi.inference.post_processors.accumulate import Accumulate
+from anemoi.inference.types import ProcessorConfig
 from anemoi.inference.types import State
 from anemoi.utils.grib import shortname_to_paramid
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import field_validator
 from pydantic import model_validator
 
 from .archive import ArchiveCollector
@@ -52,6 +57,12 @@ class UserDefinedMetadata(BaseModel):
     """Model name, e.g. aifs-single, ..."""
     number: int | None = None
     """Ensemble number, e.g. 0,1,2"""
+    hindcast_reference_date: datetime | None = None
+    """Hindcast reference date, e.g. 20200101
+        If set, this will be used as the date in the output metadata instead of the state reference date,
+        and the actual initial condition date will be written in the hdate key.
+    """
+
     numberOfForecastsInEnsemble: int | None = Field(None, serialization_alias="misc-numberOfForecastsInEnsemble")
     """Number of ensembles in the forecast, e.g. 50"""
     generatingProcessIdentifier: int | None = Field(None, serialization_alias="misc-generatingProcessIdentifier")
@@ -62,6 +73,21 @@ class UserDefinedMetadata(BaseModel):
         if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
             raise ValueError("numberOfForecastsInEnsemble must be an integer if number is provided")
         return self
+
+    @field_validator("hindcast_reference_date", mode="before")
+    def validate_hindcast_reference_date(cls, v):
+        if isinstance(v, str):
+            try:
+                v = datetime.fromisoformat(v) if "-" in v else datetime(int(v[:4]), int(v[4:6]), int(v[6:8]))
+            except ValueError as e:
+                raise ValueError(
+                    "hindcast_reference_date must be an 8-digit datetime string in the format YYYYMMDD"
+                ) from e
+        elif isinstance(v, int):
+            v = datetime.fromisoformat(str(v))
+        if v is not None and not isinstance(v, datetime):
+            raise ValueError("hindcast_reference_date must be a datetime object")
+        return v
 
 
 class MultioMetadata(BaseModel):
@@ -80,7 +106,8 @@ class MultioMetadata(BaseModel):
     """Grid name, e.g. n320, o96"""
     levelist: int | None = None
     """Level, e.g. 0,50,100"""
-
+    hdate: int | None = None
+    """Hindcast initial condition date, e.g. 20200101, only used if hindcast_reference_date is provided in the user metadata"""
     timespan: int | None = None
     """Time span, e.g."""
 
@@ -134,16 +161,22 @@ class MultioOutputPlugin(Output):
     def __init__(
         self,
         context: Context,
+        metadata: Metadata,
         plan: str | dict | multio.plans.Client | multio.plans.Server,
         *,
+        variables: list[str] | None = None,
+        post_processors: list[ProcessorConfig] | None = None,
         output_frequency: int | None = None,
         write_initial_state: bool | None = None,
         archive_requests: Config | None = None,
         initial_state_diagnostics_grib: str | None = None,
-        **metadata: Any,
+        **user_metadata: Any,
     ) -> None:
         super().__init__(
             context,
+            metadata=metadata,
+            variables=variables,
+            post_processors=post_processors,
             output_frequency=output_frequency,
             write_initial_state=write_initial_state,
         )
@@ -152,9 +185,9 @@ class MultioOutputPlugin(Output):
         self._initial_state_diagnostics_grib = initial_state_diagnostics_grib
 
         try:
-            self._user_defined_metadata = UserDefinedMetadata(**metadata)
+            self._user_defined_metadata = UserDefinedMetadata(**user_metadata)
         except TypeError as e:
-            raise TypeError(f"Invalid metadata: {e}") from e
+            raise TypeError(f"Invalid user_metadata: {e}") from e
 
         dumped_plan = (
             self._plan.dump_yaml() if isinstance(self._plan, multio.plans.plans.MultioBaseModel) else self._plan
@@ -163,7 +196,7 @@ class MultioOutputPlugin(Output):
 
     @cached_property
     def _is_accumulated_from_start(self) -> bool:
-        return any(isinstance(x, Accumulate) for x in self.context.create_post_processors())
+        return any(isinstance(x, Accumulate) for k in self.context.post_processors for x in self.context.post_processors[k])  # type: ignore[reportAttributeAccessIssue]
 
     def open(self, state: State) -> None:
         if self._server is None:
@@ -172,6 +205,8 @@ class MultioOutputPlugin(Output):
 
         self._server.open_connections()
         user_metadata = self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True)
+        user_metadata.pop("hindcast_reference_date", None)
+
         if user_metadata.get("stream") == originkey:
             user_metadata.pop("stream")
 
@@ -200,7 +235,7 @@ class MultioOutputPlugin(Output):
         import earthkit.data as ekd
 
         ds = ekd.from_source("file", self._initial_state_diagnostics_grib)
-        namer = self.context.checkpoint.default_namer()
+        namer = self.metadata.default_namer()
 
         LOG.info(f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:")
         for field in ds:  # type: ignore
@@ -216,16 +251,31 @@ class MultioOutputPlugin(Output):
             raise RuntimeError("Multio server is not open, call `.open()` first.")
 
         reference_date = self.reference_date or self.context.reference_date
+        href_date = self._user_defined_metadata.hindcast_reference_date
+
+        if not isinstance(reference_date, datetime):
+            raise ValueError("Reference date must be a datetime object.")
+
+        reference_date, hdate = (
+            (
+                datetime.fromisoformat(f"{href_date.strftime('%Y%m%d')}T{reference_date.strftime('%H%M%S')}"),
+                reference_date,
+            )
+            if href_date is not None
+            else (reference_date, None)
+        )
+
         step = state["step"]
 
         shared_metadata = {
             "step": int(step.total_seconds() // 3600),
-            "grid": str(self.context.checkpoint.grid).upper(),
+            "grid": str(self.metadata.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
             "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
+            "hdate": int(hdate.strftime("%Y%m%d")) if hdate is not None else None,
         }
 
-        timespan = self.context.checkpoint.timestep.total_seconds() // 3600
+        timespan = self.metadata.timestep.total_seconds() // 3600
         if self._is_accumulated_from_start:
             timespan = shared_metadata["step"]
 
@@ -310,6 +360,7 @@ def add_debug(locations: dict[int, str], plan: multio.plans.Plan) -> None:
 
 
 @main_argument("path")
+@supports_parallel_output("path")
 class MultioOutputGribPlugin(MultioOutputPlugin):
     """Multio output plugin for GRIB files.
 
@@ -320,6 +371,8 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
     def __init__(
         self,
         context: Context,
+        metadata: Metadata,
+        *,
         path: str,
         append: bool = False,
         per_server: bool = False,
@@ -332,6 +385,8 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
         ----------
         context : Context
             Model Runner
+        metadata : Metadata
+            Metadata for the output plugin
         path : str
             Path to write to
         append : bool
@@ -348,7 +403,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
                 multio.plans.Plan(
                     name="output-to-file",
                     actions=[
-                        multio.plans.EncodeMTG(geo_from_atlas=True),
+                        multio.plans.EncodeMTG(),
                         multio.plans.Sink(
                             sinks=[
                                 multio.plans.sinks.File(
@@ -365,10 +420,11 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
         if debug:
             add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
 
-        super().__init__(context, plan=plan, **kwargs)
+        super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
 
 @main_argument("fdb_config")
+@supports_parallel_output("-ignore-parallel-output-suffix")  # Used to ignore the suffix kwarg
 class MultioOutputFDBPlugin(MultioOutputPlugin):
     """Multio output plugin to write to FDB.
 
@@ -376,13 +432,17 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
     It is a subclass of the MultioOutputPlugin class.
     """
 
-    def __init__(self, context: Context, fdb_config: str, debug: bool = False, **kwargs: Any) -> None:
+    def __init__(
+        self, context: Context, metadata: Metadata, fdb_config: str, *, debug: bool = False, **kwargs: Any
+    ) -> None:
         """Multio FDB Output Plugin.
 
         Parameters
         ----------
         context : Context
             Model Runner
+        metadata : Metadata
+            Metadata for the output plugin
         fdb_config : str
             FDB Configuration file
         debug : bool, optional
@@ -395,7 +455,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
                 multio.plans.Plan(
                     name="output-to-fdb",
                     actions=[
-                        multio.plans.EncodeMTG(geo_from_atlas=True),
+                        multio.plans.EncodeMTG(),
                         multio.plans.Sink(
                             sinks=[
                                 multio.plans.sinks.FDB(
@@ -410,22 +470,33 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
         if debug:
             add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
 
-        super().__init__(context, plan=plan, **kwargs)
+        super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
 
 @main_argument("plan")
+@supports_parallel_output("-ignore-parallel-output-suffix")  # Used to ignore the suffix kwarg
 class MultioOutputPlanPlugin(MultioOutputPlugin):
     """Multio output plugin to write with a plan."""
 
     def __init__(
-        self, context: Context, plan: str | dict, *, sinks: list[multio.plans.sinks.SINKS] | None = None, **kwargs: Any
+        self,
+        context: Context,
+        metadata: Metadata,
+        plan: str | dict,
+        *,
+        sinks: list[multio.plans.sinks.SINKS] | None = None,
+        **kwargs: Any,
     ) -> None:
         """Multio FDB Output Plugin.
+
+        Note: if using the parallel output, this plan can only sensibly write to an FDB, not a file.
 
         Parameters
         ----------
         context : Context
             Model Runner
+        metadata : Metadata
+            Metadata for the output plugin
         plan : str | dict
             Multio Plan
         sinks : list[multio.plans.sinks.SINKS] | None
@@ -444,7 +515,7 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
                 p.actions.append(multio.plans.Sink(sinks=sinks))
             plan = realised_plan  # type: ignore
 
-        super().__init__(context, plan=plan, **kwargs)
+        super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
 
 class MultioDisambiguousOutputPlugin(MultioOutputPlugin):

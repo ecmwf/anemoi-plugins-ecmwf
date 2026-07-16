@@ -1,6 +1,7 @@
 ---
 checkpoint: checkpoints/multio.ckpt
 date: 2020-01-01
+input: dummy
 output:
   multio:
     path: /dev/null
