@@ -12,6 +12,7 @@ import earthkit.data as ekd
 import numpy as np
 import pytest
 from anemoi.inference.context import Context
+from anemoi.inference.metadata import Metadata
 from anemoi.plugins.ecmwf.inference.dynamics.modify_value import ModifyValuePlugin
 from pytest_mock import MockerFixture
 
@@ -35,8 +36,9 @@ def mock_fields() -> ekd.FieldList:
 def test_modify_value(mocker: MockerFixture, mock_fields: ekd.FieldList, value):
     # mock the context to return the mask when load_supporting_array is called
     context = cast(Context, mocker.MagicMock())
+    metadata = cast(Metadata, mocker.MagicMock())
     field_specifier = [{"shortName": "2t"}]
-    processor = ModifyValuePlugin(context=context, fields=field_specifier, value=value, method="add")
+    processor = ModifyValuePlugin(context=context, metadata=metadata, fields=field_specifier, value=value, method="add")
 
     # check that assignment works as expected
     new_state = processor.process(fields=mock_fields)
@@ -61,8 +63,11 @@ def test_modify_value_with_numpy_file(mocker: MockerFixture, mock_fields: ekd.Fi
 
     # mock the context to return the mask when load_supporting_array is called
     context = cast(Context, mocker.MagicMock())
+    metadata = cast(Metadata, mocker.MagicMock())
     field_specifier = [{"shortName": "2t"}]
-    processor = ModifyValuePlugin(context=context, fields=field_specifier, value=str(numpy_file), method="add")
+    processor = ModifyValuePlugin(
+        context=context, metadata=metadata, fields=field_specifier, value=str(numpy_file), method="add"
+    )
 
     # check that assignment works as expected
     new_state = processor.process(fields=mock_fields)

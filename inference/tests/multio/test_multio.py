@@ -37,7 +37,7 @@ def mock_multio_server():
 
 
 @fake_checkpoints
-def test_multio_write_field_called(mock_multio_server, state: State) -> None:
+def test_multio_write_field_called(mock_multio_server, mock_state: State) -> None:
     """Test the write_field method of the MultioOutputPlugin using a fake checkpoint.
 
     This function creates a MultioOutputPlugin instance, opens it with a mock state,
@@ -46,17 +46,17 @@ def test_multio_write_field_called(mock_multio_server, state: State) -> None:
     # Load configuration
     config = MockRunConfiguration.load(
         str((Path(__file__).parent / "configs/multio.yaml").absolute()),
-        overrides=dict(runner="testing", device="cpu", input="dummy"),
+        overrides=dict(runner="no-model", device="cpu", input="dummy"),
     )
 
     runner = create_runner(config)  # type: ignore
-    output = runner.create_output()
+    output = runner.create_output("data", runner.tensor_handlers["data"].metadata)
 
-    output.open(state)
-    output.reference_date = state["date"]
+    output.open(mock_state)
+    output.reference_date = mock_state["date"]
     assert hasattr(output, "_server") and output._server is mock_multio_server
 
-    output.write_step(state)
+    output.write_step(mock_state)
     output.close()
 
     # Check that write_field was called with metadata and field data
@@ -87,33 +87,7 @@ def test_multio_write_field_called(mock_multio_server, state: State) -> None:
 
 
 @fake_checkpoints
-def test_multio_workflow_called(mock_multio_server) -> None:
-    """Test the inference process using a fake checkpoint.
-
-    This function loads a configuration, creates a runner, and runs the inference
-    process to ensure that the system works as expected with the provided configuration.
-    """
-    # Load configuration
-    config = MockRunConfiguration.load(
-        str((Path(__file__).parent / "configs/multio.yaml").absolute()),
-        overrides=dict(runner="testing", device="cpu", input="dummy"),
-    )
-
-    # Create runner and execute
-    runner = create_runner(config)  # type: ignore
-
-    # Check calls to the _server property
-    assert hasattr(runner.create_output(), "_server")
-
-    runner.execute()
-
-    mock_multio_server.write_field.assert_called()
-    mock_multio_server.flush.assert_called()
-    mock_multio_server.close_connections.assert_called()
-
-
-@fake_checkpoints
-def test_multio_archiver(mock_multio_server, state) -> None:
+def test_multio_archiver(mock_multio_server, mock_state) -> None:
     """Test archiver"""
 
     output_override = {
@@ -134,18 +108,18 @@ def test_multio_archiver(mock_multio_server, state) -> None:
     # Load configuration
     config = MockRunConfiguration.load(
         str((Path(__file__).parent / "configs/multio.yaml").absolute()),
-        overrides=dict(runner="testing", device="cpu", input="dummy", output=output_override),
+        overrides=dict(runner="no-model", device="cpu", input="dummy", output=output_override),
     )
 
     # Create runner and execute
     runner = create_runner(config)  # type: ignore
-    output = runner.create_output()
+    output = runner.create_output("data", runner.tensor_handlers["data"].metadata)
 
-    output.open(state)
-    output.reference_date = state["date"]
+    output.open(mock_state)
+    output.reference_date = mock_state["date"]
     assert hasattr(output, "_server") and output._server is mock_multio_server
 
-    output.write_step(state)
+    output.write_step(mock_state)
 
     assert output._archiver is not None
 

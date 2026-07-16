@@ -8,16 +8,16 @@
 # nor does it submit to any jurisdiction.
 
 import base64
-import io
 import logging
 import os
 import zlib
 from typing import Any
 
 import earthkit.data as ekd
-import mir
 from anemoi.inference.grib.templates import IndexTemplateProvider
 from anemoi.inference.grib.templates import TemplateProvider
+
+from ..regrid import regrid as ekr
 
 LOG = logging.getLogger(__name__)
 
@@ -49,36 +49,6 @@ class MirTemplatesProvider(TemplateProvider):
 
         self._base_template_provider = BaseTemplateProvider(manager, path)
 
-    def _regrid_with_mir(self, base_template: bytes, grid: str, area: str | None = None) -> bytes:
-        """Regrid the base template using mir.
-
-        Parameters
-        ----------
-        base_template : bytes
-            Base grib handle template as bytes to regrid.
-        grid : str
-            Target grid for regridding.
-        area : Optional[str], optional
-            Target area for regridding, by default None
-
-        Returns
-        -------
-        bytes
-            Grib handle in bytes regridded.
-        """
-
-        mir_input = mir.GribMemoryInput(base_template)
-        job_args = {"grid": grid}
-        if area:
-            job_args["area"] = area
-
-        job = mir.Job(**job_args)
-        buffer = io.BytesIO()
-
-        job.execute(mir_input, buffer)
-
-        return buffer.getvalue()
-
     def template(self, variable: str, lookup: dict[str, Any], **kwargs) -> ekd.Field:
         """Get the template for the given variable and lookup.
 
@@ -101,21 +71,8 @@ class MirTemplatesProvider(TemplateProvider):
         grid = _lookup.pop("grid")
         area = _lookup.pop("area", None)
 
-        if isinstance(grid, (list, tuple)):
-            grid = "/".join(map(str, grid))
-        if isinstance(area, (list, tuple)):
-            area = "/".join(map(str, area))
-
-        if isinstance(grid, (int, float)):
-            grid = f"{grid}/{grid}"  # Convert single value to a grid string, introduced by choice in anemoi-inference.
-
-        base_template = self._base_template_provider.template(variable, lookup)
+        base_template = ekd.from_source("memory", self._base_template_provider.template(variable, lookup))
         if base_template is None:
             raise ValueError(f"Base template not found for variable {variable} with lookup {lookup}")
 
-        regridded_template = self._regrid_with_mir(base_template, str(grid), area)
-
-        if len(regridded_template) == 0:
-            raise ValueError(f"Regridded template is empty for variable {variable} with lookup {lookup}")
-
-        return ekd.from_source("memory", regridded_template)[0]  # type: ignore
+        return ekr.regrid(base_template, grid=grid, area=area, verbose=False)[0]

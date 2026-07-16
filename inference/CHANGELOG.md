@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.5.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.4.0...inference-0.5.0) (2026-07-03)
+
+
+### Features
+
+* **inference/multio:** Enable parallel output ([#95](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/95)) ([30595e3](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/30595e37fe1f7a248b5fc179a4419a69d7f8335f))
+
+## [0.4.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.3.1...inference-0.4.0) (2026-06-23)
+
+
+### Features
+
+* **inference/multio:** implement hindcast date logic in MultioOutputPlugin ([#92](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/92)) ([c535677](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/c53567719d798c220bb6112ae88c85c0e0bcdcc0))
+
+## [0.3.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.3.0...inference-0.3.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **inference-polytope:** patch request reference in metadata calls ([#89](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/89)) ([ea64936](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ea64936a3dba62146fdb37a66c419ea3e52f4d65))
+
+## [0.3.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.3...inference-0.3.0) (2026-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* Update all plugins to work with multi-dataset in inference ([#83](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/83))
+
+### Features
+
+* **regrid:** add named grid support with lat/lon regridding ([#87](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/87)) ([48229a8](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/48229a8a66d02bcc62d5150920b32cc5b1a7a61f))
+* **regrid:** enhance checkpoint grid handling in regridding processor ([#88](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/88)) ([d936ff4](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d936ff4b3eff80f5971f4f3baf9462d7460d44b4))
+* Update all plugins to work with multi-dataset in inference ([#83](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/83)) ([ff0be3d](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ff0be3d0cbb13851e600b3dc7a099400db7755f9))
+
+## [0.2.3](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.2...inference-0.2.3) (2026-04-30)
+
+
+### Bug Fixes
+
+* **polytope:** Add missing keys with defaults ([#84](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/84)) ([5a449be](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/5a449be54113fa81731293890e32b5b4f7d4acba))
+
 ## [0.2.2](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.2.1...inference-0.2.2) (2026-03-18)
 
 
