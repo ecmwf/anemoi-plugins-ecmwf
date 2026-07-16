@@ -14,13 +14,6 @@ forcings (e.g. insolation, local solar time) at their initial values for
 the entire rollout.  This is useful when combined with mid-processors that
 remove the climatological drift each step — for example ``subtract_tendency``
 — so that only the anomaly response of a perturbation is retained.
-
-Register via the ``anemoi.inference.runners`` entry-point group:
-
-.. code-block:: toml
-
-    [project.entry-points."anemoi.inference.runners"]
-    steady-state = "anemoi.plugins.ecmwf.inference.dynamics.steady_state:SteadyStateRunner"
 """
 
 import logging
