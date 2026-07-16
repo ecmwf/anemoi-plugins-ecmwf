@@ -79,7 +79,7 @@ class RegressionPerturbationPlugin(Processor):
     """Compute regression-based initial-condition perturbations on-the-fly.
 
     Implements the Hakim & Masanam (2023) climatological regression method:
-    data samples are loaded, a localized linear regression is computed against
+    data samples are loaded, a localised linear regression is computed against
     a reference variable at a chosen point, and the resulting perturbation
     field is applied to the model initial conditions.
 
