@@ -101,6 +101,7 @@ class TestSubtractTendency:
         context = cast(Context, MagicMock())
         return SubtractTendencyPlugin(
             context=context,
+            metadata=MagicMock(),
             tend_pl_path=tendency_files["pl_path"],
             tend_sfc_path=tendency_files["sfc_path"],
             param_pl=tendency_files["param_pl"],

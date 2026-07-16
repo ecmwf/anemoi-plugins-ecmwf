@@ -93,6 +93,7 @@ def _make_regression_plugin(mocker, **overrides):
     context.checkpoint.grid = "O96"
     defaults = dict(
         context=context,
+        metadata=MagicMock(),
         season="JAS",
         data_path="/nonexistent/",
         data_grid="N320",
