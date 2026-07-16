@@ -17,6 +17,7 @@ import earthkit.data as ekd
 import earthkit.regrid as ekr
 import numpy as np
 from anemoi.inference.processor import Processor
+from anemoi.transform.constants import R_earth_meter
 from scipy.stats import linregress
 
 from ._operate_on_fields import apply_function_to_fields
@@ -38,7 +39,7 @@ def _haversine(lon1, lat1, lon2, lat2):
     dlon = lon2 - lon1
     dlat = lat2 - lat1
     a = np.sin(dlat / 2.0) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2.0) ** 2
-    return 6367.0 * 2 * np.arcsin(np.sqrt(a))
+    return (R_earth_meter / 1000.0) * 2 * np.arcsin(np.sqrt(a))
 
 
 def _gaspari_cohn(lat_vec, lon_vec, bplat, bplon, locrad):
