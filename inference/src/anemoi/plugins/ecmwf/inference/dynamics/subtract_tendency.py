@@ -97,7 +97,7 @@ class SubtractTendencyPlugin(Processor):
 
         # --- Pressure levels ---
         tend_pl = ekd.from_source("file", self._tend_pl_path).order_by(param=self._param_pl, level=self._level_pl)
-        tend_pl_values = tend_pl.values  # shape (n_fields, n_gridpoints)
+        tend_pl_values = tend_pl.to_numpy()  # shape (n_fields, n_gridpoints)
 
         idx = 0
         for param in self._param_pl:
