@@ -13,12 +13,9 @@ from types import SimpleNamespace
 
 import numpy as np
 import torch
-
 from anemoi.inference.tensors import TensorHandler
-
 from anemoi.plugins.ecmwf.inference.dynamics.steady_state import SteadyStateRunner
 from anemoi.plugins.ecmwf.inference.dynamics.steady_state import SteadyStateTensorHandler
-
 
 # ---------------------------------------------------------------------------
 # Helpers
