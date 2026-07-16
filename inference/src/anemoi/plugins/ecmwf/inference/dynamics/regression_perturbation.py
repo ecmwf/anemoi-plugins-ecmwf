@@ -42,7 +42,7 @@ def _haversine(lon1, lat1, lon2, lat2):
 
 
 def _gaspari_cohn(lat_vec, lon_vec, bplat, bplon, locrad):
-    """Compute Gaspari-Cohn localization function on the grid.
+    """Compute Gaspari-Cohn localisation function on the grid.
 
     Returns a 1-D array (same length as lat_vec) with values in [0, 1].
     """
