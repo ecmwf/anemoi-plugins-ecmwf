@@ -43,13 +43,14 @@ class FDBPlusPreProcessor(Processor):
         metadata: Metadata,
         *,
         target_grid: str,
+        spectral_backend: str | None = None,
     ) -> None:
         super().__init__(context, metadata)
         self.target_grid = target_grid
 
         self.regrid_processor = MIRRegrid(grid=self.target_grid, packing="simple", accuracy=16, method="array")
-        self.vordiv_to_uv_processor = VordivToUV(transform_grid=self.target_grid)
-        self.sh_to_gg_processor = ShToGg(transform_grid=self.target_grid)
+        self.vordiv_to_uv_processor = VordivToUV(transform_grid=self.target_grid, backend=spectral_backend)
+        self.sh_to_gg_processor = ShToGg(transform_grid=self.target_grid, backend=spectral_backend)
 
     def process(self, state: State) -> Any:
         fields = state["fields"]

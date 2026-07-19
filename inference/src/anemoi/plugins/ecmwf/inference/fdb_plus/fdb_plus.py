@@ -31,6 +31,7 @@ class FDBPlusInput(FDBInput):
         metadata: Metadata,
         *,
         grid: str | None = None,
+        spectral_backend: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialise the FDBPlusInput.
@@ -54,5 +55,6 @@ class FDBPlusInput(FDBInput):
                 context=context,
                 metadata=metadata,
                 target_grid=target_grid,
+                spectral_backend=spectral_backend,
             ),
         )
