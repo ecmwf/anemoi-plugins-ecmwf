@@ -89,17 +89,24 @@ def _resolve_input_gridspec(field) -> dict | None:
     in which case it cannot go through the array interface.
 
     The gridspec derived from GRIB metadata contains an ``area`` rounded to
-    6 decimals; at high resolutions (e.g. O1280) this rounding makes MIR
-    crop grid rows, so its point count no longer matches the values array
-    (``RawInput: values size equals iterator count`` assertion). For global
-    fields (ecCodes computed key ``global``) the area is redundant, so it
-    is dropped and the grid treated as global.
+    6 decimals; this rounding makes MIR compute a point count that differs
+    from the values array length (``RawInput: values size equals iterator
+    count`` assertion or Bus error). For reduced Gaussian grids the area is
+    always redundant (they are inherently global), so it is unconditionally
+    stripped. For other grids, it is dropped when the ecCodes computed key
+    ``global`` is true.
     """
     gridspec = field.metadata().gridspec
     if gridspec is None:
         return None
     gridspec = dict(gridspec)
-    if field.metadata("global", default=0) == 1:
+
+    # Reduced Gaussian grids (O, N, F prefixed) are always global; the area
+    # key from GRIB metadata is rounded and causes MIR to miscount points.
+    grid_name = str(gridspec.get("grid", ""))
+    is_reduced_gg = grid_name and grid_name[0] in ("O", "N", "F") and grid_name[1:].isdigit()
+
+    if is_reduced_gg or int(field.metadata("global", default=0)) == 1:
         gridspec.pop("area", None)
     return gridspec
 
