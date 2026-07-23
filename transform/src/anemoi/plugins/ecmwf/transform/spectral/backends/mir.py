@@ -15,6 +15,7 @@ import logging
 import earthkit.data as ekd
 import numpy as np
 
+from . import backend_registry
 from .base import CalculationBackend
 
 LOG = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
+@backend_registry.register("ectrans4py")
 class mir(CalculationBackend):
     """Backend using MIR (Meteorological Interpolation and Regridding) library.
 
@@ -82,36 +84,6 @@ class mir(CalculationBackend):
             return ec.codes_get_message(sample)
         finally:
             ec.codes_release(sample)
-
-    def _transform_via_mir(self, grib_bytes: bytes, vod2uv: bool = False) -> io.BytesIO:
-        """Transform GRIB spectral field(s) to gridpoint using MIR.
-
-        Uses BytesIO buffers directly with job.execute() which correctly
-        handles multiple GRIB messages in a single pass.
-
-        Parameters
-        ----------
-        grib_bytes : bytes
-            Concatenated GRIB2 message(s).
-        vod2uv : bool
-            If True, add vod2uv=1 to the MIR job (input must be vo/d pairs).
-
-        Returns
-        -------
-        io.BytesIO
-            Output buffer containing regridded GRIB messages.
-        """
-        import mir
-
-        input_buffer = io.BytesIO(grib_bytes)
-        output_buffer = io.BytesIO()
-        job = mir.Job()
-        job.set("grid", self.grid)
-        if vod2uv:
-            job.set("vod2uv", "1")
-        job.execute(input_buffer, output_buffer)
-        output_buffer.seek(0)
-        return output_buffer
 
     def vordiv_to_uv(self, vorticity: np.ndarray, divergence: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Spectral vorticity/divergence to grid-point u/v via MIR.
@@ -207,7 +179,13 @@ class mir(CalculationBackend):
         grib_bytes = b"".join(messages)
 
         # Transform all fields in one MIR pass
-        output_buffer = self._transform_via_mir(grib_bytes)
+        import mir as mir_lib
+
+        input_buffer = io.BytesIO(grib_bytes)
+        output_buffer = io.BytesIO()
+        job = mir_lib.Job()
+        job.set("grid", self.grid)
+        job.execute(input_buffer, output_buffer)
 
         # Decode output gridpoint fields
         output_bytes = output_buffer.getvalue()
