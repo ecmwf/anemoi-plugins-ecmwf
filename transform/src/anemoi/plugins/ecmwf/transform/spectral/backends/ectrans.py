@@ -67,7 +67,7 @@ class _EctransRuntime:
             omp_num_threads=cores,
         )
         self.lib.mpl_init4py()
-        self.lib.setup_trans0_4py(1, 1, 1, True, len(self._resolutions) + 1)
+        self.lib.setup_trans0_4py(1, 1, 1, True, len(self._resolutions) + 1, True)
 
         self._initialised = True
 
