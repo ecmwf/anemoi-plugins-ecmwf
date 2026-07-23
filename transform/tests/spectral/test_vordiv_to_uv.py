@@ -461,32 +461,15 @@ class TestPatchDataRequest:
 # Integration: VordivToUV forward_transform with real spectral backend
 # ============================================================================
 
-
-def _available_backend_names():
-    """Return list of backend names that are currently available."""
-    available = []
-    for name, cls in BACKENDS.items():
-        ok, _ = cls.available()
-        if ok:
-            available.append(name)
-    return available
+# backend_name fixture is provided by tests/spectral/conftest.py.
 
 
-def _any_spectral_backend_available():
-    """Check if any spectral backend is available."""
-    return len(_available_backend_names()) > 0
-
-
-@pytest.fixture(params=_available_backend_names() or ["none_available"], ids=lambda x: x)
-def backend_name(request):
-    """Parametrised fixture yielding each available backend name."""
-    if request.param == "none_available":
-        pytest.skip("No spectral backend available")
-    return request.param
+def _any_backend_available():
+    return any(ok for ok, _ in (cls.available() for cls in BACKENDS.values()))
 
 
 @pytest.mark.skipif(
-    not _any_spectral_backend_available(),
+    not _any_backend_available(),
     reason="No spectral backend (ctrans4py/ectrans4py) available",
 )
 class TestVordivToUVIntegration:
