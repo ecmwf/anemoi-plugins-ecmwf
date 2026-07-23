@@ -11,23 +11,13 @@ from __future__ import annotations
 
 import logging
 
+from anemoi.utils.registry import Registry
+
 from .base import CalculationBackend
-from .ctrans import ctrans4py
-from .ectrans import ectrans4py
-from .mir import mir
 
 LOG = logging.getLogger(__name__)
 
-
-# ---------------------------------------------------------------------------
-# Registry
-# ---------------------------------------------------------------------------
-
-BACKENDS: dict[str, type[CalculationBackend]] = {
-    "ctrans4py": ctrans4py,
-    "ectrans4py": ectrans4py,
-    "mir": mir,
-}
+backend_registry = Registry[CalculationBackend](__name__)
 
 
 def get_backend(order: list[str] | None = None) -> type[CalculationBackend]:
@@ -49,11 +39,11 @@ def get_backend(order: list[str] | None = None) -> type[CalculationBackend]:
         The first available backend class.
     """
     if order is None:
-        order = list(BACKENDS.keys())
+        order = list(backend_registry.factories.keys())
 
     error_messages = []
     for name in order:
-        cls = BACKENDS.get(name)
+        cls = backend_registry.lookup(name)
         if cls is None:
             error_messages.append(f"Backend {name} not found")
             continue
