@@ -13,6 +13,7 @@ import logging
 
 import numpy as np
 
+from . import backend_registry
 from .base import CalculationBackend
 
 LOG = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
+@backend_registry.register("ctrans4py")
 class ctrans4py(CalculationBackend):
     """Backend using ctrans4py (C spectral-transform library via transi ABI).
 

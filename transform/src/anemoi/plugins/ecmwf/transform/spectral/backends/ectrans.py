@@ -13,6 +13,7 @@ import logging
 
 import numpy as np
 
+from . import backend_registry
 from .base import CalculationBackend
 
 LOG = logging.getLogger(__name__)
@@ -94,6 +95,7 @@ class _EctransRuntime:
         return info
 
 
+@backend_registry.register("ectrans4py")
 class ectrans4py(CalculationBackend):
     """Backend using ectrans4py (serial via mpi_serial stub)."""
 
