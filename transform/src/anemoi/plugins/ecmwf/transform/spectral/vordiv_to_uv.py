@@ -88,13 +88,14 @@ class VordivToUV(MatchingFieldsFilter):
         self.v_component_of_wind = v_component_of_wind
 
         self.transform_grid = transform_grid
+        self.target_grid = target_grid
         self.backend = backend
         self.spectral_grid = spectral_grid
         self.transform_grid = transform_grid
 
         super().__init__()
 
-    def _resolve_forward_grid(self, vorticity: ekd.Field) -> tuple[str, int]:
+    def _resolve_forward_grid(self, vorticity: ekd.Field | ekd.FieldList) -> tuple[str, int]:
         """Resolve the grid and truncation for the forward transform."""
         from .utils import grid_to_trunc
 
@@ -107,7 +108,11 @@ class VordivToUV(MatchingFieldsFilter):
 
         from .utils import trunc_from_nspec
 
-        nspec = vorticity.to_numpy().shape[-1]
+        nspec = (
+            vorticity[0].to_numpy().shape[-1]
+            if isinstance(vorticity, ekd.FieldList)
+            else vorticity.to_numpy().shape[-1]
+        )
         trunc = trunc_from_nspec(nspec)
         return f"O{trunc + 1}", trunc
 
