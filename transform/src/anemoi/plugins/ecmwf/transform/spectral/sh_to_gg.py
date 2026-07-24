@@ -33,6 +33,7 @@ class ShToGg(Filter):
         *,
         target_grid: str | None = None,
         transform_grid: str | None = None,
+        backend: str | None = None,
     ):
         """Initialise the ShToGg filter.
 
@@ -51,9 +52,12 @@ class ShToGg(Filter):
         transform_grid: str, optional
             Pre-truncate spectral fields to this grid's resolution before
             transforming. Also determines the output grid.
+        backend: str, optional
+            Backend to use for the transform.  If None, the first available backend is used.
         """
         self.target_grid = target_grid
         self.transform_grid = transform_grid
+        self.backend = backend
 
     def _resolve_grid(self, nspec: int) -> tuple[str, int]:
         from .utils import grid_to_trunc
@@ -80,7 +84,7 @@ class ShToGg(Filter):
         data = truncate_spectral(data, trunc)
         LOG.debug("sh -> gg: transforming %d fields at T%d (%s)", len(fields), trunc, grid)
 
-        backend = make_backend(grid, trunc)
+        backend = make_backend(grid, trunc, order=[self.backend] if self.backend is not None else None)
         gridpoint = backend.sh_to_gg(data)
 
         return new_fieldlist_from_list([new_field_from_numpy(gridpoint[i], template=f) for i, f in enumerate(fields)])

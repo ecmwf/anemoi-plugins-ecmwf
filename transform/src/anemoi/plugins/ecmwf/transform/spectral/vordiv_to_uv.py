@@ -38,6 +38,7 @@ class VordivToUV(MatchingFieldsFilter):
         target_grid: str | None = None,
         spectral_grid: str | None = None,
         transform_grid: str | None = None,
+        backend: str | None = None,
     ):
         """Initialise the VordivToUV filter.
 
@@ -78,19 +79,23 @@ class VordivToUV(MatchingFieldsFilter):
             Pre-truncate spectral fields to this grid's resolution before
             transforming.  Reduces setup cost for high-resolution inputs.
             Also determines the output grid for the forward transform.
+        backend: str, optional
+            Backend to use for the transform.  If None, the first available backend is used.
         """
         self.vorticity = vorticity
         self.divergence = divergence
         self.u_component_of_wind = u_component_of_wind
         self.v_component_of_wind = v_component_of_wind
 
+        self.transform_grid = transform_grid
         self.target_grid = target_grid
+        self.backend = backend
         self.spectral_grid = spectral_grid
         self.transform_grid = transform_grid
 
         super().__init__()
 
-    def _resolve_forward_grid(self, vorticity: ekd.Field) -> tuple[str, int]:
+    def _resolve_forward_grid(self, vorticity: ekd.Field | ekd.FieldList) -> tuple[str, int]:
         """Resolve the grid and truncation for the forward transform."""
         from .utils import grid_to_trunc
 
@@ -103,7 +108,11 @@ class VordivToUV(MatchingFieldsFilter):
 
         from .utils import trunc_from_nspec
 
-        nspec = vorticity.to_numpy().shape[-1]
+        nspec = (
+            vorticity[0].to_numpy().shape[-1]
+            if isinstance(vorticity, ekd.FieldList)
+            else vorticity.to_numpy().shape[-1]
+        )
         trunc = trunc_from_nspec(nspec)
         return f"O{trunc + 1}", trunc
 
@@ -124,7 +133,7 @@ class VordivToUV(MatchingFieldsFilter):
     ) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
 
         grid, trunc = self._resolve_forward_grid(vorticity)
-        backend = make_backend(grid, trunc)
+        backend = make_backend(grid, trunc, order=[self.backend] if self.backend is not None else None)
 
         vor_np = fields_to_numpy_parallel(vorticity)
         div_np = fields_to_numpy_parallel(divergence)
@@ -151,7 +160,7 @@ class VordivToUV(MatchingFieldsFilter):
         self, u_component_of_wind: ekd.Field, v_component_of_wind: ekd.Field
     ) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
         grid, trunc = self._resolve_backward_grid()
-        backend = make_backend(grid, trunc)
+        backend = make_backend(grid, trunc, order=[self.backend] if self.backend is not None else None)
         vor, div = backend.uv_to_vordiv(u_component_of_wind.to_numpy(), v_component_of_wind.to_numpy())
 
         for i, f in enumerate(u_component_of_wind):  # type: ignore[reportArgumentType]
