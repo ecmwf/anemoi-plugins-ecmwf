@@ -43,7 +43,7 @@ def get_backend(order: list[str] | None = None) -> type[CalculationBackend]:
 
     error_messages = []
     for name in order:
-        cls = backend_registry.lookup(name)
+        cls = backend_registry.lookup(name, return_none=True)
         if cls is None:
             error_messages.append(f"Backend {name} not found")
             continue
