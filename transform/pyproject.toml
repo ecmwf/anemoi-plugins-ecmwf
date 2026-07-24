@@ -39,7 +39,10 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "anemoi-transform",
+  "earthkit-data",
 ]
+
+optional-dependencies.mir = [ "mir-python>=1.27.10.5" ]
 
 # optional-dependencies.all = [ "" ]
 
@@ -51,8 +54,11 @@ optional-dependencies.tests = [
 ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
 
-## Entry Points
+entry-points."anemoi.transform.filters.fields".mir_regrid = "anemoi.plugins.ecmwf.transform.regrid:MIRRegrid"
+entry-points."anemoi.transform.filters.fields".sh_to_gg = "anemoi.plugins.ecmwf.transform.spectral:ShToGg"
+entry-points."anemoi.transform.filters.fields".uv_to_vordiv = "anemoi.plugins.ecmwf.transform.spectral:UVToVordiv"
 entry-points."anemoi.transform.filters.fields".virtual_temperature = "anemoi.plugins.ecmwf.transform.virtual_temperature:VirtualTemperature"
+entry-points."anemoi.transform.filters.fields".vordiv_to_uv = "anemoi.plugins.ecmwf.transform.spectral:VordivToUV"
 
 [dependency-groups]
 dev = [
