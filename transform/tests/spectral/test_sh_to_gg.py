@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from anemoi.plugins.ecmwf.transform.spectral.backends import BACKENDS
+from anemoi.plugins.ecmwf.transform.spectral.backends import backend_registry
 from anemoi.plugins.ecmwf.transform.spectral.utils import grid_to_pl
 from anemoi.plugins.ecmwf.transform.spectral.utils import nspec_from_trunc
 from anemoi.plugins.ecmwf.transform.spectral.utils import truncate_spectral
@@ -20,7 +20,7 @@ from anemoi.plugins.ecmwf.transform.spectral.utils import truncate_spectral
 
 
 def _any_backend_available():
-    return any(ok for ok, _ in (cls.available() for cls in BACKENDS.values()))
+    return any(ok for ok, _ in (cls.available() for cls in backend_registry.factories.values()))
 
 
 @pytest.mark.skipif(
