@@ -14,8 +14,8 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from anemoi.plugins.ecmwf.transform.spectral.backends import BACKENDS
 from anemoi.plugins.ecmwf.transform.spectral.backends import CalculationBackend
+from anemoi.plugins.ecmwf.transform.spectral.backends import backend_registry
 from anemoi.plugins.ecmwf.transform.spectral.backends import get_backend
 from anemoi.plugins.ecmwf.transform.spectral.utils import _classic_reduced_pl
 from anemoi.plugins.ecmwf.transform.spectral.utils import _truncation_indices
@@ -218,15 +218,15 @@ class TestClassicReducedPl:
 
 class TestBackendRegistry:
     def test_backends_contains_expected_keys(self):
-        assert "ctrans4py" in BACKENDS
-        assert "ectrans4py" in BACKENDS
+        assert "ctrans4py" in backend_registry.factories
+        assert "ectrans4py" in backend_registry.factories
 
     def test_all_backends_are_subclasses(self):
-        for name, cls in BACKENDS.items():
+        for name, cls in backend_registry.factories.items():
             assert issubclass(cls, CalculationBackend), f"{name} is not a CalculationBackend"
 
     def test_get_backend_no_available_raises(self):
-        with patch.dict(BACKENDS, {}, clear=True):
+        with patch.dict(backend_registry.factories, {}, clear=True):
             with pytest.raises(RuntimeError, match="No available backend found"):
                 get_backend()
 
@@ -242,7 +242,7 @@ class TestBackendRegistry:
             def uv_to_vordiv(self, u_component_of_wind, v_component_of_wind):
                 return u_component_of_wind, v_component_of_wind
 
-        with patch.dict(BACKENDS, {"fake": FakeBackend}, clear=True):
+        with patch.dict(backend_registry.factories, {"fake": FakeBackend}, clear=True):
             result = get_backend()
             assert result is FakeBackend
 
@@ -270,7 +270,7 @@ class TestBackendRegistry:
                 return u_component_of_wind, v_component_of_wind
 
         with patch.dict(
-            BACKENDS,
+            backend_registry.factories,
             {"bad": UnavailableBackend, "good": AvailableBackend},
             clear=True,
         ):
@@ -301,7 +301,7 @@ class TestBackendRegistry:
                 pass
 
         with patch.dict(
-            BACKENDS,
+            backend_registry.factories,
             {"a": BackendA, "b": BackendB},
             clear=True,
         ):
@@ -322,7 +322,7 @@ class TestBackendRegistry:
             def uv_to_vordiv(self, u_component_of_wind, v_component_of_wind):
                 pass
 
-        with patch.dict(BACKENDS, {"good": GoodBackend}, clear=True):
+        with patch.dict(backend_registry.factories, {"good": GoodBackend}, clear=True):
             result = get_backend(order=["nonexistent", "good"])
             assert result is GoodBackend
 
@@ -465,7 +465,7 @@ class TestPatchDataRequest:
 
 
 def _any_backend_available():
-    return any(ok for ok, _ in (cls.available() for cls in BACKENDS.values()))
+    return any(ok for ok, _ in (cls.available() for cls in backend_registry.factories.values()))
 
 
 @pytest.mark.skipif(

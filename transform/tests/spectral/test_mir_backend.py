@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from anemoi.plugins.ecmwf.transform.spectral.backends import BACKENDS
+from anemoi.plugins.ecmwf.transform.spectral.backends import backend_registry
 from anemoi.plugins.ecmwf.transform.spectral.utils import grid_to_pl
 from anemoi.plugins.ecmwf.transform.spectral.utils import nspec_from_trunc
 
@@ -23,19 +23,15 @@ pytest.importorskip("eccodes", reason="eccodes not available")
 class TestMIRBackend:
     """Test MIR backend for spectral transforms."""
 
-    def test_mir_backend_registered(self):
-        """MIR backend is in the registry."""
-        assert "mir" in BACKENDS
-
     def test_mir_backend_available(self):
         """MIR backend reports as available."""
-        mir_backend = BACKENDS["mir"]
+        mir_backend = backend_registry.factories["mir"]
         available, msg = mir_backend.available()
         assert available, f"MIR should be available: {msg}"
 
     def test_mir_backend_instantiation(self):
         """MIR backend can be instantiated."""
-        mir_backend = BACKENDS["mir"]
+        mir_backend = backend_registry.factories["mir"]
         trunc = 21
         kloen = grid_to_pl("O22")
         backend = mir_backend(kloen, trunc, grid="O22")
@@ -44,7 +40,7 @@ class TestMIRBackend:
 
     def test_mir_sh_to_gg_single_field(self):
         """MIR backend transforms single spectral field to gridpoint."""
-        mir_backend = BACKENDS["mir"]
+        mir_backend = backend_registry.factories["mir"]
         trunc = 21
         kloen = grid_to_pl("O22")
         backend = mir_backend(kloen, trunc, grid="O22")
@@ -69,7 +65,7 @@ class TestMIRBackend:
 
     def test_mir_sh_to_gg_multiple_fields(self):
         """MIR backend transforms multiple spectral fields to gridpoint."""
-        mir_backend = BACKENDS["mir"]
+        mir_backend = backend_registry.factories["mir"]
         trunc = 21
         kloen = grid_to_pl("O22")
         backend = mir_backend(kloen, trunc, grid="O22")
@@ -94,7 +90,7 @@ class TestMIRBackend:
 
     def test_mir_vordiv_to_uv_produces_valid_output(self):
         """MIR backend vordiv_to_uv produces finite gridpoint u/v."""
-        mir_backend = BACKENDS["mir"]
+        mir_backend = backend_registry.factories["mir"]
         trunc = 21
         kloen = grid_to_pl("O22")
         backend = mir_backend(kloen, trunc, grid="O22")
@@ -116,7 +112,7 @@ class TestMIRBackend:
 
     def test_mir_uv_to_vordiv_not_implemented(self):
         """MIR backend raises NotImplementedError for uv_to_vordiv."""
-        mir_backend = BACKENDS["mir"]
+        mir_backend = backend_registry.factories["mir"]
         trunc = 21
         kloen = grid_to_pl("O22")
         backend = mir_backend(kloen, trunc, grid="O22")
