@@ -10,13 +10,13 @@
 from __future__ import annotations
 
 import pytest
-from anemoi.plugins.ecmwf.transform.spectral.backends import BACKENDS
+from anemoi.plugins.ecmwf.transform.spectral.backends import backend_registry
 
 
 def _available_backend_names():
     """Return list of backend names that are currently available."""
     available = []
-    for name, cls in BACKENDS.items():
+    for name, cls in backend_registry.factories.items():
         ok, _ = cls.available()
         if ok:
             available.append(name)

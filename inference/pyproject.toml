@@ -42,9 +42,9 @@ dependencies = [
 ]
 
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[mir,multio,opendata,polytope]" ]
-optional-dependencies.dynamics = [ "earthkit-regrid", "pillow" ]
-optional-dependencies.fdbplus = [ "anemoi-plugins-ecmwf-inference[regrid]", "anemoi-plugins-ecmwf-transform" ]
-optional-dependencies.mir = [ "anemoi-plugins-ecmwf-transform[mir]", "mir-python>=1.27.10.5" ]
+optional-dependencies.dynamics = [ "anemoi-transform", "earthkit-regrid", "pillow", "scipy", "torch" ]
+optional-dependencies.fdbplus = [ "anemoi-plugins-ecmwf-transform[mir]" ]
+optional-dependencies.mir = [ "anemoi-plugins-ecmwf-transform[mir]" ]
 optional-dependencies.multio = [ "pymultio[all]>=2.7.1.5" ]
 optional-dependencies.opendata = [
   "anemoi-plugins-ecmwf-inference[regrid]",
@@ -68,13 +68,16 @@ entry-points."anemoi.inference.grib.templates".mir = "anemoi.plugins.ecmwf.infer
 entry-points."anemoi.inference.inputs".fdbplus = "anemoi.plugins.ecmwf.inference.fdb_plus:FDBPlusInput"
 entry-points."anemoi.inference.inputs".opendata = "anemoi.plugins.ecmwf.inference.opendata.opendata:OpenDataInputPlugin"
 entry-points."anemoi.inference.inputs".polytope = "anemoi.plugins.ecmwf.inference.polytope.polytope:PolytopeInputPlugin"
+entry-points."anemoi.inference.mid_processors"."subtract_tendency" = "anemoi.plugins.ecmwf.inference.dynamics:SubtractTendencyPlugin"
 entry-points."anemoi.inference.outputs"."multio" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioDisambiguousOutputPlugin"
 entry-points."anemoi.inference.outputs"."multio.fdb" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputFDBPlugin"
 entry-points."anemoi.inference.outputs"."multio.grib" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputGribPlugin"
 entry-points."anemoi.inference.outputs"."multio.plan" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputPlanPlugin"
 entry-points."anemoi.inference.pre_processors"."array_overlay" = "anemoi.plugins.ecmwf.inference.dynamics:ArrayOverlayPlugin"
 entry-points."anemoi.inference.pre_processors"."modify_value" = "anemoi.plugins.ecmwf.inference.dynamics:ModifyValuePlugin"
+entry-points."anemoi.inference.pre_processors"."regression-perturbation" = "anemoi.plugins.ecmwf.inference.dynamics:RegressionPerturbationPlugin"
 entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.inference.regrid:RegridPreprocessor"
+entry-points."anemoi.inference.runners"."steady-state" = "anemoi.plugins.ecmwf.inference.dynamics.steady_state:SteadyStateRunner"
 
 [dependency-groups]
 dev = [
@@ -82,6 +85,7 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
+"anemoi.plugins.ecmwf.inference" = [ "py.typed" ]
 "anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
 "anemoi.plugins.ecmwf.inference.opendata" = [ "*.yaml" ]
 "anemoi.plugins.ecmwf.inference.regrid.named" = [ "*/*.npz" ]

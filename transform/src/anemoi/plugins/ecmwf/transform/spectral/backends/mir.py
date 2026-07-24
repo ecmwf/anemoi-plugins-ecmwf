@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-@backend_registry.register("ectrans4py")
+@backend_registry.register("mir")
 class mir(CalculationBackend):
     """Backend using MIR (Meteorological Interpolation and Regridding) library.
 

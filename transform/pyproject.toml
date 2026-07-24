@@ -65,6 +65,9 @@ dev = [
   "anemoi-plugins-ecmwf-transform[tests]",
 ]
 
+[tool.setuptools.package-data]
+"anemoi.plugins.ecmwf.transform" = [ "py.typed" ]
+
 [tool.setuptools_scm]
 root = ".."
 version_scheme = "post-release"
