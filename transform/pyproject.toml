@@ -42,9 +42,9 @@ dependencies = [
   "earthkit-data",
 ]
 
-optional-dependencies.mir = [ "mir-python>=1.27.10.5" ]
+optional-dependencies.all = [ "anemoi-plugins-ecmwf-transform[mir]" ]
 
-# optional-dependencies.all = [ "" ]
+optional-dependencies.mir = [ "mir-python>=1.27.10.5" ]
 
 optional-dependencies.tests = [
   "anemoi-plugins-ecmwf-transform[all]",
