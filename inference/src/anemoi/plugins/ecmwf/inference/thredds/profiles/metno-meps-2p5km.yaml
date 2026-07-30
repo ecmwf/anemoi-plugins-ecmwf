@@ -1,0 +1,68 @@
+name: metno-meps-2p5km
+entries:
+  - url: https://thredds.met.no/thredds/dodsC/meps25epsarchive/{date:%Y}/{date:%m}/{date:%d}/meps_det_sfc_{date:%Y%m%d}T{date:%H}Z.ncml
+    params:
+      - air_temperature_2m
+      - air_pressure_at_sea_level
+      - specific_humidity_2m
+      - x_wind_10m
+      - y_wind_10m
+      - SFX_TS
+      - surface_air_pressure
+      - lwe_thickness_of_atmosphere_mass_content_of_water_vapor
+      - surface_geopotential
+      - land_area_fraction
+      - SFX_SST
+      - precipitation_amount_acc
+      - relative_humidity_2m  # used to derive 2d via r_to_d transform
+    derived_params:
+      - dewpoint_2m
+    transforms:
+      - r_to_d:
+          relative_humidity: relative_humidity_2m
+          temperature: air_temperature_2m
+          dewpoint: dewpoint_2m
+    rename:
+      air_temperature_2m: 2t
+      air_pressure_at_sea_level: msl
+      specific_humidity_2m: q
+      SFX_SST: sst
+      precipitation_amount_acc: tp
+      x_wind_10m: 10u
+      y_wind_10m: 10v
+      SFX_TS: skt
+      surface_air_pressure: sp
+      lwe_thickness_of_atmosphere_mass_content_of_water_vapor: tcw
+      surface_geopotential: z
+      land_area_fraction: lsm
+      dewpoint_2m: 2d
+
+  - url: https://thredds.met.no/thredds/dodsC/meps25epsarchive/{date:%Y}/{date:%m}/{date:%d}/meps_det_pl_{date:%Y%m%d}T{date:%H}Z.ncml
+    params:
+      - air_temperature_pl
+      - specific_humidity_pl
+      - x_wind_pl
+      - y_wind_pl
+      - upward_air_velocity_pl
+      - geopotential_pl
+    levels:
+      - 50
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+      - 400
+      - 500
+      - 700
+      - 800
+      - 850
+      - 925
+      - 1000
+    rename:
+      air_temperature_pl: t
+      specific_humidity_pl: q
+      x_wind_pl: u
+      y_wind_pl: v
+      upward_air_velocity_pl: w
+      geopotential_pl: z
