@@ -16,8 +16,7 @@ from typing import Any
 import earthkit.data as ekd
 from anemoi.inference.grib.templates import IndexTemplateProvider
 from anemoi.inference.grib.templates import TemplateProvider
-
-from ..regrid import regrid as ekr
+from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 
 LOG = logging.getLogger(__name__)
 
@@ -75,4 +74,5 @@ class MirTemplatesProvider(TemplateProvider):
         if base_template is None:
             raise ValueError(f"Base template not found for variable {variable} with lookup {lookup}")
 
-        return ekr.regrid(base_template, grid=grid, area=area, verbose=False)[0]
+        regridder = MIRRegrid(grid=grid, area=area)
+        return regridder.forward(base_template)[0]

@@ -194,7 +194,11 @@ def test_rename_params_swvl(mock_shortname_to_paramid):
 def test_rename_params_multiple_fields(mock_shortname_to_paramid):
     """Test renaming multiple soil fields."""
     # Setup
-    mock_shortname_to_paramid.side_effect = [139, 170, 39]  # paramIds for stl1, stl2, swvl1
+    mock_shortname_to_paramid.side_effect = [
+        139,
+        170,
+        39,
+    ]  # paramIds for stl1, stl2, swvl1
 
     # Field 1: sot level 1
     mock_metadata1 = MagicMock()
@@ -230,10 +234,10 @@ def test_rename_params_multiple_fields(mock_shortname_to_paramid):
 
 
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata._rename_params")
-@patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekr.regrid")
+@patch("anemoi.plugins.ecmwf.inference.opendata.opendata.MIRRegrid")
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekd.from_source")
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekd.SimpleFieldList")
-def test_retrieve_with_soil_variables(mock_simple_fieldlist, mock_from_source, mock_regrid, mock_rename_params):
+def test_retrieve_with_soil_variables(mock_simple_fieldlist, mock_from_source, mock_regrid_cls, mock_rename_params):
     """Test retrieve function when soil variables are included."""
     # Setup
     mock_result_list = MagicMock()
@@ -241,7 +245,9 @@ def test_retrieve_with_soil_variables(mock_simple_fieldlist, mock_from_source, m
 
     mock_fieldlist = MagicMock(spec=ekd.FieldList)
     mock_from_source.return_value = mock_fieldlist
-    mock_regrid.return_value = mock_fieldlist
+    mock_regrid_instance = MagicMock()
+    mock_regrid_instance.forward.return_value = mock_fieldlist
+    mock_regrid_cls.return_value = mock_regrid_instance
     mock_rename_params.return_value = mock_fieldlist
 
     requests = [
@@ -265,10 +271,10 @@ def test_retrieve_with_soil_variables(mock_simple_fieldlist, mock_from_source, m
 
 
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata._rename_params")
-@patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekr.regrid")
+@patch("anemoi.plugins.ecmwf.inference.opendata.opendata.MIRRegrid")
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekd.from_source")
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekd.SimpleFieldList")
-def test_retrieve_only_soil_variables(mock_simple_fieldlist, mock_from_source, mock_regrid, mock_rename_params):
+def test_retrieve_only_soil_variables(mock_simple_fieldlist, mock_from_source, mock_regrid_cls, mock_rename_params):
     """Test retrieve function with only soil variables."""
     # Setup
     mock_result_list = MagicMock()
@@ -276,7 +282,9 @@ def test_retrieve_only_soil_variables(mock_simple_fieldlist, mock_from_source, m
 
     mock_fieldlist = MagicMock(spec=ekd.FieldList)
     mock_from_source.return_value = mock_fieldlist
-    mock_regrid.return_value = mock_fieldlist
+    mock_regrid_instance = MagicMock()
+    mock_regrid_instance.forward.return_value = mock_fieldlist
+    mock_regrid_cls.return_value = mock_regrid_instance
     mock_rename_params.return_value = mock_fieldlist
 
     requests = [
@@ -302,10 +310,10 @@ def test_retrieve_only_soil_variables(mock_simple_fieldlist, mock_from_source, m
 
 
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata._rename_params")
-@patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekr.regrid")
+@patch("anemoi.plugins.ecmwf.inference.opendata.opendata.MIRRegrid")
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekd.from_source")
 @patch("anemoi.plugins.ecmwf.inference.opendata.opendata.ekd.SimpleFieldList")
-def test_retrieve_no_soil_variables(mock_simple_fieldlist, mock_from_source, mock_regrid, mock_rename_params):
+def test_retrieve_no_soil_variables(mock_simple_fieldlist, mock_from_source, mock_regrid_cls, mock_rename_params):
     """Test retrieve function without soil variables."""
     # Setup
     mock_result_list = MagicMock()
@@ -313,7 +321,9 @@ def test_retrieve_no_soil_variables(mock_simple_fieldlist, mock_from_source, moc
 
     mock_regular_fieldlist = MagicMock(spec=ekd.FieldList)
     mock_from_source.return_value = mock_regular_fieldlist
-    mock_regrid.return_value = mock_regular_fieldlist
+    mock_regrid_instance = MagicMock()
+    mock_regrid_instance.forward.return_value = mock_regular_fieldlist
+    mock_regrid_cls.return_value = mock_regrid_instance
     mock_rename_params.return_value = mock_regular_fieldlist
 
     requests = [

@@ -21,7 +21,10 @@ from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
 def test_plugin(mock_metadata) -> None:
     config = MockRunConfiguration.load(
         (Path(__file__).parent / "configs/simple.yaml").absolute(),
-        overrides=dict(input="opendata"),
+        overrides=dict(
+            input="opendata",
+            checkpoint=str((Path(__file__).parent.parent / "checkpoints/simple.ckpt").absolute()),
+        ),
     )
     runner = create_runner(config)
     runner.pre_processors = defaultdict(list)

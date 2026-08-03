@@ -21,9 +21,9 @@ from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.metadata import Metadata
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
+from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 from anemoi.utils.grib import shortname_to_paramid
 
-from ..regrid import regrid as ekr
 from .geopotential_height import OrographyProcessor
 
 LOG = logging.getLogger(__name__)
@@ -223,7 +223,9 @@ def _rename_params(fieldlist: ekd.FieldList) -> ekd.FieldList:
 
         for inv in INVERSE_MAPPINGS:
             if inv.matches(field_metadata):
-                field._metadata = field.metadata().override(paramId=shortname_to_paramid(inv.true_param))  # type: ignore
+                field._metadata = field.metadata().override(
+                    paramId=shortname_to_paramid(inv.true_param)
+                )  # type: ignore
                 break
 
     return fieldlist
@@ -269,6 +271,7 @@ def retrieve(
 
     result = ekd.SimpleFieldList()
     expanded_requests = [req for r in requests for req in _expand_request(r)]
+    regridder = MIRRegrid(grid=grid, area=area)
 
     for r in expanded_requests:
         r.update(kwargs)
@@ -279,7 +282,7 @@ def retrieve(
             r = patch(r)
 
         LOG.debug("%s", _(r))
-        result += ekr.regrid(ekd.from_source("ecmwf-open-data", r), grid, area)  # type: ignore
+        result += regridder.forward(ekd.from_source("ecmwf-open-data", r))  # type: ignore
 
     return _rename_params(result)  # type: ignore
 
