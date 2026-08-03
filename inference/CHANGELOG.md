@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.5.0...inference-0.6.0) (2026-08-03)
+
+
+### Features
+
+* dynamic test ([#82](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/82)) ([4c7e033](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/4c7e03369a476cd04013b83dc316468065f26fb2))
+* FDB Plus input ([#102](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/102)) ([1ef32fe](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1ef32fe4d8b48d3f51619665dffce901336c549a))
+* **inference/thredds:** add THREDDS profiles input plugin ([#107](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/107)) ([6a20b66](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/6a20b66dd0d80f96390db4a6279206c2890e84c6))
+
 ## [0.5.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.4.0...inference-0.5.0) (2026-07-03)
 
 
