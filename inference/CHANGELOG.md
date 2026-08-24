@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.6.0...inference-0.7.0) (2026-08-24)
+
+
+### Features
+
+* Add source parameter to data retrieval methods ([#108](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/108)) ([9f70a35](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/9f70a355c62f15c1d72eca5f096702865d5f6b09))
+
 ## [0.6.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.5.0...inference-0.6.0) (2026-08-03)
 
 
