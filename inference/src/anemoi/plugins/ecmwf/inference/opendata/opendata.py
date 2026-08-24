@@ -235,6 +235,7 @@ def retrieve(
     requests: list[dict[str, Any]],
     grid: str | list[float] | None,
     area: list[float] | str | None,
+    source: str,
     patch: Any | None = None,
     **kwargs: Any,
 ) -> ekd.FieldList:
@@ -248,6 +249,8 @@ def retrieve(
         The grid for the retrieval.
     area : Optional[Union[list[float], str]]
         The area for the retrieval.
+    source: str
+        Source of the opendata.
     patch : Optional[Any], optional
         Optional patch for the request, by default None.
     **kwargs : Any
@@ -282,7 +285,7 @@ def retrieve(
             r = patch(r)
 
         LOG.debug("%s", _(r))
-        result += regridder.forward(ekd.from_source("ecmwf-open-data", r))  # type: ignore
+        result += regridder.forward(ekd.from_source("ecmwf-open-data", r, source=source))  # type: ignore
 
     return _rename_params(result)  # type: ignore
 
@@ -296,6 +299,7 @@ class OpenDataInputPlugin(MarsInput):
         self,
         context: Context,
         metadata: Metadata,
+        source: str = "ecmwf",
         **kwargs: Any,
     ) -> None:
         """Initialise the OpenDataInput.
@@ -306,13 +310,20 @@ class OpenDataInputPlugin(MarsInput):
             The context in which the input is used.
         metadata : Metadata
             The metadata associated with the input.
+        source: str
+            Source of the opendata. Possible values are 'ecmwf' to access ECMWF's servers,
+            'aws' for data hosted by Amazon Web Services, 'google' for data hosted on Google Cloud Platform,
+            or 'azure' to access data hosted on Microsoft's Azure.
+            Default is 'ecmwf'.
         """
         rules_for_namer = [
             ({"levtype": "sol"}, "{param}"),
         ]
         kwargs.pop("namer", None)  # Ensure namer is not passed to MarsInput
+
         super().__init__(context, metadata=metadata, namer={"rules": rules_for_namer}, **kwargs)
         self.pre_processors.append(OrographyProcessor(context=context, metadata=metadata, orog="gh"))
+        self._source = source
 
         if self.context.use_grib_paramid:
             LOG.warning("`use_grib_paramid=True` is not supported for ECMWF Open Data and will be ignored.")
@@ -350,5 +361,6 @@ class OpenDataInputPlugin(MarsInput):
         return retrieve(
             requests,
             patch=self.patch_data_request,
+            source=self._source,
             **kwargs,
         )
