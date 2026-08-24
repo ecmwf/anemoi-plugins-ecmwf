@@ -235,7 +235,7 @@ def retrieve(
     requests: list[dict[str, Any]],
     grid: str | list[float] | None,
     area: list[float] | str | None,
-    source: str,
+    source: str = "ecmwf",
     patch: Any | None = None,
     **kwargs: Any,
 ) -> ekd.FieldList:
@@ -249,8 +249,9 @@ def retrieve(
         The grid for the retrieval.
     area : Optional[Union[list[float], str]]
         The area for the retrieval.
-    source: str
-        Source of the opendata.
+    source: str, optional
+        Source of the opendata. Default is 'ecmwf'.
+        Possible values are 'ecmwf', 'aws', 'google', or 'azure'.
     patch : Optional[Any], optional
         Optional patch for the request, by default None.
     **kwargs : Any
