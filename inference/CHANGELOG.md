@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.4](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.7.0...inference-0.2.4) (2026-09-14)
+
+
+### Features
+
+* enable setup of gribjump through FDB_ENABLE_GRIBJUMP ([4fca1f1](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/4fca1f13209d112494032c6ff0e5e839e1e6309a))
+
+
+### Miscellaneous Chores
+
+* release 0.2.4 ([833a98a](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/833a98a8be710ed5d0e9b9ba922592896583fa02))
+
 ## [0.7.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.6.0...inference-0.7.0) (2026-08-24)
 
 
