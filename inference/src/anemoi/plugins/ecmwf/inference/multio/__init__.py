@@ -16,8 +16,14 @@ from .multio_output import MultioOutputPlugin as MultioOutputPlugin
 
 LOG = logging.getLogger(__name__)
 
+# Importing pygribjump will call dlopen on libgribjump.so.
+# When this happens, the gribjump plugin registers a callback function with the FDB library.
+# This function is responsible for generating the .gribjump index files in FDB, and is called whenever FDB archives a field.
+# Traditionally, gribjump is dynamically loaded by eckit::Main's plugin mechanism,
+# but this makes certain assumptions about the relative installation paths of the libraries which are true for the C++ bundles,
+# but not for python wheels installed into site_packages.
+
 if os.getenv("FDB_ENABLE_GRIBJUMP", "0") == "1":
-    # As gribjump through a wheel install cannot be auto discovered by fdb, it must be imported here
     try:
         import pygribjump  # type: ignore
 
