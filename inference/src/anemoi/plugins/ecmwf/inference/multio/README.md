@@ -87,3 +87,20 @@ output:
       # number: 1
       # numberOfForecastsInEnsemble: 50
 ```
+
+### Hindcasts
+
+To use the multio output for hindcasts, set `hindcast_reference_date` in the user provided metadata, to the reference date.
+This will then be used as the date key, and `hdate` inserted into the multio write.
+
+```yaml
+output:
+  multio.grib:
+      path: 'output.grib'
+      ...
+      hindcast_reference_date: 20260119
+```
+
+If creating a hindcast for a reference date of a leap day, (29th Feb), set the `hindcast_reference_date` to said leap day,
+As the initial conditions for non leap years must fall on a non leap-day, maintain that for all years of the hindcast.
+This will result in `date` being set correctly as the leap day, and hdate being the true initial condition day.

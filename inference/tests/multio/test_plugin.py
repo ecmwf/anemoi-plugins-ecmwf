@@ -37,13 +37,13 @@ FAKE_METADATA_KEYS = {
     ],
 )
 @fake_checkpoints
-def test_plugin(plugin, kwargs):
+def test_plugin(plugin, kwargs, mock_metadata):
     config = MockRunConfiguration.load(
         str((Path(__file__).parent / "configs/simple.yaml").absolute()),
         overrides=dict(output={plugin: {**kwargs, **FAKE_METADATA_KEYS}}),
     )
     runner = create_runner(config)
-    output = create_output(runner, config.output)
+    output = create_output(runner, config.output, mock_metadata, variables=[])
     assert output is not None
 
 

@@ -7,7 +7,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-
 from datetime import datetime
 from datetime import timedelta
 
@@ -15,11 +14,19 @@ import numpy as np
 import pytest
 from anemoi.inference.types import State
 
+
+@pytest.fixture
+def mock_metadata(mocker):
+    from anemoi.inference.metadata import Metadata
+
+    return mocker.MagicMock(spec=Metadata)
+
+
 STATE_NPOINTS = 50
 
 
 @pytest.fixture
-def state() -> State:
+def mock_state() -> State:
     """Fixture to create a mock state for testing."""
 
     return {

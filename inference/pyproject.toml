@@ -38,12 +38,13 @@ classifiers = [
 
 dynamic = [ "version" ]
 dependencies = [
-  "anemoi-inference>=0.8.1",
+  "anemoi-inference>=0.11",
 ]
 
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[mir,multio,opendata,polytope]" ]
-optional-dependencies.dynamics = [ "earthkit-regrid", "pillow" ]
-optional-dependencies.mir = [ "earthkit-data", "mir-python>=1.27.10.5" ]
+optional-dependencies.dynamics = [ "anemoi-transform", "earthkit-regrid", "pillow", "scipy", "torch" ]
+optional-dependencies.fdbplus = [ "anemoi-plugins-ecmwf-transform[mir]" ]
+optional-dependencies.mir = [ "anemoi-plugins-ecmwf-transform[mir]" ]
 optional-dependencies.multio = [ "pymultio[all]>=2.7.1.5" ]
 optional-dependencies.opendata = [
   "anemoi-plugins-ecmwf-inference[regrid]",
@@ -53,30 +54,43 @@ optional-dependencies.opendata = [
   "ecmwf-opendata",
 ]
 optional-dependencies.polytope = [ "earthkit-data[polytope]" ]
-optional-dependencies.regrid = [ "anemoi-plugins-ecmwf-inference[mir]" ]
+optional-dependencies.regrid = [ "anemoi-plugins-ecmwf-transform[mir]" ]
 optional-dependencies.tests = [
   "anemoi-plugins-ecmwf-inference[all]",
   "pytest",
   "pytest-mock",
   "pytest-xdist",
 ]
+optional-dependencies.thredds = [ "pydantic", "pyyaml" ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
 
 ## Entry Points
 entry-points."anemoi.inference.grib.templates".mir = "anemoi.plugins.ecmwf.inference.mir_templates.mir_templates:MirTemplatesProvider"
+entry-points."anemoi.inference.inputs".fdbplus = "anemoi.plugins.ecmwf.inference.fdb_plus:FDBPlusInput"
 entry-points."anemoi.inference.inputs".opendata = "anemoi.plugins.ecmwf.inference.opendata.opendata:OpenDataInputPlugin"
 entry-points."anemoi.inference.inputs".polytope = "anemoi.plugins.ecmwf.inference.polytope.polytope:PolytopeInputPlugin"
+entry-points."anemoi.inference.inputs".thredds_profile = "anemoi.plugins.ecmwf.inference.thredds:ThreddsProfilesInput"
+entry-points."anemoi.inference.mid_processors"."subtract_tendency" = "anemoi.plugins.ecmwf.inference.dynamics:SubtractTendencyPlugin"
 entry-points."anemoi.inference.outputs"."multio" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioDisambiguousOutputPlugin"
 entry-points."anemoi.inference.outputs"."multio.fdb" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputFDBPlugin"
 entry-points."anemoi.inference.outputs"."multio.grib" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputGribPlugin"
 entry-points."anemoi.inference.outputs"."multio.plan" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputPlanPlugin"
 entry-points."anemoi.inference.pre_processors"."array_overlay" = "anemoi.plugins.ecmwf.inference.dynamics:ArrayOverlayPlugin"
 entry-points."anemoi.inference.pre_processors"."modify_value" = "anemoi.plugins.ecmwf.inference.dynamics:ModifyValuePlugin"
+entry-points."anemoi.inference.pre_processors"."regression-perturbation" = "anemoi.plugins.ecmwf.inference.dynamics:RegressionPerturbationPlugin"
 entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.inference.regrid:RegridPreprocessor"
+entry-points."anemoi.inference.runners"."steady-state" = "anemoi.plugins.ecmwf.inference.dynamics.steady_state:SteadyStateRunner"
+
+[dependency-groups]
+dev = [
+  "anemoi-plugins-ecmwf-inference[tests]",
+]
 
 [tool.setuptools.package-data]
+"anemoi.plugins.ecmwf.inference" = [ "py.typed" ]
 "anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
 "anemoi.plugins.ecmwf.inference.opendata" = [ "*.yaml" ]
+"anemoi.plugins.ecmwf.inference.regrid.named" = [ "*/*.npz" ]
 
 [tool.setuptools_scm]
 root = ".."
@@ -87,9 +101,12 @@ tag_regex = "^inference-(?P<version>[vV]?[0-9]+[^-]*)"
 version_file = "src/anemoi/plugins/ecmwf/inference/_version.py"
 fallback_version = "0.0.0"
 
+[tool.uv.sources]
+anemoi-plugins-ecmwf-inference = { workspace = true }
+
 [tool.pytest.ini_options]
 testpaths = "tests"
 addopts = [
-  "--numprocesses=8",
+  #"--numprocesses=8",
   "--strict-config",
 ]

@@ -18,11 +18,12 @@ import earthkit.data as ekd
 import yaml
 from anemoi.inference.context import Context
 from anemoi.inference.inputs.mars import MarsInput
+from anemoi.inference.metadata import Metadata
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
+from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 from anemoi.utils.grib import shortname_to_paramid
 
-from ..regrid import regrid as ekr
 from .geopotential_height import OrographyProcessor
 
 LOG = logging.getLogger(__name__)
@@ -222,7 +223,9 @@ def _rename_params(fieldlist: ekd.FieldList) -> ekd.FieldList:
 
         for inv in INVERSE_MAPPINGS:
             if inv.matches(field_metadata):
-                field._metadata = field.metadata().override(paramId=shortname_to_paramid(inv.true_param))  # type: ignore
+                field._metadata = field.metadata().override(
+                    paramId=shortname_to_paramid(inv.true_param)
+                )  # type: ignore
                 break
 
     return fieldlist
@@ -231,7 +234,8 @@ def _rename_params(fieldlist: ekd.FieldList) -> ekd.FieldList:
 def retrieve(
     requests: list[dict[str, Any]],
     grid: str | list[float] | None,
-    area: list[float] | None,
+    area: list[float] | str | None,
+    source: str = "ecmwf",
     patch: Any | None = None,
     **kwargs: Any,
 ) -> ekd.FieldList:
@@ -243,8 +247,11 @@ def retrieve(
         The list of requests to be retrieved.
     grid : Optional[Union[str, list[float]]]
         The grid for the retrieval.
-    area : Optional[list[float]]
+    area : Optional[Union[list[float], str]]
         The area for the retrieval.
+    source: str, optional
+        Source of the opendata. Default is 'ecmwf'.
+        Possible values are 'ecmwf', 'aws', 'google', or 'azure'.
     patch : Optional[Any], optional
         Optional patch for the request, by default None.
     **kwargs : Any
@@ -268,6 +275,7 @@ def retrieve(
 
     result = ekd.SimpleFieldList()
     expanded_requests = [req for r in requests for req in _expand_request(r)]
+    regridder = MIRRegrid(grid=grid, area=area)
 
     for r in expanded_requests:
         r.update(kwargs)
@@ -278,7 +286,7 @@ def retrieve(
             r = patch(r)
 
         LOG.debug("%s", _(r))
-        result += ekr.regrid(ekd.from_source("ecmwf-open-data", r), grid, area)  # type: ignore
+        result += regridder.forward(ekd.from_source("ecmwf-open-data", r, source=source))  # type: ignore
 
     return _rename_params(result)  # type: ignore
 
@@ -291,6 +299,8 @@ class OpenDataInputPlugin(MarsInput):
     def __init__(
         self,
         context: Context,
+        metadata: Metadata,
+        source: str = "ecmwf",
         **kwargs: Any,
     ) -> None:
         """Initialise the OpenDataInput.
@@ -299,13 +309,22 @@ class OpenDataInputPlugin(MarsInput):
         ----------
         context : Any
             The context in which the input is used.
+        metadata : Metadata
+            The metadata associated with the input.
+        source: str
+            Source of the opendata. Possible values are 'ecmwf' to access ECMWF's servers,
+            'aws' for data hosted by Amazon Web Services, 'google' for data hosted on Google Cloud Platform,
+            or 'azure' to access data hosted on Microsoft's Azure.
+            Default is 'ecmwf'.
         """
         rules_for_namer = [
             ({"levtype": "sol"}, "{param}"),
         ]
         kwargs.pop("namer", None)  # Ensure namer is not passed to MarsInput
-        super().__init__(context, namer={"rules": rules_for_namer}, **kwargs)
-        self.pre_processors.append(OrographyProcessor(context=context, orog="gh"))
+
+        super().__init__(context, metadata=metadata, namer={"rules": rules_for_namer}, **kwargs)
+        self.pre_processors.append(OrographyProcessor(context=context, metadata=metadata, orog="gh"))
+        self._source = source
 
         if self.context.use_grib_paramid:
             LOG.warning("`use_grib_paramid=True` is not supported for ECMWF Open Data and will be ignored.")
@@ -326,7 +345,7 @@ class OpenDataInputPlugin(MarsInput):
             The retrieved data.
         """
 
-        requests = self.checkpoint.mars_requests(
+        requests = self.metadata.mars_requests(
             variables=variables,
             dates=dates,
             use_grib_paramid=False,
@@ -337,11 +356,12 @@ class OpenDataInputPlugin(MarsInput):
             raise ValueError(f"No requests for {variables} ({dates})")
 
         kwargs = self.kwargs.copy()
+        kwargs.setdefault("grid", self.metadata.grid)
+        kwargs.setdefault("area", self.metadata.area)
 
         return retrieve(
             requests,
-            self.checkpoint.grid,
-            self.checkpoint.area,
             patch=self.patch_data_request,
+            source=self._source,
             **kwargs,
         )

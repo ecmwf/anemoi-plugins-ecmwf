@@ -7,10 +7,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-
 import functools
 import logging
 from os import PathLike
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
 
@@ -20,6 +20,10 @@ import numpy as np
 from anemoi.inference.processor import Processor
 
 from ._operate_on_fields import apply_function_to_fields
+
+if TYPE_CHECKING:
+    from anemoi.inference.context import Context
+    from anemoi.inference.metadata import Metadata
 
 LOG = logging.getLogger(__name__)
 
@@ -67,14 +71,16 @@ class ArrayOverlayPlugin(Processor):
 
     def __init__(
         self,
-        context,
+        context: "Context",
+        metadata: "Metadata",
+        *,
         overlay: PathLike,
         fields: list[dict[str, Any]],
         rescale: float = 1,
         method: VALID_METHODS = "add",
         invert: bool = False,
     ):
-        super().__init__(context)
+        super().__init__(context, metadata)
 
         self._overlay = overlay
         self._fields = fields
@@ -143,7 +149,7 @@ class ArrayOverlayPlugin(Processor):
         LOG.debug("ImageOverlay: Applying image overlay to %s.", field)
         data = field.to_numpy()
 
-        image_array = self.prepare_overlay(self.checkpoint.grid) / 255.0
+        image_array = self.prepare_overlay(self.metadata.grid) / 255.0
         rescaled_array = ((1 - image_array) if self._invert else image_array) * self._rescale
 
         if self._method == "add":

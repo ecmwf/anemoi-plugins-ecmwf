@@ -1,3 +1,4 @@
 ---
 checkpoint: checkpoints/simple.ckpt
 date: 2020-01-01
+input: dummy
