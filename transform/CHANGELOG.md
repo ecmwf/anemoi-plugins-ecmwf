@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/transform-0.2.0...transform-0.2.4) (2026-09-14)
+
+
+### Miscellaneous Chores
+
+* release 0.2.4 ([833a98a](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/833a98a8be710ed5d0e9b9ba922592896583fa02))
+
 ## [0.2.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/transform-0.1.0...transform-0.2.0) (2026-07-24)
 
 
