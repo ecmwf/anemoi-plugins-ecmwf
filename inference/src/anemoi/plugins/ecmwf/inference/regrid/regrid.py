@@ -17,8 +17,6 @@ from anemoi.inference.types import State
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 from anemoi.plugins.ecmwf.transform.regrid.backend import GridSpec
 
-from .named import KNOWN_GRIDS
-from .named import NamedRegrid
 
 LOG = logging.getLogger(__name__)
 CHECKPOINT_SENTINEL = "checkpoint"
@@ -46,6 +44,7 @@ class RegridPreprocessor(Processor):
         *,
         grid: GridSpec | dict[str, str] | None = None,
         area: str | list[float] | tuple[float, ...] | None = None,
+        method: str = "grib",
     ) -> None:
         """Initialise the Regridding processor.
 
@@ -60,7 +59,9 @@ class RegridPreprocessor(Processor):
             a list/tuple of increments, a named grid (e.g. "meps"),
             a dict of coordinate file paths, or a dict of coordinate lists.
         area : str | list[float] | tuple[float, ...] | None, optional
-            The target area for regridding, by default None
+            The target area for regridding, by default None.
+        method : str, optional
+            The regridding method to use, by default "grib".
         """
         super().__init__(context, metadata=metadata)
 
@@ -79,11 +80,7 @@ class RegridPreprocessor(Processor):
                 )
 
         elif isinstance(grid, str):
-            if grid.lower() in KNOWN_GRIDS:
-                named_regrid = NamedRegrid(grid)
-                resolved_grid = named_regrid.gridspec["grid"]
-
-            elif grid.lower().startswith(CHECKPOINT_SENTINEL):
+            if grid.lower().startswith(CHECKPOINT_SENTINEL):
                 coord_path = grid.lstrip(f"{CHECKPOINT_SENTINEL}:")
                 if (
                     f"{coord_path}/latitudes" not in self.metadata.supporting_arrays
@@ -103,7 +100,15 @@ class RegridPreprocessor(Processor):
         else:
             resolved_grid = grid
 
+        self._resolved_grid = resolved_grid
         self._regrid = MIRRegrid(grid=resolved_grid, area=area)
+
+    def _get_latlon(self, state: State) -> dict:
+        resolved_grid = self._regrid.grid
+        if isinstance(resolved_grid, dict) and "latitudes" in resolved_grid and "longitudes" in resolved_grid:
+            return {"lat": resolved_grid["latitudes"], "lon": resolved_grid["longitudes"]}
+        else:
+            return next(iter(state["fields"])).to_latlon()
 
     def process(self, state: State) -> State:  # type: ignore
         """Process the fields by regridding them to the specified grid and area.
@@ -119,8 +124,10 @@ class RegridPreprocessor(Processor):
             The updated state with regridded fields.
         """
         state["fields"] = self._regrid.forward(state["fields"])
-        state["latitudes"] = next(iter(state["fields"])).metadata().geography.latitudes()
-        state["longitudes"] = next(iter(state["fields"])).metadata().geography.longitudes()
+        latlon = self._get_latlon(state)
+
+        state["latitudes"] = latlon['lat']
+        state["longitudes"] = latlon['lon']
         return state
 
     def __repr__(self) -> str:

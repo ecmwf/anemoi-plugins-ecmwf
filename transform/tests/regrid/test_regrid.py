@@ -129,3 +129,4 @@ class TestMIRRegridImport:
     def test_importable_from_package(self):
         """MIRRegrid is importable from the regrid package."""
         assert MIRRegrid is MIRRegridDirect
+
