@@ -298,7 +298,7 @@ class MultioOutputPlugin(Output):
             metadata = MultioMetadata(
                 param=param,
                 levtype=levtype,
-                levelist=variable.level * 100 if not variable.is_surface_level else None,
+                levelist=variable.level * 100 if variable.level else None,
                 timespan=int(timespan) if variable.is_accumulation else None,
                 **shared_metadata,
             )
@@ -326,7 +326,7 @@ class MultioOutputPlugin(Output):
                     **metadata.model_dump(exclude_none=True, by_alias=True),
                     **extra_keys,
                     **missing_value_keys,
-                    "misc-timeIncrementInSeconds": 0,
+                    "misc-timeIncrementInSeconds": 1,
                 },
                 field,
             )
