@@ -39,6 +39,29 @@ CONVERT_PARAM_TO_PARAMID = True
 
 LOG = logging.getLogger(__name__)
 
+
+def _format_step(step: timedelta) -> int | str:
+    """Format a forecast step for multio/metkit without losing sub-hourly precision.
+
+    metkit/mars2grib interprets a numeric ``step`` as whole hours. Flooring a
+    sub-hourly step to hours (``int(step.total_seconds() // 3600)``) silently
+    collapses distinct sub-hourly steps to the same value (e.g. every step maps
+    to 0 or 1), which makes statistical fields encode with a stuck time range
+    (e.g. always ``0-1``).
+
+    To preserve precision:
+    - whole-hour steps are returned as an ``int`` number of hours (metkit's
+      numeric = hours convention);
+    - anything else is returned as an explicit-unit duration string in seconds
+      (``"<seconds>s"``), using metkit's duration language so the exact value is
+      carried through rather than floored.
+    """
+    total_seconds = int(step.total_seconds())
+    if total_seconds % 3600 == 0:
+        return total_seconds // 3600
+    return f"{total_seconds}s"
+
+
 ORIGIN = Literal["ORIGIN"]
 originkey = get_args(ORIGIN)[0]
 
@@ -100,15 +123,23 @@ class MultioMetadata(BaseModel):
     """Reference date, e.g. 20220101"""
     time: int
     """Reference time, e.g. 1200"""
-    step: int
-    """Forecast step, e.g. 0,6,12,24"""
+    step: int | str
+    """Forecast step.
+
+    Whole-hour steps are expressed as integers (interpreted as hours by
+    metkit/mars2grib, e.g. 0, 6, 12, 24). Sub-hourly / non-hour-aligned steps
+    are expressed as a duration string with an explicit unit suffix so no
+    precision is lost, using metkit's duration language:
+    ``h`` (hours), ``m`` (minutes), ``s`` (seconds), ``d`` (days),
+    e.g. ``"1800s"`` or ``"30m"``.
+    """
     grid: str
     """Grid name, e.g. n320, o96"""
     levelist: int | None = None
     """Level, e.g. 0,50,100"""
     hdate: int | None = None
     """Hindcast initial condition date, e.g. 20200101, only used if hindcast_reference_date is provided in the user metadata"""
-    timespan: int | None = None
+    timespan: int | Literal["fs"] | None = None
     """Time span, e.g."""
 
     origin: str | None = None
@@ -268,16 +299,12 @@ class MultioOutputPlugin(Output):
         step = state["step"]
 
         shared_metadata = {
-            "step": int(step.total_seconds() // 3600),
+            "step": _format_step(step),
             "grid": str(self.metadata.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
             "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
             "hdate": int(hdate.strftime("%Y%m%d")) if hdate is not None else None,
         }
-
-        timespan = self.metadata.timestep.total_seconds() // 3600
-        if self._is_accumulated_from_start:
-            timespan = shared_metadata["step"]
 
         for param, field in state["fields"].items():
             variable = self.typed_variables[param]
@@ -295,11 +322,23 @@ class MultioOutputPlugin(Output):
             levtype = variable.grib_keys.get("levtype")
             assert levtype is not None, f"levtype must be defined for variable {variable.name!r}"
 
+            timespan = None
+
+            if variable.is_accumulation:
+                if self._is_accumulated_from_start:
+                    timespan = "fs"
+                    # timespan = shared_metadata["step"]
+                else:
+                    timespan = int(variable.period.total_seconds() // 3600)
+
+            elif variable.period and not variable.is_instantanous:
+                timespan = int(variable.period.total_seconds() // 3600)
+
             metadata = MultioMetadata(
                 param=param,
                 levtype=levtype,
                 levelist=variable.level * 100 if variable.level else None,
-                timespan=int(timespan) if variable.is_accumulation else None,
+                timespan=timespan,
                 **shared_metadata,
             )
             # Copy the field to ensure it is contiguous
@@ -326,7 +365,6 @@ class MultioOutputPlugin(Output):
                     **metadata.model_dump(exclude_none=True, by_alias=True),
                     **extra_keys,
                     **missing_value_keys,
-                    "misc-timeIncrementInSeconds": 1,
                 },
                 field,
             )
