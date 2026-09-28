@@ -355,7 +355,7 @@ class MultioOutputPlugin(Output):
             "step": _format_step(step),
             "grid": str(self.metadata.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
-            "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
+            "time": int(reference_date.strftime("%H%M")),  # type: ignore
             "hdate": int(hdate.strftime("%Y%m%d")) if hdate is not None else None,
         }
 
