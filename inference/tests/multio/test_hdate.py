@@ -45,7 +45,9 @@ class TestUserDefinedMetadataHdate:
     }
 
     def test_accepts_datetime(self):
-        meta = UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_date=datetime(2026, 1, 1))
+        meta = UserDefinedMetadata(
+            **self.BASE_KWARGS, hindcast_reference_date=datetime(2026, 1, 1)
+        )
         assert meta.hindcast_reference_date == datetime(2026, 1, 1)
 
     def test_accepts_none(self):
@@ -53,7 +55,9 @@ class TestUserDefinedMetadataHdate:
         assert meta.hindcast_reference_date is None
 
     def test_accepts_yyyymmdd_string(self):
-        meta = UserDefinedMetadata(**self.BASE_KWARGS, hindcast_reference_date="20260610")
+        meta = UserDefinedMetadata(
+            **self.BASE_KWARGS, hindcast_reference_date="20260610"
+        )
         assert meta.hindcast_reference_date == datetime(2026, 6, 10)
 
     def test_accepts_yyyymmdd_int(self):
@@ -77,12 +81,18 @@ def mock_multio_server():
     mocked_server.write_field = MagicMock()
     mocked_server.flush = MagicMock()
 
-    with patch("anemoi.plugins.ecmwf.inference.multio.MultioOutputPlugin.open") as mock_open:
-        mock_open.side_effect = lambda state: setattr(MultioOutputPlugin, "_server", mocked_server)
+    with patch(
+        "anemoi.plugins.ecmwf.inference.multio.MultioOutputPlugin.open"
+    ) as mock_open:
+        mock_open.side_effect = lambda state: setattr(
+            MultioOutputPlugin, "_server", mocked_server
+        )
         yield mocked_server
 
 
-def _run_write_step(mock_server, state: State, output_override: dict | None = None) -> list:
+def _run_write_step(
+    mock_server, state: State, output_override: dict | None = None
+) -> list:
     """Create runner, open output, write one step, return write_field call args."""
     overrides = dict(runner="no-model", device="cpu", input="dummy")
     if output_override is not None:
@@ -147,7 +157,9 @@ def test_write_step_sets_date_and_hdate(
 ):
     """When hindcast_reference_date is configured, date is replaced and hdate is the original."""
     mock_state["date"] = ref_date
-    calls = _run_write_step(mock_multio_server, mock_state, _hdate_output_override(hindcast_reference_date))
+    calls = _run_write_step(
+        mock_multio_server, mock_state, _hdate_output_override(hindcast_reference_date)
+    )
 
     assert len(calls) > 0
     for metadata, field in calls:
@@ -160,12 +172,15 @@ def test_write_step_sets_date_and_hdate(
 def test_write_step_preserves_time(mock_multio_server, mock_state):
     """The time component from the original reference date is preserved."""
     mock_state["date"] = datetime(2025, 6, 10, 12, 0, 0)
-    calls = _run_write_step(mock_multio_server, mock_state, _hdate_output_override("20260610"))
+    calls = _run_write_step(
+        mock_multio_server, mock_state, _hdate_output_override("20260610")
+    )
 
     for metadata, _ in calls:
         assert metadata["date"] == 20260610
         assert metadata["hdate"] == 20250610
-        assert metadata["time"] == 120000
+        # time is encoded as HHMM (metkit convention), e.g. 1200 for 12Z.
+        assert metadata["time"] == 1200
 
 
 @fake_checkpoints
@@ -185,7 +200,9 @@ def test_write_step_step_unaffected_by_hdate(mock_multio_server, mock_state):
 
     mock_state["date"] = datetime(2025, 6, 10)
     mock_state["step"] = timedelta(hours=24)
-    calls = _run_write_step(mock_multio_server, mock_state, _hdate_output_override("20260610"))
+    calls = _run_write_step(
+        mock_multio_server, mock_state, _hdate_output_override("20260610")
+    )
 
     for metadata, _ in calls:
         assert metadata["step"] == 24

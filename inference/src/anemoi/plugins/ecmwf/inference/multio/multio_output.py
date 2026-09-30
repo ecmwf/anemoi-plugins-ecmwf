@@ -40,41 +40,28 @@ CONVERT_PARAM_TO_PARAMID = True
 LOG = logging.getLogger(__name__)
 
 
-def _format_step(step: timedelta) -> int | str:
-    """Format a forecast step for multio/metkit without losing sub-hourly precision.
+def _format_step(step: timedelta) -> int:
+    """Format a forecast step as whole hours for multio/metkit.
 
-    metkit/mars2grib interprets a numeric ``step`` as whole hours. Flooring a
-    sub-hourly step to hours (``int(step.total_seconds() // 3600)``) silently
-    collapses distinct sub-hourly steps to the same value (e.g. every step maps
-    to 0 or 1), which makes statistical fields encode with a stuck time range
-    (e.g. always ``0-1``).
-
-    To preserve precision:
-    - whole-hour steps are returned as an ``int`` number of hours (metkit's
-      numeric = hours convention);
-    - anything else is returned as an explicit-unit duration string in seconds
-      (``"<seconds>s"``), using metkit's duration language so the exact value is
-      carried through rather than floored.
+    metkit interprets a numeric ``step`` as whole hours and does not support
+    sub-hourly / non-hour-aligned steps, so we reject those with a clear Python
+    error instead of passing a value the mtg2 encoder cannot handle.
     """
     total_seconds = int(step.total_seconds())
-    if total_seconds % 3600 == 0:
-        return total_seconds // 3600
-    return f"{total_seconds}s"
+    if total_seconds % 3600 != 0:
+        raise ValueError(
+            f"Sub-hourly / non-hour-aligned step {step} is not supported by the "
+            "multio mtg2 encoder (metkit requires whole-hour steps)."
+        )
+    return total_seconds // 3600
 
 
-def _format_timespan(period: timedelta) -> int | str:
-    """Format a statistical/accumulation time span for multio/metkit.
+def _format_timespan(period: timedelta) -> int:
+    """Format an accumulation / statistical time span as whole hours.
 
-    The time span is the length of the period over which a field is
-    accumulated (e.g. ``tp``, paramId 228) or statistically processed
-    (e.g. the 10 metre wind gust ``10fg``, paramId 49, which is a maximum
-    over the preceding period). See the ECMWF parameter and GRIB2 statistical
-    process code tables for the meaning of these fields.
-
-    metkit interprets a numeric span as whole hours. To avoid silently
-    flooring sub-hourly spans to 0/1 hour, whole-hour spans are returned as an
-    ``int`` number of hours while sub-hourly spans are returned as an
-    explicit-unit duration string in seconds (``"<seconds>s"``).
+    The span is the period a field is accumulated (e.g. ``tp``) or statistically
+    processed over (e.g. the wind gust ``10fg``). Like ``step`` it must be a
+    whole number of hours; sub-hourly spans are rejected.
     """
     return _format_step(period)
 
@@ -103,22 +90,34 @@ class UserDefinedMetadata(BaseModel):
         and the actual initial condition date will be written in the hdate key.
     """
 
-    numberOfForecastsInEnsemble: int | None = Field(None, serialization_alias="misc-numberOfForecastsInEnsemble")
+    numberOfForecastsInEnsemble: int | None = Field(
+        None, serialization_alias="misc-numberOfForecastsInEnsemble"
+    )
     """Number of ensembles in the forecast, e.g. 50"""
-    generatingProcessIdentifier: int | None = Field(None, serialization_alias="misc-generatingProcessIdentifier")
+    generatingProcessIdentifier: int | None = Field(
+        None, serialization_alias="misc-generatingProcessIdentifier"
+    )
     """Generating process identifier"""
 
     @model_validator(mode="after")
     def validate_number_of_forecasts(self):
-        if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
-            raise ValueError("numberOfForecastsInEnsemble must be an integer if number is provided")
+        if isinstance(self.number, int) and not isinstance(
+            self.numberOfForecastsInEnsemble, int
+        ):
+            raise ValueError(
+                "numberOfForecastsInEnsemble must be an integer if number is provided"
+            )
         return self
 
     @field_validator("hindcast_reference_date", mode="before")
     def validate_hindcast_reference_date(cls, v):
         if isinstance(v, str):
             try:
-                v = datetime.fromisoformat(v) if "-" in v else datetime(int(v[:4]), int(v[4:6]), int(v[6:8]))
+                v = (
+                    datetime.fromisoformat(v)
+                    if "-" in v
+                    else datetime(int(v[:4]), int(v[4:6]), int(v[6:8]))
+                )
             except ValueError as e:
                 raise ValueError(
                     "hindcast_reference_date must be an 8-digit datetime string in the format YYYYMMDD"
@@ -140,15 +139,13 @@ class MultioMetadata(BaseModel):
     """Reference date, e.g. 20220101"""
     time: int
     """Reference time, e.g. 1200"""
-    step: int | str
-    """Forecast step.
+    step: int
+    """Forecast step, whole hours.
 
-    Whole-hour steps are expressed as integers (interpreted as hours by
+    Expressed as an integer number of hours (interpreted as hours by
     metkit/mars2grib, e.g. 0, 6, 12, 24). Sub-hourly / non-hour-aligned steps
-    are expressed as a duration string with an explicit unit suffix so no
-    precision is lost, using metkit's duration language:
-    ``h`` (hours), ``m`` (minutes), ``s`` (seconds), ``d`` (days),
-    e.g. ``"1800s"`` or ``"30m"``.
+    are not supported by the mtg2 encoder and are rejected upstream in
+    :func:`_format_step`.
     """
     grid: str
     """Grid name, e.g. n320, o96"""
@@ -156,15 +153,15 @@ class MultioMetadata(BaseModel):
     """Level, e.g. 0,50,100"""
     hdate: int | None = None
     """Hindcast initial condition date, e.g. 20200101, only used if hindcast_reference_date is provided in the user metadata"""
-    timespan: int | str | Literal["fs"] | None = None
+    timespan: int | Literal["fs"] | None = None
     """Time span for accumulated or statistically-processed fields.
 
     - ``None`` for instantaneous fields (e.g. ``2t``, ``msl``): no time span.
     - ``"fs"`` ("from start") for fields accumulated from the start of the
       forecast (when an :class:`Accumulate` post-processor is active).
-    - a whole-hour span as an ``int`` (metkit numeric = hours), or a sub-hourly
-      span as a duration string ``"<seconds>s"`` for accumulations (e.g. ``tp``)
-      and non-instantaneous statistical fields (e.g. the wind gust ``10fg``).
+    - a whole-hour span as an ``int`` (metkit numeric = hours) for accumulations
+      (e.g. ``tp``) and non-instantaneous statistical fields (e.g. the wind gust
+      ``10fg``). Sub-hourly spans are unsupported by mtg2 and rejected upstream.
     """
 
     origin: str | None = None
@@ -185,7 +182,9 @@ class MultioMetadata(BaseModel):
         return self
 
 
-def _to_mars(metadata: MultioMetadata, user_metadata: UserDefinedMetadata) -> dict[str, Any]:
+def _to_mars(
+    metadata: MultioMetadata, user_metadata: UserDefinedMetadata
+) -> dict[str, Any]:
     """Convert MultioMetadata and UserDefinedMetadata to a MARS request dictionary for use with the ArchiveCollector."""
     mars_dict = {
         "levtype": metadata.levtype,
@@ -236,7 +235,9 @@ class MultioOutputPlugin(Output):
             write_initial_state=write_initial_state,
         )
         self._plan = plan
-        self._archiver = ArchiveCollector(archive_requests) if archive_requests else None
+        self._archiver = (
+            ArchiveCollector(archive_requests) if archive_requests else None
+        )
         self._initial_state_diagnostics_grib = initial_state_diagnostics_grib
 
         try:
@@ -245,15 +246,21 @@ class MultioOutputPlugin(Output):
             raise TypeError(f"Invalid user_metadata: {e}") from e
 
         dumped_plan = (
-            self._plan.dump_yaml() if isinstance(self._plan, multio.plans.plans.MultioBaseModel) else self._plan
+            self._plan.dump_yaml()
+            if isinstance(self._plan, multio.plans.plans.MultioBaseModel)
+            else self._plan
         )
         LOG.info("Using Multio plan:\n%s", dumped_plan)
 
     @cached_property
     def _is_accumulated_from_start(self) -> bool:
-        return any(isinstance(x, Accumulate) for k in self.context.post_processors for x in self.context.post_processors[k])  # type: ignore[reportAttributeAccessIssue]
+        return any(
+            isinstance(x, Accumulate)
+            for k in self.context.post_processors
+            for x in self.context.post_processors[k]
+        )  # type: ignore[reportAttributeAccessIssue]
 
-    def _timespan_for(self, variable: Any) -> int | str | None:
+    def _timespan_for(self, variable: Any) -> int | Literal["fs"] | None:
         """Compute the multio ``timespan`` metadata for a variable.
 
         The time span describes the period a field represents:
@@ -288,7 +295,9 @@ class MultioOutputPlugin(Output):
                 self._server = multio.Multio()
 
         self._server.open_connections()
-        user_metadata = self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True)
+        user_metadata = self._user_defined_metadata.model_dump(
+            exclude_none=True, by_alias=True
+        )
         user_metadata.pop("hindcast_reference_date", None)
 
         if user_metadata.get("stream") == originkey:
@@ -306,8 +315,6 @@ class MultioOutputPlugin(Output):
         """
 
         state = state.copy()
-
-        self.reference_date = state["date"]
         state.setdefault("step", timedelta(0))
 
         if self._initial_state_diagnostics_grib:
@@ -321,7 +328,9 @@ class MultioOutputPlugin(Output):
         ds = ekd.from_source("file", self._initial_state_diagnostics_grib)
         namer = self.metadata.default_namer()
 
-        LOG.info(f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:")
+        LOG.info(
+            f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:"
+        )
         for field in ds:  # type: ignore
             name = namer(field, field.metadata())
             if name in state["fields"]:
@@ -334,7 +343,11 @@ class MultioOutputPlugin(Output):
         if self._server is None:
             raise RuntimeError("Multio server is not open, call `.open()` first.")
 
-        reference_date = self.reference_date or self.context.reference_date
+        # ``reference_date`` is initialised from the context by the base
+        # ``Output.__init__`` and may be overridden per-run (e.g. in
+        # ``write_initial_state``). Trust that value rather than re-reading the
+        # context so an overridden reference date is honoured.
+        reference_date = self.reference_date
         href_date = self._user_defined_metadata.hindcast_reference_date
 
         if not isinstance(reference_date, datetime):
@@ -342,7 +355,9 @@ class MultioOutputPlugin(Output):
 
         reference_date, hdate = (
             (
-                datetime.fromisoformat(f"{href_date.strftime('%Y%m%d')}T{reference_date.strftime('%H%M%S')}"),
+                datetime.fromisoformat(
+                    f"{href_date.strftime('%Y%m%d')}T{reference_date.strftime('%H%M%S')}"
+                ),
                 reference_date,
             )
             if href_date is not None
@@ -373,7 +388,9 @@ class MultioOutputPlugin(Output):
                 param = shortname_to_paramid(param)
 
             levtype = variable.grib_keys.get("levtype")
-            assert levtype is not None, f"levtype must be defined for variable {variable.name!r}"
+            assert levtype is not None, (
+                f"levtype must be defined for variable {variable.name!r}"
+            )
 
             timespan = self._timespan_for(variable)
 
@@ -416,14 +433,18 @@ class MultioOutputPlugin(Output):
 
     def close(self) -> None:
         if self._server is None:
-            raise RuntimeError("Multio server is not open to close, call `.open()` first.")
+            raise RuntimeError(
+                "Multio server is not open to close, call `.open()` first."
+            )
 
         self._server.flush()
         self._server.close_connections()
         self._server = None
 
         if self._archiver:
-            self._archiver.write(source=self.source, use_grib_paramid=self.context.use_grib_paramid)
+            self._archiver.write(
+                source=self.source, use_grib_paramid=self.context.use_grib_paramid
+            )
 
 
 def add_debug(locations: dict[int, str], plan: multio.plans.Plan) -> None:
@@ -437,7 +458,9 @@ def add_debug(locations: dict[int, str], plan: multio.plans.Plan) -> None:
         The multio plan to modify.
     """
     for index, prefix in sorted(locations.items(), reverse=True):
-        plan.actions.insert(index, multio.plans.Print(stream="cout", prefix=prefix, only_fields=False))
+        plan.actions.insert(
+            index, multio.plans.Print(stream="cout", prefix=prefix, only_fields=False)
+        )
 
 
 @main_argument("path")
@@ -508,7 +531,9 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
 
 
 @main_argument("fdb_config")
-@supports_parallel_output("-ignore-parallel-output-suffix")  # Used to ignore the suffix kwarg
+@supports_parallel_output(
+    "-ignore-parallel-output-suffix"
+)  # Used to ignore the suffix kwarg
 class MultioOutputFDBPlugin(MultioOutputPlugin):
     """Multio output plugin to write to FDB.
 
@@ -567,7 +592,9 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
 
 
 @main_argument("plan")
-@supports_parallel_output("-ignore-parallel-output-suffix")  # Used to ignore the suffix kwarg
+@supports_parallel_output(
+    "-ignore-parallel-output-suffix"
+)  # Used to ignore the suffix kwarg
 class MultioOutputPlanPlugin(MultioOutputPlugin):
     """Multio output plugin to write with a plan."""
 
@@ -599,10 +626,18 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
         """
         if sinks:
             realised_plan = (
-                multio.plans.Client(**plan) if isinstance(plan, dict) else multio.plans.Client.from_yamlfile(plan)
+                multio.plans.Client(**plan)
+                if isinstance(plan, dict)
+                else multio.plans.Client.from_yamlfile(plan)
             )
-            if any(isinstance(action, multio.plans.sinks.SINKS) for p in realised_plan.plans for action in p.actions):
-                raise ValueError("The plan already contains sinks, cannot add additional sinks.")
+            if any(
+                isinstance(action, multio.plans.sinks.SINKS)
+                for p in realised_plan.plans
+                for action in p.actions
+            ):
+                raise ValueError(
+                    "The plan already contains sinks, cannot add additional sinks."
+                )
 
             for p in realised_plan.plans:
                 p.actions.append(multio.plans.Sink(sinks=sinks))

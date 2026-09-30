@@ -108,13 +108,26 @@ def _make_plugin(*, accumulated_from_start: bool, timestep: timedelta) -> Multio
         (timedelta(hours=6), 6),
         (timedelta(hours=1), 1),
         (timedelta(hours=24), 24),
-        (timedelta(minutes=30), "1800s"),
-        (timedelta(minutes=90), "5400s"),
-        (timedelta(seconds=45), "45s"),
     ],
 )
-def test_format_timespan(period, expected):
+def test_format_timespan_whole_hours(period, expected):
     assert _format_timespan(period) == expected
+
+
+@pytest.mark.parametrize(
+    "period",
+    [
+        timedelta(minutes=30),
+        timedelta(minutes=90),
+        timedelta(seconds=45),
+    ],
+)
+def test_format_timespan_rejects_sub_hourly(period):
+    # Sub-hourly spans are unsupported by the mtg2 encoder (metkit). The plugin
+    # must refuse them with a clear Python error rather than emitting an
+    # unencodable "<seconds>s" duration string that floods multio's failure log.
+    with pytest.raises(ValueError, match="[Ss]ub-hourly"):
+        _format_timespan(period)
 
 
 # ---------------------------------------------------------------------------
@@ -151,9 +164,12 @@ def test_non_instantaneous_statistical_field_uses_period():
     assert plugin._timespan_for(WIND_GUST_6H) == 6
 
 
-def test_non_instantaneous_subhourly_period_kept_as_seconds():
+def test_non_instantaneous_subhourly_period_rejected():
     plugin = _make_plugin(accumulated_from_start=False, timestep=timedelta(hours=1))
-    assert plugin._timespan_for(WIND_GUST_30M) == "1800s"
+    # Sub-hourly statistical windows are unsupported by mtg2 and must raise
+    # rather than produce an unencodable duration string.
+    with pytest.raises(ValueError, match="[Ss]ub-hourly"):
+        plugin._timespan_for(WIND_GUST_30M)
 
 
 def test_non_instantaneous_not_affected_by_accumulate_from_start():
