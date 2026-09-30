@@ -90,34 +90,22 @@ class UserDefinedMetadata(BaseModel):
         and the actual initial condition date will be written in the hdate key.
     """
 
-    numberOfForecastsInEnsemble: int | None = Field(
-        None, serialization_alias="misc-numberOfForecastsInEnsemble"
-    )
+    numberOfForecastsInEnsemble: int | None = Field(None, serialization_alias="misc-numberOfForecastsInEnsemble")
     """Number of ensembles in the forecast, e.g. 50"""
-    generatingProcessIdentifier: int | None = Field(
-        None, serialization_alias="misc-generatingProcessIdentifier"
-    )
+    generatingProcessIdentifier: int | None = Field(None, serialization_alias="misc-generatingProcessIdentifier")
     """Generating process identifier"""
 
     @model_validator(mode="after")
     def validate_number_of_forecasts(self):
-        if isinstance(self.number, int) and not isinstance(
-            self.numberOfForecastsInEnsemble, int
-        ):
-            raise ValueError(
-                "numberOfForecastsInEnsemble must be an integer if number is provided"
-            )
+        if isinstance(self.number, int) and not isinstance(self.numberOfForecastsInEnsemble, int):
+            raise ValueError("numberOfForecastsInEnsemble must be an integer if number is provided")
         return self
 
     @field_validator("hindcast_reference_date", mode="before")
     def validate_hindcast_reference_date(cls, v):
         if isinstance(v, str):
             try:
-                v = (
-                    datetime.fromisoformat(v)
-                    if "-" in v
-                    else datetime(int(v[:4]), int(v[4:6]), int(v[6:8]))
-                )
+                v = datetime.fromisoformat(v) if "-" in v else datetime(int(v[:4]), int(v[4:6]), int(v[6:8]))
             except ValueError as e:
                 raise ValueError(
                     "hindcast_reference_date must be an 8-digit datetime string in the format YYYYMMDD"
@@ -182,9 +170,7 @@ class MultioMetadata(BaseModel):
         return self
 
 
-def _to_mars(
-    metadata: MultioMetadata, user_metadata: UserDefinedMetadata
-) -> dict[str, Any]:
+def _to_mars(metadata: MultioMetadata, user_metadata: UserDefinedMetadata) -> dict[str, Any]:
     """Convert MultioMetadata and UserDefinedMetadata to a MARS request dictionary for use with the ArchiveCollector."""
     mars_dict = {
         "levtype": metadata.levtype,
@@ -235,9 +221,7 @@ class MultioOutputPlugin(Output):
             write_initial_state=write_initial_state,
         )
         self._plan = plan
-        self._archiver = (
-            ArchiveCollector(archive_requests) if archive_requests else None
-        )
+        self._archiver = ArchiveCollector(archive_requests) if archive_requests else None
         self._initial_state_diagnostics_grib = initial_state_diagnostics_grib
 
         try:
@@ -246,18 +230,14 @@ class MultioOutputPlugin(Output):
             raise TypeError(f"Invalid user_metadata: {e}") from e
 
         dumped_plan = (
-            self._plan.dump_yaml()
-            if isinstance(self._plan, multio.plans.plans.MultioBaseModel)
-            else self._plan
+            self._plan.dump_yaml() if isinstance(self._plan, multio.plans.plans.MultioBaseModel) else self._plan
         )
         LOG.info("Using Multio plan:\n%s", dumped_plan)
 
     @cached_property
     def _is_accumulated_from_start(self) -> bool:
         return any(
-            isinstance(x, Accumulate)
-            for k in self.context.post_processors
-            for x in self.context.post_processors[k]
+            isinstance(x, Accumulate) for k in self.context.post_processors for x in self.context.post_processors[k]
         )  # type: ignore[reportAttributeAccessIssue]
 
     def _timespan_for(self, variable: Any) -> int | Literal["fs"] | None:
@@ -295,9 +275,7 @@ class MultioOutputPlugin(Output):
                 self._server = multio.Multio()
 
         self._server.open_connections()
-        user_metadata = self._user_defined_metadata.model_dump(
-            exclude_none=True, by_alias=True
-        )
+        user_metadata = self._user_defined_metadata.model_dump(exclude_none=True, by_alias=True)
         user_metadata.pop("hindcast_reference_date", None)
 
         if user_metadata.get("stream") == originkey:
@@ -328,9 +306,7 @@ class MultioOutputPlugin(Output):
         ds = ekd.from_source("file", self._initial_state_diagnostics_grib)
         namer = self.metadata.default_namer()
 
-        LOG.info(
-            f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:"
-        )
+        LOG.info(f"Copying step 0 diagnostic fields from {self._initial_state_diagnostics_grib} to output:")
         for field in ds:  # type: ignore
             name = namer(field, field.metadata())
             if name in state["fields"]:
@@ -355,9 +331,7 @@ class MultioOutputPlugin(Output):
 
         reference_date, hdate = (
             (
-                datetime.fromisoformat(
-                    f"{href_date.strftime('%Y%m%d')}T{reference_date.strftime('%H%M%S')}"
-                ),
+                datetime.fromisoformat(f"{href_date.strftime('%Y%m%d')}T{reference_date.strftime('%H%M%S')}"),
                 reference_date,
             )
             if href_date is not None
@@ -388,9 +362,7 @@ class MultioOutputPlugin(Output):
                 param = shortname_to_paramid(param)
 
             levtype = variable.grib_keys.get("levtype")
-            assert levtype is not None, (
-                f"levtype must be defined for variable {variable.name!r}"
-            )
+            assert levtype is not None, f"levtype must be defined for variable {variable.name!r}"
 
             timespan = self._timespan_for(variable)
 
@@ -433,18 +405,14 @@ class MultioOutputPlugin(Output):
 
     def close(self) -> None:
         if self._server is None:
-            raise RuntimeError(
-                "Multio server is not open to close, call `.open()` first."
-            )
+            raise RuntimeError("Multio server is not open to close, call `.open()` first.")
 
         self._server.flush()
         self._server.close_connections()
         self._server = None
 
         if self._archiver:
-            self._archiver.write(
-                source=self.source, use_grib_paramid=self.context.use_grib_paramid
-            )
+            self._archiver.write(source=self.source, use_grib_paramid=self.context.use_grib_paramid)
 
 
 def add_debug(locations: dict[int, str], plan: multio.plans.Plan) -> None:
@@ -458,9 +426,7 @@ def add_debug(locations: dict[int, str], plan: multio.plans.Plan) -> None:
         The multio plan to modify.
     """
     for index, prefix in sorted(locations.items(), reverse=True):
-        plan.actions.insert(
-            index, multio.plans.Print(stream="cout", prefix=prefix, only_fields=False)
-        )
+        plan.actions.insert(index, multio.plans.Print(stream="cout", prefix=prefix, only_fields=False))
 
 
 @main_argument("path")
@@ -531,9 +497,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
 
 
 @main_argument("fdb_config")
-@supports_parallel_output(
-    "-ignore-parallel-output-suffix"
-)  # Used to ignore the suffix kwarg
+@supports_parallel_output("-ignore-parallel-output-suffix")  # Used to ignore the suffix kwarg
 class MultioOutputFDBPlugin(MultioOutputPlugin):
     """Multio output plugin to write to FDB.
 
@@ -592,9 +556,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
 
 
 @main_argument("plan")
-@supports_parallel_output(
-    "-ignore-parallel-output-suffix"
-)  # Used to ignore the suffix kwarg
+@supports_parallel_output("-ignore-parallel-output-suffix")  # Used to ignore the suffix kwarg
 class MultioOutputPlanPlugin(MultioOutputPlugin):
     """Multio output plugin to write with a plan."""
 
@@ -626,18 +588,10 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
         """
         if sinks:
             realised_plan = (
-                multio.plans.Client(**plan)
-                if isinstance(plan, dict)
-                else multio.plans.Client.from_yamlfile(plan)
+                multio.plans.Client(**plan) if isinstance(plan, dict) else multio.plans.Client.from_yamlfile(plan)
             )
-            if any(
-                isinstance(action, multio.plans.sinks.SINKS)
-                for p in realised_plan.plans
-                for action in p.actions
-            ):
-                raise ValueError(
-                    "The plan already contains sinks, cannot add additional sinks."
-                )
+            if any(isinstance(action, multio.plans.sinks.SINKS) for p in realised_plan.plans for action in p.actions):
+                raise ValueError("The plan already contains sinks, cannot add additional sinks.")
 
             for p in realised_plan.plans:
                 p.actions.append(multio.plans.Sink(sinks=sinks))
