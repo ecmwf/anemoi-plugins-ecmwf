@@ -1,0 +1,114 @@
+# (C) Copyright 2026- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+# ---------------------------------------------------------------------------
+# Multio -> GRIB integration sweep: ensemble (enfo) stream.
+#
+# Mirrors ``sweep_oper.yaml`` but exercises the perturbed-forecast (type ``pf``)
+# ensemble path, checking the ensemble product-definition keys
+# (perturbationNumber / number, numberOfForecastsInEnsemble) survive encoding.
+# See the multio.log reference: ``type=pf`` fields carry stream oper/enfo/wave.
+# ---------------------------------------------------------------------------
+
+defaults:
+  grid: O48
+  user:
+    class: ai
+    type: pf
+    stream: enfo
+    expver: "0001"
+    model: aifs-ens
+    number: 1
+    numberOfForecastsInEnsemble: 50
+    generatingProcessIdentifier: 5
+  reference:
+    date: 20260923
+    time: 0000
+  step: 0
+
+cases:
+  # --- ensemble member routing --------------------------------------------
+  - name: enfo-2t-member1
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      shortName: 2t
+      paramId: 167
+      stream: enfo
+      type: pf
+      number: 1
+      perturbationNumber: 1
+      numberOfForecastsInEnsemble: 50
+      levtype: sfc
+
+  - name: enfo-2t-member25
+    user:
+      number: 25
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      stream: enfo
+      type: pf
+      number: 25
+      perturbationNumber: 25
+      numberOfForecastsInEnsemble: 50
+
+  # --- ensemble pressure level ---------------------------------------------
+  - name: enfo-t-500-step12
+    step: 12
+    variable:
+      name: t_500
+      mars: {param: t, levtype: pl, levelist: 500}
+    expect:
+      shortName: t
+      paramId: 130
+      levtype: pl
+      level: 500
+      step: 12
+      stream: enfo
+      type: pf
+      number: 1
+
+  # --- ensemble accumulation -----------------------------------------------
+  - name: enfo-tp-accum-0-6
+    step: 6
+    variable:
+      name: tp
+      process: accumulation
+      period: [0, 6]
+      mars: {param: tp, levtype: sfc}
+    expect:
+      levtype: sfc
+      stepRange: 0-6
+      startStep: 0
+      endStep: 6
+      typeOfStatisticalProcessing: 1
+      stream: enfo
+      type: pf
+      number: 1
+
+  # --- ensemble with 12Z reference time ------------------------------------
+  # multio 2.10 encodes time as hours (1200 -> 12); 2.11 keeps HHMM.
+  - name: enfo-msl-time1200-step18
+    reference: {date: 20260923, time: 1200}
+    step: 18
+    min_multio: "2.11"
+    variable:
+      name: msl
+      mars: {param: msl, levtype: sfc}
+    expect:
+      shortName: msl
+      paramId: 151
+      dataDate: 20260923
+      dataTime: 1200
+      step: 18
+      stream: enfo
+      type: pf
