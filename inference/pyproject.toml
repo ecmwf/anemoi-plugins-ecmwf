@@ -45,7 +45,7 @@ optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[mir,multio,opendat
 optional-dependencies.dynamics = [ "anemoi-transform", "earthkit-regrid", "pillow", "scipy", "torch" ]
 optional-dependencies.fdbplus = [ "anemoi-plugins-ecmwf-transform[mir]" ]
 optional-dependencies.mir = [ "anemoi-plugins-ecmwf-transform[mir]" ]
-optional-dependencies.multio = [ "pymultio[all]>=2.7.1.5" ]
+optional-dependencies.multio = [ "pymultio[all]>=2.11.2.27" ]
 optional-dependencies.opendata = [
   "anemoi-plugins-ecmwf-inference[regrid]",
   "anemoi-transform>=0.1.27",

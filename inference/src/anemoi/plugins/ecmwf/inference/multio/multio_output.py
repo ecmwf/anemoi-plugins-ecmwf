@@ -39,6 +39,33 @@ CONVERT_PARAM_TO_PARAMID = True
 
 LOG = logging.getLogger(__name__)
 
+
+def _format_step(step: timedelta) -> int:
+    """Format a forecast step as whole hours for multio/metkit.
+
+    metkit interprets a numeric ``step`` as whole hours and does not support
+    sub-hourly / non-hour-aligned steps, so we reject those with a clear Python
+    error instead of passing a value the mtg2 encoder cannot handle.
+    """
+    total_seconds = int(step.total_seconds())
+    if total_seconds % 3600 != 0:
+        raise ValueError(
+            f"Sub-hourly / non-hour-aligned step {step} is not supported by the "
+            "multio mtg2 encoder (metkit requires whole-hour steps)."
+        )
+    return total_seconds // 3600
+
+
+def _format_timespan(period: timedelta) -> int:
+    """Format an accumulation / statistical time span as whole hours.
+
+    The span is the period a field is accumulated (e.g. ``tp``) or statistically
+    processed over (e.g. the wind gust ``10fg``). Like ``step`` it must be a
+    whole number of hours; sub-hourly spans are rejected.
+    """
+    return _format_step(period)
+
+
 ORIGIN = Literal["ORIGIN"]
 originkey = get_args(ORIGIN)[0]
 
@@ -101,15 +128,29 @@ class MultioMetadata(BaseModel):
     time: int
     """Reference time, e.g. 1200"""
     step: int
-    """Forecast step, e.g. 0,6,12,24"""
+    """Forecast step, whole hours.
+
+    Expressed as an integer number of hours (interpreted as hours by
+    metkit/mars2grib, e.g. 0, 6, 12, 24). Sub-hourly / non-hour-aligned steps
+    are not supported by the mtg2 encoder and are rejected upstream in
+    :func:`_format_step`.
+    """
     grid: str
     """Grid name, e.g. n320, o96"""
     levelist: int | None = None
     """Level, e.g. 0,50,100"""
     hdate: int | None = None
     """Hindcast initial condition date, e.g. 20200101, only used if hindcast_reference_date is provided in the user metadata"""
-    timespan: int | None = None
-    """Time span, e.g."""
+    timespan: int | Literal["fs"] | None = None
+    """Time span for accumulated or statistically-processed fields.
+
+    - ``None`` for instantaneous fields (e.g. ``2t``, ``msl``): no time span.
+    - ``"fs"`` ("from start") for fields accumulated from the start of the
+      forecast (when an :class:`Accumulate` post-processor is active).
+    - a whole-hour span as an ``int`` (metkit numeric = hours) for accumulations
+      (e.g. ``tp``) and non-instantaneous statistical fields (e.g. the wind gust
+      ``10fg``). Sub-hourly spans are unsupported by mtg2 and rejected upstream.
+    """
 
     origin: str | None = None
     """Origin name, e.g. ecmf, ukmo"""
@@ -151,7 +192,6 @@ def _to_mars(metadata: MultioMetadata, user_metadata: UserDefinedMetadata) -> di
 
 
 class MultioOutputPlugin(Output):
-
     api_version = "1.0.0"
     schema = None
 
@@ -196,7 +236,38 @@ class MultioOutputPlugin(Output):
 
     @cached_property
     def _is_accumulated_from_start(self) -> bool:
-        return any(isinstance(x, Accumulate) for k in self.context.post_processors for x in self.context.post_processors[k])  # type: ignore[reportAttributeAccessIssue]
+        return any(
+            isinstance(x, Accumulate) for k in self.context.post_processors for x in self.context.post_processors[k]
+        )  # type: ignore[reportAttributeAccessIssue]
+
+    def _timespan_for(self, variable: Any) -> int | Literal["fs"] | None:
+        """Compute the multio ``timespan`` metadata for a variable.
+
+        The time span describes the period a field represents:
+
+        - Instantaneous fields (e.g. ``2t``, ``msl``) have no time span and
+          return ``None``.
+        - Accumulations (e.g. ``tp``) return ``"fs"`` when accumulated from the
+          start of the forecast (an :class:`Accumulate` post-processor is
+          active), otherwise the length of their accumulation period.
+        - Non-instantaneous statistical fields (e.g. the 10 metre wind gust
+          ``10fg``, a maximum over the preceding period) return the length of
+          their processing period.
+
+        When a field is accumulated or non-instantaneous but the checkpoint
+        does not record an explicit ``period``, we fall back to the model
+        timestep so the encoder still receives a sensible span rather than
+        crashing on a missing period.
+        """
+        if variable.is_accumulation:
+            if self._is_accumulated_from_start:
+                return "fs"
+            return _format_timespan(variable.period or self.metadata.timestep)
+
+        if not variable.is_instantanous:
+            return _format_timespan(variable.period or self.metadata.timestep)
+
+        return None
 
     def open(self, state: State) -> None:
         if self._server is None:
@@ -222,8 +293,6 @@ class MultioOutputPlugin(Output):
         """
 
         state = state.copy()
-
-        self.reference_date = state["date"]
         state.setdefault("step", timedelta(0))
 
         if self._initial_state_diagnostics_grib:
@@ -250,7 +319,11 @@ class MultioOutputPlugin(Output):
         if self._server is None:
             raise RuntimeError("Multio server is not open, call `.open()` first.")
 
-        reference_date = self.reference_date or self.context.reference_date
+        # ``reference_date`` is initialised from the context by the base
+        # ``Output.__init__`` and may be overridden per-run (e.g. in
+        # ``write_initial_state``). Trust that value rather than re-reading the
+        # context so an overridden reference date is honoured.
+        reference_date = self.reference_date
         href_date = self._user_defined_metadata.hindcast_reference_date
 
         if not isinstance(reference_date, datetime):
@@ -268,16 +341,12 @@ class MultioOutputPlugin(Output):
         step = state["step"]
 
         shared_metadata = {
-            "step": int(step.total_seconds() // 3600),
+            "step": _format_step(step),
             "grid": str(self.metadata.grid).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
-            "time": int(reference_date.strftime("%H%M%S")),  # type: ignore
+            "time": int(reference_date.strftime("%H%M")),  # type: ignore
             "hdate": int(hdate.strftime("%Y%m%d")) if hdate is not None else None,
         }
-
-        timespan = self.metadata.timestep.total_seconds() // 3600
-        if self._is_accumulated_from_start:
-            timespan = shared_metadata["step"]
 
         for param, field in state["fields"].items():
             variable = self.typed_variables[param]
@@ -295,11 +364,13 @@ class MultioOutputPlugin(Output):
             levtype = variable.grib_keys.get("levtype")
             assert levtype is not None, f"levtype must be defined for variable {variable.name!r}"
 
+            timespan = self._timespan_for(variable)
+
             metadata = MultioMetadata(
                 param=param,
                 levtype=levtype,
-                levelist=variable.level * 100 if not variable.is_surface_level else None,
-                timespan=int(timespan) if variable.is_accumulation else None,
+                levelist=variable.level * 100 if variable.level else None,
+                timespan=timespan,
                 **shared_metadata,
             )
             # Copy the field to ensure it is contiguous
@@ -326,7 +397,6 @@ class MultioOutputPlugin(Output):
                     **metadata.model_dump(exclude_none=True, by_alias=True),
                     **extra_keys,
                     **missing_value_keys,
-                    "misc-timeIncrementInSeconds": 0,
                 },
                 field,
             )
@@ -418,7 +488,10 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
             ]
         )
         if debug:
-            add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
+            add_debug(
+                {0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "},
+                plan.plans[0],
+            )
 
         super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
@@ -433,7 +506,13 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
     """
 
     def __init__(
-        self, context: Context, metadata: Metadata, fdb_config: str, *, debug: bool = False, **kwargs: Any
+        self,
+        context: Context,
+        metadata: Metadata,
+        fdb_config: str,
+        *,
+        debug: bool = False,
+        **kwargs: Any,
     ) -> None:
         """Multio FDB Output Plugin.
 
@@ -468,7 +547,10 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
             ]
         )
         if debug:
-            add_debug({0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "}, plan.plans[0])
+            add_debug(
+                {0: "MULTIO PRE-ENC DEBUG: ", 2: "MULTIO PST-ENC DEBUG: "},
+                plan.plans[0],
+            )
 
         super().__init__(context, metadata=metadata, plan=plan, **kwargs)
 
