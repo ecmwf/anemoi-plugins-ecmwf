@@ -1,0 +1,81 @@
+# (C) Copyright 2026- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+# ---------------------------------------------------------------------------
+# Regression: accumulation stepRange must not collapse across a forecast.
+#
+# The operational aifs-ens-crps plan encodes with:
+#     - type: encode-mtg2
+#       cached: true
+#
+# Observed in aifs-temporal-downscaler.grib: every tp / typeOfStatisticalProcessing
+# accumulation field collapsed to stepRange "0-1", even though the forecast runs
+# hourly (2t correctly spans steps 0..240). Root cause: with ``cached: true`` the
+# mtg2 encoder reuses a cached GRIB template across messages, freezing the first
+# accumulation field's time range and reusing it for every subsequent step.
+#
+# These cases write a *sequence* of accumulation steps through one multio session
+# (as a real forecast does) and assert each encodes its own 0->step window:
+#
+#   - cached:false  -> MUST pass (distinct 0-1, 0-2, 0-3, 0-6, 0-12, 0-24)
+#   - cached:true   -> currently a HARD FAILURE, reproducing the collapse. This is
+#                      intentional: the test stays red until multio/mtg2 fixes the
+#                      caching (or the operational plan drops cached:true).
+# ---------------------------------------------------------------------------
+
+defaults:
+  grid: O48
+  timestep: 1
+  accumulate_from_start: true
+  # The timespan:"fs" accumulation path is only supported from multio 2.11.
+  min_multio: "2.11"
+  user:
+    class: ai
+    type: pf
+    stream: enfo
+    expver: "0001"
+    model: aifs-ens
+    number: 1
+    numberOfForecastsInEnsemble: 50
+    generatingProcessIdentifier: 5
+  reference:
+    date: 20260923
+    time: 1200
+  variable:
+    name: tp
+    process: accumulation
+    period: [0, 6]
+    mars: {param: tp, levtype: sfc}
+
+cases:
+  - name: tp-accum-sequence-uncached
+    cached: false
+    steps: [1, 2, 3, 6, 12, 24]
+    expect_sequence:
+      - {stepRange: "0-1", startStep: 0, endStep: 1, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-2", startStep: 0, endStep: 2, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-3", startStep: 0, endStep: 3, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-6", startStep: 0, endStep: 6, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-12", startStep: 0, endStep: 12, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-24", startStep: 0, endStep: 24, typeOfStatisticalProcessing: 1}
+
+  # NOTE: this currently FAILS (hard) -- it reproduces the operational bug where
+  # encode-mtg2 cached:true freezes the accumulation stepRange and every step
+  # collapses to the first window (0-1), as seen in aifs-temporal-downscaler.grib.
+  # Left as a hard failure on purpose so the regression stays loud until fixed.
+  - name: tp-accum-sequence-cached
+    cached: true
+    steps: [1, 2, 3, 6, 12, 24]
+    expect_sequence:
+      - {stepRange: "0-1", startStep: 0, endStep: 1, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-2", startStep: 0, endStep: 2, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-3", startStep: 0, endStep: 3, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-6", startStep: 0, endStep: 6, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-12", startStep: 0, endStep: 12, typeOfStatisticalProcessing: 1}
+      - {stepRange: "0-24", startStep: 0, endStep: 24, typeOfStatisticalProcessing: 1}

@@ -1,0 +1,241 @@
+# (C) Copyright 2026- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+# ---------------------------------------------------------------------------
+# Multio -> GRIB integration sweep: deterministic (oper) stream.
+#
+# Each entry under ``cases`` produces one field that is written through a real
+# multio server (EncodeMTG -> file sink) and read back with earthkit-data. The
+# ``expect`` block lists GRIB header keys that must match after encoding.
+#
+# Structure of a case:
+#   name        : unique, human readable id (used as the pytest parametrize id)
+#   grid        : gaussian grid, drives the number of values in the payload
+#   user        : UserDefinedMetadata (class/type/stream/expver/model/...)
+#   reference   : {date: YYYYMMDD, time: HHMM} forecast reference (analysis) time
+#   step        : forecast step, hours (int) or metkit duration string ("1800s")
+#   variable    : anemoi-transform Variable spec (mars keys + optional process)
+#   field       : optional field generation controls (fill / nan_fraction)
+#   expect      : GRIB header keys checked against the round-tripped message
+# ---------------------------------------------------------------------------
+
+defaults:
+  grid: O48
+  user:
+    class: ai
+    type: fc
+    stream: oper
+    expver: "0001"
+    model: aifs-single
+    generatingProcessIdentifier: 5
+  reference:
+    date: 20260923
+    time: 0000
+  step: 0
+
+cases:
+  # --- surface instantaneous parameters -----------------------------------
+  - name: sfc-2t-step0
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      shortName: 2t
+      paramId: 167
+      levtype: sfc
+      class: ai
+      stream: oper
+      type: fc
+      dataDate: 20260923
+      dataTime: 0
+      step: 0
+      generatingProcessIdentifier: 5
+
+  - name: sfc-msl-step6
+    step: 6
+    variable:
+      name: msl
+      mars: {param: msl, levtype: sfc}
+    expect:
+      shortName: msl
+      paramId: 151
+      levtype: sfc
+      step: 6
+
+  - name: sfc-10u-step12
+    step: 12
+    variable:
+      name: 10u
+      mars: {param: 10u, levtype: sfc}
+    expect:
+      shortName: 10u
+      paramId: 165
+      levtype: sfc
+      step: 12
+
+  # --- pressure level parameters (levelist sweep) --------------------------
+  - name: pl-t-500-step0
+    variable:
+      name: t_500
+      mars: {param: t, levtype: pl, levelist: 500}
+    expect:
+      shortName: t
+      paramId: 130
+      levtype: pl
+      level: 500
+      step: 0
+
+  - name: pl-t-1000-step6
+    step: 6
+    variable:
+      name: t_1000
+      mars: {param: t, levtype: pl, levelist: 1000}
+    expect:
+      shortName: t
+      paramId: 130
+      levtype: pl
+      level: 1000
+      step: 6
+
+  - name: pl-q-50-step24
+    step: 24
+    variable:
+      name: q_50
+      mars: {param: q, levtype: pl, levelist: 50}
+    expect:
+      shortName: q
+      paramId: 133
+      levtype: pl
+      level: 50
+      step: 24
+
+  - name: pl-z-850-step0
+    variable:
+      name: z_850
+      mars: {param: z, levtype: pl, levelist: 850}
+    expect:
+      shortName: z
+      paramId: 129
+      levtype: pl
+      level: 850
+
+  # --- accumulation with explicit period (stepRange) -----------------------
+  - name: sfc-tp-accum-0-6
+    step: 6
+    variable:
+      name: tp
+      process: accumulation
+      period: [0, 6]
+      mars: {param: tp, levtype: sfc}
+    expect:
+      levtype: sfc
+      stepRange: 0-6
+      startStep: 0
+      endStep: 6
+      typeOfStatisticalProcessing: 1
+
+  - name: sfc-tp-accum-6-12
+    step: 12
+    variable:
+      name: tp
+      process: accumulation
+      period: [6, 12]
+      mars: {param: tp, levtype: sfc}
+    expect:
+      levtype: sfc
+      stepRange: 6-12
+      startStep: 6
+      endStep: 12
+      typeOfStatisticalProcessing: 1
+
+  # --- accumulation from start (Accumulate post-processor -> timespan "fs") --
+  # The window must run 0 -> step for every step, NOT collapse to a fixed range.
+  - name: sfc-tp-accum-from-start-step6
+    step: 6
+    accumulate_from_start: true
+    min_multio: "2.11"  # timespan:"fs" path supported from 2.11
+    variable:
+      name: tp
+      process: accumulation
+      period: [0, 6]
+      mars: {param: tp, levtype: sfc}
+    expect:
+      levtype: sfc
+      stepRange: 0-6
+      startStep: 0
+      endStep: 6
+      typeOfStatisticalProcessing: 1
+
+  - name: sfc-tp-accum-from-start-step12
+    step: 12
+    accumulate_from_start: true
+    min_multio: "2.11"  # timespan:"fs" path supported from 2.11
+    variable:
+      name: tp
+      process: accumulation
+      period: [0, 6]
+      mars: {param: tp, levtype: sfc}
+    expect:
+      levtype: sfc
+      stepRange: 0-12
+      startStep: 0
+      endStep: 12
+      typeOfStatisticalProcessing: 1
+
+  - name: sfc-tp-accum-from-start-step24
+    step: 24
+    accumulate_from_start: true
+    min_multio: "2.11"  # timespan:"fs" path supported from 2.11
+    variable:
+      name: tp
+      process: accumulation
+      period: [0, 6]
+      mars: {param: tp, levtype: sfc}
+    expect:
+      levtype: sfc
+      stepRange: 0-24
+      startStep: 0
+      endStep: 24
+      typeOfStatisticalProcessing: 1
+
+  # --- reference time sweep (12Z run) --------------------------------------
+  # multio 2.10 encodes time as hours (1200 -> 12); 2.11 keeps HHMM.
+  - name: sfc-2t-time1200
+    reference: {date: 20260923, time: 1200}
+    step: 6
+    min_multio: "2.11"
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      dataDate: 20260923
+      dataTime: 1200
+      step: 6
+
+  # --- reference date sweep -------------------------------------------------
+  - name: sfc-2t-date20270101
+    reference: {date: 20270101, time: 0000}
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      dataDate: 20270101
+      dataTime: 0
+
+  # --- missing values / bitmap ---------------------------------------------
+  - name: sfc-sst-with-missing
+    variable:
+      name: sst
+      mars: {param: sst, levtype: sfc}
+    field:
+      fill: [270.0, 300.0]
+      nan_fraction: 0.25
+    expect:
+      levtype: sfc
+      bitmapPresent: 1

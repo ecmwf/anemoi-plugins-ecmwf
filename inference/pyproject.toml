@@ -60,6 +60,7 @@ optional-dependencies.tests = [
   "pytest",
   "pytest-mock",
   "pytest-xdist",
+  "pyyaml",
 ]
 optional-dependencies.thredds = [ "pydantic", "pyyaml" ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
@@ -109,4 +110,7 @@ testpaths = "tests"
 addopts = [
   #"--numprocesses=8",
   "--strict-config",
+]
+markers = [
+  "integration: real multio->GRIB encode/roundtrip tests (require pymultio + earthkit)",
 ]
