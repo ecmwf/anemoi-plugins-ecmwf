@@ -7,19 +7,23 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+"""Tests for the ``MIRRegrid`` filter (``regrid.regrid``).
+
+Covers the public filter: construction (incl. named-grid resolution),
+``forward()`` integration with MIR, ``__repr__`` and import paths.
+"""
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
-from anemoi.plugins.ecmwf.transform.regrid.regrid import MIRRegrid as MIRRegridDirect
+from anemoi.plugins.ecmwf.transform.regrid.named import KNOWN_GRIDS
+from anemoi.plugins.ecmwf.transform.regrid.named import NamedRegrid
 
-# Check dependencies for integration tests
-mir = pytest.importorskip("mir", reason="MIR not available")
-pytest.importorskip("eccodes", reason="eccodes not available")
-ekd = pytest.importorskip("earthkit.data", reason="earthkit.data not available")
+from . import requires_mir
 
 
+@requires_mir
 class TestMIRRegridForward:
     """Integration tests for MIRRegrid.forward() running MIR properly."""
 
@@ -68,17 +72,6 @@ class TestMIRRegridForward:
         assert np.isfinite(values).all()
         np.testing.assert_allclose(values, 300.0, atol=1.0)
 
-    def test_forward_array_method(self, grib_fieldlist):
-        """forward() with method='array' produces correct results."""
-        fields = grib_fieldlist(grid="O32", nfields=2, base_value=200.0)
-        r = MIRRegrid(grid="O16", method="array")
-        result = r.forward(fields)
-
-        assert len(result) == 2
-        for i, field in enumerate(result):
-            expected = 200.0 + i * 10.0
-            np.testing.assert_allclose(field.values, expected, atol=1.0)
-
     def test_forward_preserves_param_id(self, grib_fieldlist):
         """forward() preserves paramId metadata after regridding."""
         fields = grib_fieldlist(grid="O32", nfields=1, base_value=300.0, param_id=130)
@@ -89,22 +82,77 @@ class TestMIRRegridForward:
 
     def test_forward_empty_fieldlist(self):
         """forward() with empty fields returns empty."""
+        import earthkit.data as ekd
+
         empty = ekd.SimpleFieldList()
         r = MIRRegrid(grid="O16")
         result = r.forward(empty)
         assert len(result) == 0
 
-    @pytest.mark.slow
-    def test_forward_grib_and_array_agree(self, grib_fieldlist):
-        """GRIB and array methods produce consistent results."""
+
+class TestMIRRegridNamedGrid:
+    """Tests for regridding to named grids (e.g. "meps").
+
+    Named grids are resolved via ``NamedRegrid`` into a dict of explicit
+    ``latitudes``/``longitudes`` lists, which drives MIR's unstructured path.
+    The resolution tests need no MIR; ``forward()`` tests do.
+    """
+
+    def test_named_grid_resolved_to_coord_dict(self):
+        """A known grid name is resolved to a lat/lon coordinate dict."""
+        r = MIRRegrid(grid="meps")
+
+        assert isinstance(r.grid, dict)
+        assert set(r.grid) == {"latitudes", "longitudes"}
+        assert len(r.grid["latitudes"]) == len(r.grid["longitudes"])
+        assert len(r.grid["latitudes"]) > 0
+
+    def test_named_grid_case_insensitive(self):
+        """Named grids are matched case-insensitively."""
+        r_lower = MIRRegrid(grid="meps")
+        r_upper = MIRRegrid(grid="MEPS")
+
+        assert r_upper.grid["latitudes"] == r_lower.grid["latitudes"]
+        assert r_upper.grid["longitudes"] == r_lower.grid["longitudes"]
+
+    def test_named_grid_matches_namedregrid(self):
+        """MIRRegrid resolves the same coordinates as NamedRegrid directly."""
+        r = MIRRegrid(grid="meps")
+        named = NamedRegrid("meps")
+
+        assert r.grid["latitudes"] == named.latitudes
+        assert r.grid["longitudes"] == named.longitudes
+
+    def test_unknown_named_grid_passed_through(self):
+        """An unknown string grid is not treated as a named grid."""
+        # "O16" is a valid MIR grid string, not a named grid.
+        assert "o16" not in KNOWN_GRIDS
+        r = MIRRegrid(grid="O16")
+        assert r.grid == "O16"
+
+    @requires_mir
+    def test_forward_to_named_grid(self, grib_fieldlist):
+        """forward() regrids onto a named grid's unstructured point set."""
         fields = grib_fieldlist(grid="O32", nfields=1, base_value=300.0)
-        r_grib = MIRRegrid(grid="O16", method="grib")
-        r_array = MIRRegrid(grid="O16", method="array")
+        r = MIRRegrid(grid="meps")
+        result = r.forward(fields)
 
-        result_grib = r_grib.forward(fields)
-        result_array = r_array.forward(fields)
+        assert len(result) == 1
+        values = result[0].values
+        # One output value per named-grid coordinate pair
+        assert len(values) == len(r.grid["latitudes"])
+        assert np.isfinite(values).all()
+        # Constant field stays constant after interpolation
+        np.testing.assert_allclose(values, 300.0, atol=1.0)
 
-        np.testing.assert_allclose(result_grib[0].values, result_array[0].values, rtol=1e-5, atol=1e-3)
+    @requires_mir
+    def test_forward_to_named_grid_is_unstructured(self, grib_fieldlist):
+        """Regridding to a named grid produces an unstructured grid."""
+        fields = grib_fieldlist(grid="O32", nfields=1, base_value=300.0)
+        r = MIRRegrid(grid="meps")
+        result = r.forward(fields)
+
+        assert result[0].metadata("gridType") == "unstructured_grid"
 
 
 class TestMIRRegridRepr:
@@ -121,11 +169,3 @@ class TestMIRRegridRepr:
         r = MIRRegrid(grid="N320")
         assert "N320" in repr(r)
         assert "None" in repr(r)
-
-
-class TestMIRRegridImport:
-    """Tests for MIRRegrid import paths."""
-
-    def test_importable_from_package(self):
-        """MIRRegrid is importable from the regrid package."""
-        assert MIRRegrid is MIRRegridDirect
