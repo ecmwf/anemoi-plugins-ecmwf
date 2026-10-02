@@ -11,173 +11,35 @@ import io
 import logging
 
 import earthkit.data as ekd
-import numpy as np
 
 LOG = logging.getLogger(__name__)
 
 
 GridSpec = str | list[float] | tuple[float, ...] | dict[str, list[float]]
 
-# GRIB keys copied from each source field onto the target-grid template
-# when using the (fast) array-based regridding path. Order matters
 
-TEMPLATE_OVERRIDE_KEYS: tuple[str, ...] = (
-    "dataDate",
-    "dataTime",
-    "stepType",
-    "stepRange",
-    "typeOfLevel",
-    "level",
-    "paramId",
-)
+def _make_mir_grid(grid: GridSpec):
+    """Build a ``mir.Grid`` from a grid specification."""
+    import mir
 
-
-def normalise_grid(grid: GridSpec) -> str:
-    """Normalise the grid specification to a string format.
-
-    Parameters
-    ----------
-    grid : GridSpec
-        The grid specification, which can be a string, list, tuple, or dict.
-
-    Returns
-    -------
-    str
-        The normalised grid specification as a string.
-    """
-    if isinstance(grid, (list, tuple)):
-        return "/".join(map(str, grid))
-    elif isinstance(grid, (int, float)):
-        return f"{grid}/{grid}"
+    if isinstance(grid, str):
+        return mir.Grid(grid=grid.upper())
+    elif isinstance(grid, (list, tuple)):
+        return mir.Grid(grid=list(grid))
     elif isinstance(grid, dict):
-        return "/".join(f"{k}={v}" for k, v in grid.items())
-    else:
-        return str(grid).upper()
+        return mir.Grid(**grid)
+    raise ValueError(f"Unsupported grid specification: {grid}")
 
 
-def _make_job(grid: str, area: str | list[float] | None, packing: str, accuracy: int):
-    import mir
-
-    job_args = {"grid": grid}
-    if area:
-        job_args["area"] = area
-    return mir.Job(**job_args, edition=2, packing=packing, accuracy=accuracy, truncation="auto")
-
-
-def _mir_regrid_grib(
-    fields: ekd.FieldList,
-    grid: str,
-    area: str | list[float] | None,
-    packing: str,
-    accuracy: int,
-) -> ekd.FieldList:
-    """Regrid via a full GRIB round-trip (slow, but preserves all metadata)."""
-    job = _make_job(grid, area, packing, accuracy)
-    input_buffer = io.BytesIO()
-    output_buffer = io.BytesIO()
-    fields.to_target("file", input_buffer)
-
-    input_buffer.seek(0)
-    job.execute(input_buffer, output_buffer)
-    return ekd.from_source("memory", output_buffer.getvalue())
-
-
-def _resolve_input_gridspec(field) -> dict | None:
-    """Determine a MIR-compatible gridspec for a field's values.
-
-    Returns ``None`` if the field has no gridspec (e.g. spectral fields),
-    in which case it cannot go through the array interface.
-
-    The gridspec derived from GRIB metadata contains an ``area`` rounded to
-    6 decimals; this rounding makes MIR compute a point count that differs
-    from the values array length (``RawInput: values size equals iterator
-    count`` assertion or Bus error). For reduced Gaussian grids the area is
-    always redundant (they are inherently global), so it is unconditionally
-    stripped. For other grids, it is dropped when the ecCodes computed key
-    ``global`` is true.
-    """
-    gridspec = field.metadata().gridspec
-    if gridspec is None:
-        return None
-    gridspec = dict(gridspec)
-
-    # Reduced Gaussian grids (O, N, F prefixed) are always global; the area
-    # key from GRIB metadata is rounded and causes MIR to miscount points.
-    grid_name = str(gridspec.get("grid", ""))
-    is_reduced_gg = grid_name and grid_name[0] in ("O", "N", "F") and grid_name[1:].isdigit()
-
-    if is_reduced_gg or int(field.metadata("global", default=0)) == 1:
-        gridspec.pop("area", None)
-    return gridspec
-
-
-def _mir_regrid_array(
-    fields: ekd.FieldList,
-    grid: str,
-    area: str | list[float] | None,
-    packing: str,
-    accuracy: int,
-) -> ekd.FieldList:
-    """Regrid via MIR's array interface (fast).
-
-    Field values are passed to MIR as numpy arrays, skipping the GRIB
-    encode/decode round-trip of the (large) input-resolution messages.
-    Output metadata is built from a target-grid GRIB template (obtained by
-    regridding the first field through the GRIB path), overriding the
-    per-field identity keys (``TEMPLATE_OVERRIDE_KEYS``).
-    """
-    import mir
-
-    from ..utils import fields_to_numpy_parallel
-
-    # Partition: fields without a gridspec (e.g. spectral) cannot use the
-    # array interface and go through the GRIB round-trip instead.
-    gridspecs = [_resolve_input_gridspec(f) for f in fields]
-    grib_only = [i for i, gs in enumerate(gridspecs) if gs is None]
-
-    if len(grib_only) == len(fields):
-        return _mir_regrid_grib(fields, grid, area, packing, accuracy)
-
-    if grib_only:
-        LOG.info(
-            f"{len(grib_only)} of {len(fields)} fields have no gridspec "
-            "(e.g. spectral); regridding them via the GRIB round-trip."
-        )
-        grib_results = _mir_regrid_grib(
-            ekd.FieldList.from_fields([fields[i] for i in grib_only]),
-            grid,
-            area,
-            packing,
-            accuracy,
-        )
-
-    # Target-grid template metadata from the first array-able field (one small
-    # GRIB round-trip).
-    # NOTE: this must run before any mir.ArrayInput is created: current mir-python
-    # segfaults if an ArrayInput is constructed before MIR has executed once.
-    first = next(i for i, gs in enumerate(gridspecs) if gs is not None)
-    template = _mir_regrid_grib(fields[first : first + 1], grid, area, packing, accuracy)[0]
-    template_md = template.metadata()
-
-    job = _make_job(grid, area, packing, accuracy)
-    output = mir.ArrayOutput()
-
-    grib_iter = iter(grib_only and grib_results)
-    out_fields = []
-    in_fields = fields_to_numpy_parallel(fields)  # (nfields, npoints)
-    for i, (field, input_gridspec) in enumerate(zip(fields, gridspecs)):
-        if input_gridspec is None:
-            out_fields.append(next(grib_iter))
-            continue
-
-        values = np.ascontiguousarray(in_fields[i], dtype=np.float64)
-        job.execute(mir.ArrayInput(values, input_gridspec), output)
-
-        overrides = {k: field.metadata(k, default=None) for k in TEMPLATE_OVERRIDE_KEYS}
-        overrides = {k: v for k, v in overrides.items() if v is not None}
-        out_fields.append(ekd.ArrayField(output.values(), template_md.override(overrides)))
-
-    return ekd.FieldList.from_fields(out_fields)
+def grid_repr(grid: GridSpec) -> str:
+    """Return a human-readable representation of the grid specification."""
+    if isinstance(grid, str):
+        return grid.upper()
+    if isinstance(grid, (list, tuple)):
+        return str(list(grid)[:5] + ["..."] if len(grid) > 5 else grid)
+    if isinstance(grid, dict):
+        return str({k: f"list of len {len(v)}" for k, v in grid.items()})
+    return repr(grid)
 
 
 def mir_regrid(
@@ -186,29 +48,28 @@ def mir_regrid(
     area: str | list[float] | None = None,
     packing: str = "ccsds",
     accuracy: int = 16,
-    method: str = "grib",
 ) -> ekd.FieldList:
-    """Regrid fields using the MIR library.
+    """Regrid fields to a target grid using MIR.
+
+    Each field's values are passed to MIR through its array interface and the
+    result is written back as a GRIB2 message via ``mir.PyGribOutput``.
+
+    For unstructured lat/lon target grids, MIR leaves ``uuidOfHGrid`` all-zero
+    on the output, so we stamp the real grid UID back on (see below).
 
     Parameters
     ----------
     fields : ekd.FieldList
         The input fields to regrid.
     grid : GridSpec
-        The target grid specification.
+        The target grid specification (grid string, list/tuple of increments,
+        or dict of coordinate lists).
     area : str or list of float or None, optional
         The target area specification.
     packing : str, optional
         GRIB packing type of the output.
     accuracy : int, optional
         GRIB bits per value of the output.
-    method : str, optional
-        ``"grib"`` (default) round-trips everything through GRIB,
-        preserving all metadata keys. ``"array"`` passes field values
-        to MIR as numpy arrays, avoiding the GRIB round-trip of the
-        input-resolution messages (faster when fields are already
-        numpy-backed, e.g. ``ekd.ArrayField``); output metadata is
-        rebuilt from a target-grid template.
 
     Returns
     -------
@@ -218,14 +79,42 @@ def mir_regrid(
     if len(fields) == 0:
         return fields
 
-    grid = normalise_grid(grid)
-
     LOG.info(
-        f"Starting MIR regridding of {len(fields)} fields to grid: {grid!r}, area: {area!r}, "
-        f"packing: {packing!r}, accuracy: {accuracy!r}, method: {method!r}."
+        f"Starting MIR regridding of {len(fields)} fields to grid: {grid_repr(grid)!r}, "
+        f"area: {area!r}, packing: {packing!r}, accuracy: {accuracy!r}."
     )
 
-    if method == "array":
-        return _mir_regrid_array(fields, grid, area, packing, accuracy)
+    import mir
 
-    return _mir_regrid_grib(fields, grid, area, packing, accuracy)
+    mir_grid = _make_mir_grid(grid)
+    # Unstructured lat/lon grids carry a UID in their spec; regular grids do
+    # not. MIR fails to write this UID into the output's ``uuidOfHGrid``,
+    # leaving it all-zero, which later makes the grid unresolvable
+    # (eckit-geo raises ``GridUnknownError``). We stamp it back on below.
+    # TODO: remove once MIR populates uuidOfHGrid for unstructured lat/lon grids.
+    grid_uid = mir_grid.spec.get("uid") if isinstance(mir_grid.spec, dict) else None
+
+    job_args = {"grid": mir_grid.spec, "edition": 2, "packing": packing, "accuracy": accuracy}
+    if area:
+        job_args["area"] = area
+    job = mir.Job(**job_args)
+
+    out_fields = []
+    for field in fields:
+        input_buffer = io.BytesIO()
+        field.to_target("file", input_buffer)
+        input_buffer.seek(0)
+
+        output_buffer = io.BytesIO()
+        job.execute(mir.PyGribInput(input_buffer), mir.PyGribOutput(output_buffer))
+        regridded = ekd.from_source("memory", output_buffer.getvalue())[0]
+
+        input_buffer.close()
+        output_buffer.close()
+
+        if grid_uid:
+            regridded.handle.set("uuidOfHGrid", grid_uid)
+
+        out_fields.append(regridded)
+
+    return ekd.FieldList.from_fields(out_fields)

@@ -13,7 +13,10 @@ import earthkit.data as ekd
 from anemoi.transform.filter import Filter
 
 from .backend import GridSpec
+from .backend import grid_repr
 from .backend import mir_regrid
+from .named import KNOWN_GRIDS
+from .named import NamedRegrid
 
 LOG = logging.getLogger(__name__)
 
@@ -32,9 +35,6 @@ class MIRRegrid(Filter):
         The packing method to use, by default "ccsds".
     accuracy : int, optional
         The accuracy for regridding, by default 16.
-    method : str, optional
-        The regridding method to use, by default "grib".
-        Can be "array" to use MIR's array-based regridding, or "grib" to use GRIB-based regridding.
     """
 
     def __init__(
@@ -44,14 +44,21 @@ class MIRRegrid(Filter):
         area: str | list[float] | tuple[float, ...] | None = None,
         packing: str = "ccsds",
         accuracy: int = 16,
-        method: str = "grib",
     ) -> None:
+
+        if isinstance(grid, str) and grid.lower() in KNOWN_GRIDS:
+            named_regrid = NamedRegrid(grid)
+            grid = named_regrid.gridspec["grid"]
+
         self._grid = grid
         self._area = area
 
         self._packing = packing
         self._accuracy = accuracy
-        self._method = method
+
+    @property
+    def grid(self) -> GridSpec:
+        return self._grid
 
     def forward(self, fields: ekd.FieldList) -> ekd.FieldList:
         """Regrid the input fields to the target grid.
@@ -72,8 +79,7 @@ class MIRRegrid(Filter):
             self._area,
             packing=self._packing,
             accuracy=self._accuracy,
-            method=self._method,
         )
 
     def __repr__(self) -> str:
-        return f"MIRRegrid(grid={self._grid!r}, area={self._area!r})"
+        return f"MIRRegrid(grid={grid_repr(self._grid)!r}, area={self._area!r})"

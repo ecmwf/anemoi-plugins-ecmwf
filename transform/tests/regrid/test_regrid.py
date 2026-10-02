@@ -68,10 +68,10 @@ class TestMIRRegridForward:
         assert np.isfinite(values).all()
         np.testing.assert_allclose(values, 300.0, atol=1.0)
 
-    def test_forward_array_method(self, grib_fieldlist):
-        """forward() with method='array' produces correct results."""
+    def test_forward_multiple_fields_values(self, grib_fieldlist):
+        """forward() produces correct values for multiple fields."""
         fields = grib_fieldlist(grid="O32", nfields=2, base_value=200.0)
-        r = MIRRegrid(grid="O16", method="array")
+        r = MIRRegrid(grid="O16")
         result = r.forward(fields)
 
         assert len(result) == 2
@@ -93,18 +93,6 @@ class TestMIRRegridForward:
         r = MIRRegrid(grid="O16")
         result = r.forward(empty)
         assert len(result) == 0
-
-    @pytest.mark.slow
-    def test_forward_grib_and_array_agree(self, grib_fieldlist):
-        """GRIB and array methods produce consistent results."""
-        fields = grib_fieldlist(grid="O32", nfields=1, base_value=300.0)
-        r_grib = MIRRegrid(grid="O16", method="grib")
-        r_array = MIRRegrid(grid="O16", method="array")
-
-        result_grib = r_grib.forward(fields)
-        result_array = r_array.forward(fields)
-
-        np.testing.assert_allclose(result_grib[0].values, result_array[0].values, rtol=1e-5, atol=1e-3)
 
 
 class TestMIRRegridRepr:
@@ -129,4 +117,3 @@ class TestMIRRegridImport:
     def test_importable_from_package(self):
         """MIRRegrid is importable from the regrid package."""
         assert MIRRegrid is MIRRegridDirect
-
