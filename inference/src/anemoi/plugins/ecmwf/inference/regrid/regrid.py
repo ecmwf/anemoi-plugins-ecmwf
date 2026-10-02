@@ -17,7 +17,6 @@ from anemoi.inference.types import State
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 from anemoi.plugins.ecmwf.transform.regrid.backend import GridSpec
 
-
 LOG = logging.getLogger(__name__)
 CHECKPOINT_SENTINEL = "checkpoint"
 
@@ -126,8 +125,8 @@ class RegridPreprocessor(Processor):
         state["fields"] = self._regrid.forward(state["fields"])
         latlon = self._get_latlon(state)
 
-        state["latitudes"] = latlon['lat']
-        state["longitudes"] = latlon['lon']
+        state["latitudes"] = latlon["lat"]
+        state["longitudes"] = latlon["lon"]
         return state
 
     def __repr__(self) -> str:

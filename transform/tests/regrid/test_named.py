@@ -71,4 +71,3 @@ class TestNamedRegrid:
         """Latitudes and longitudes arrays have the same length."""
         grid = NamedRegrid("meps")
         assert len(grid.latitudes) == len(grid.longitudes)
-
