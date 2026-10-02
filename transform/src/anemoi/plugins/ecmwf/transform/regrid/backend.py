@@ -54,9 +54,6 @@ def mir_regrid(
     Each field's values are passed to MIR through its array interface and the
     result is written back as a GRIB2 message via ``mir.PyGribOutput``.
 
-    For unstructured lat/lon target grids, MIR leaves ``uuidOfHGrid`` all-zero
-    on the output, so we stamp the real grid UID back on (see below).
-
     Parameters
     ----------
     fields : ekd.FieldList
@@ -88,7 +85,12 @@ def mir_regrid(
 
     mir_grid = _make_mir_grid(grid)
 
-    job_args = {"grid": mir_grid.spec, "edition": 2, "packing": packing, "accuracy": accuracy}
+    job_args = {
+        "grid": mir_grid.spec,
+        "edition": 2,
+        "packing": packing,
+        "accuracy": accuracy,
+    }
     if area:
         job_args["area"] = area
     job = mir.Job(**job_args)
