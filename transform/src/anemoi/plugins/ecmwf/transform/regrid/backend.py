@@ -87,12 +87,6 @@ def mir_regrid(
     import mir
 
     mir_grid = _make_mir_grid(grid)
-    # Unstructured lat/lon grids carry a UID in their spec; regular grids do
-    # not. MIR fails to write this UID into the output's ``uuidOfHGrid``,
-    # leaving it all-zero, which later makes the grid unresolvable
-    # (eckit-geo raises ``GridUnknownError``). We stamp it back on below.
-    # TODO: remove once MIR populates uuidOfHGrid for unstructured lat/lon grids.
-    grid_uid = mir_grid.spec.get("uid") if isinstance(mir_grid.spec, dict) else None
 
     job_args = {"grid": mir_grid.spec, "edition": 2, "packing": packing, "accuracy": accuracy}
     if area:
@@ -111,9 +105,6 @@ def mir_regrid(
 
         input_buffer.close()
         output_buffer.close()
-
-        if grid_uid:
-            regridded.handle.set("uuidOfHGrid", grid_uid)
 
         out_fields.append(regridded)
 

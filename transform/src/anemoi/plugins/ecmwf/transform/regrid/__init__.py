@@ -7,10 +7,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import os
-
-os.environ["ECCODES_ECKIT_GEO"] = "1"
-
 from .regrid import MIRRegrid
 
 __all__ = ["MIRRegrid"]
