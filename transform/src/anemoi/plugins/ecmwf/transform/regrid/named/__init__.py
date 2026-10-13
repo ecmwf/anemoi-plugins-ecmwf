@@ -13,7 +13,7 @@ from typing import Literal
 
 import numpy as np
 
-_NAMED_PKG = "anemoi.plugins.ecmwf.inference.regrid.named"
+_NAMED_PKG = "anemoi.plugins.ecmwf.transform.regrid.named"
 
 KNOWN_GRIDS = [
     f.name
