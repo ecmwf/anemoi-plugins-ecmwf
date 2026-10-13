@@ -10,11 +10,11 @@
 # ---------------------------------------------------------------------------
 # Regression: accumulation stepRange must not collapse across a forecast.
 #
-# The operational aifs-ens-crps plan encodes with:
+# The operational aifs-temporal-downscaler plan encodes with:
 #     - type: encode-mtg2
 #       cached: true
 #
-# Observed in aifs-temporal-downscaler.grib: every tp / typeOfStatisticalProcessing
+# Observed in aifs-temporal-downscaler tests: every tp / typeOfStatisticalProcessing
 # accumulation field collapsed to stepRange "0-1", even though the forecast runs
 # hourly (2t correctly spans steps 0..240). Root cause: with ``cached: true`` the
 # mtg2 encoder reuses a cached GRIB template across messages, freezing the first
@@ -24,9 +24,7 @@
 # (as a real forecast does) and assert each encodes its own 0->step window:
 #
 #   - cached:false  -> MUST pass (distinct 0-1, 0-2, 0-3, 0-6, 0-12, 0-24)
-#   - cached:true   -> currently a HARD FAILURE, reproducing the collapse. This is
-#                      intentional: the test stays red until multio/mtg2 fixes the
-#                      caching (or the operational plan drops cached:true).
+#   - cached:true   -> MUST pass (distinct 0-1, 0-2, 0-3, 0-6, 0-12, 0-24) prior error
 # ---------------------------------------------------------------------------
 
 defaults:
@@ -65,10 +63,6 @@ cases:
       - {stepRange: "0-12", startStep: 0, endStep: 12, typeOfStatisticalProcessing: 1}
       - {stepRange: "0-24", startStep: 0, endStep: 24, typeOfStatisticalProcessing: 1}
 
-  # NOTE: this currently FAILS (hard) -- it reproduces the operational bug where
-  # encode-mtg2 cached:true freezes the accumulation stepRange and every step
-  # collapses to the first window (0-1), as seen in aifs-temporal-downscaler.grib.
-  # Left as a hard failure on purpose so the regression stays loud until fixed.
   - name: tp-accum-sequence-cached
     cached: true
     steps: [1, 2, 3, 6, 12, 24]

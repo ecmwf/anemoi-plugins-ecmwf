@@ -42,7 +42,7 @@ from .schema import Case
 # ---------------------------------------------------------------------------
 # Dependency gate -- these are heavy, compiled, optional dependencies.
 # ---------------------------------------------------------------------------
-multio = pytest.importorskip("multio", reason="pymultio not installed")
+multio = pytest.importorskip("multio", reason="multio not installed")
 ekd = pytest.importorskip("earthkit.data", reason="earthkit-data not installed")
 eccodes = pytest.importorskip("eccodes", reason="eccodes not installed")
 
