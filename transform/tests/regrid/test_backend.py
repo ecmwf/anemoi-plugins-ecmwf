@@ -16,7 +16,6 @@ target grids), the ``grid_repr`` logging helper, and the ``GridSpec`` type.
 from __future__ import annotations
 
 import numpy as np
-import pytest
 from anemoi.plugins.ecmwf.transform.regrid.backend import GridSpec
 from anemoi.plugins.ecmwf.transform.regrid.backend import grid_repr
 from anemoi.plugins.ecmwf.transform.regrid.backend import mir_regrid
@@ -186,13 +185,6 @@ class TestMirRegridUnstructured:
         assert flat.shape == (len(latitudes),)
         np.testing.assert_array_equal(flat, result[0].values)
 
-    @pytest.mark.xfail(
-        reason=(
-            "MIR leaves uuidOfHGrid all-zero on unstructured lat/lon output, so the "
-            "grid geometry cannot be decoded. To be fixed upstream; xpass once fixed."
-        ),
-        strict=True,
-    )
     def test_regrid_unstructured_to_latlon(self, grib_fieldlist):
         """Lat/lon coordinates are retrievable from the unstructured output."""
         fields = grib_fieldlist(grid="O32", nfields=1, base_value=300.0)
@@ -204,13 +196,6 @@ class TestMirRegridUnstructured:
         np.testing.assert_allclose(ll["lat"], latitudes)
         np.testing.assert_allclose(ll["lon"], longitudes)
 
-    @pytest.mark.xfail(
-        reason=(
-            "MIR leaves uuidOfHGrid all-zero on unstructured lat/lon output, so the "
-            "grid geometry cannot be decoded. To be fixed upstream; xpass once fixed."
-        ),
-        strict=True,
-    )
     def test_regrid_unstructured_grid_points(self, grib_fieldlist):
         """Grid points are retrievable from the unstructured output."""
         fields = grib_fieldlist(grid="O32", nfields=1, base_value=300.0)
