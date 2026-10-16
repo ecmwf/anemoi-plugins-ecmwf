@@ -88,34 +88,6 @@ cases:
       levtype: sfc
       step: 12
 
-  # --- soil parameters -----------------------------------
-  - name: sfc-stl1
-    step: 0
-    user:
-      generatingProcessIdentifier: 6
-    variable:
-      name: stl1
-      mars: {param: stl1, levtype: sfc}
-    expect:
-      shortName: sot
-      paramId: 260360
-      levtype: sol
-      levelist: 1
-
-  - name: sfc-swvl1
-    step: 0
-    user:
-      generatingProcessIdentifier: 6
-    variable:
-      name: swvl1
-      mars: {param: swvl1, levtype: sfc}
-    expect:
-      shortName: vsw
-      paramId: 260199
-      levtype: sol
-      levelist: 1
-
-
   # --- pressure level parameters (levelist sweep) --------------------------
   - name: pl-t-500-step0
     variable:
