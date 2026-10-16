@@ -196,7 +196,13 @@ class CaseFile(BaseModel):
         """Merge defaults into each raw case and validate to :class:`Case`."""
         out: list[Case] = []
         for raw in self.cases:
-            merged = _deep_merge(self.defaults, raw)
+            defaults = dict(self.defaults)
+            # ``step`` and ``steps`` are mutually exclusive: a case setting one
+            # replaces a default given in the other form.
+            for key, other in (("step", "steps"), ("steps", "step")):
+                if key in raw:
+                    defaults.pop(other, None)
+            merged = _deep_merge(defaults, raw)
             merged["source"] = source
             merged["id"] = f"{source.removesuffix('.yaml')}::{raw['name']}"
             out.append(Case.model_validate(merged))

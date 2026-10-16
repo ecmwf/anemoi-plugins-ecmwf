@@ -225,7 +225,7 @@ def main(argv: list[str]) -> int:
     sys.stdout.write("RESULT " + json.dumps(result) + "\n")
     sys.stdout.flush()
 
-    # Hard exit: skip interpreter shutdown / multio atexit teardown, which on a
+    # Hard exit: skip interpreter shutdown / multio at exit teardown, which on a
     # failed encode would re-invoke the FailureAware handler and flood stderr
     # with an unbounded, recursive C++ backtrace (exhausting the parent's memory
     # when stderr is captured). ``os._exit`` bypasses all of that.

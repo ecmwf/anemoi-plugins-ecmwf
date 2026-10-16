@@ -14,6 +14,25 @@
 # ensemble path, checking the ensemble product-definition keys
 # (perturbationNumber / number, numberOfForecastsInEnsemble) survive encoding.
 # See the multio.log reference: ``type=pf`` fields carry stream oper/enfo/wave.
+#
+# Structure of a case:
+#   name        : unique, human readable id (used as the pytest parametrize id)
+#   grid        : gaussian grid, drives the number of values in the payload
+#   user        : UserDefinedMetadata (class/type/stream/expver/model/...)
+#   reference   : {date: YYYYMMDD, time: HHMM} forecast reference (analysis) time
+#   step        : forecast step, hours (int) or metkit duration string ("1800s")
+#   variable    : anemoi-transform Variable spec (mars keys + optional process)
+#   field       : optional field generation controls (fill / nan_fraction)
+#   expect      : GRIB header keys checked against the round-tripped message
+#
+# Overriding defaults:
+#   Any key under ``defaults`` can be overridden per case. Mappings are merged
+#   key by key, so a case only lists what changes, e.g.
+#     user: {generatingProcessIdentifier: 5}   # keeps class/type/stream/...
+#     reference: {time: 1200}                  # keeps the default date
+#   Scalars and lists replace the default outright (grid: O96, step: 12).
+#   Setting ``steps`` replaces the default ``step`` (and vice versa).
+#   Set an optional user key to ``null`` to drop it, e.g. ``user: {model: null}``.
 # ---------------------------------------------------------------------------
 
 defaults:
@@ -26,7 +45,7 @@ defaults:
     model: aifs-ens
     number: 1
     numberOfForecastsInEnsemble: 50
-    generatingProcessIdentifier: 5
+    generatingProcessIdentifier: 3
   reference:
     date: 20260923
     time: 0000
