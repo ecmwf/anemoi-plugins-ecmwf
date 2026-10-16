@@ -320,10 +320,6 @@ class MultioOutputPlugin(Output):
             raise RuntimeError("Multio server is not open, call `.open()` first.")
 
         reference_date = self.reference_date or self.context.reference_date
-        # ``Output.__init__`` and may be overridden per-run (e.g. in
-        # ``write_initial_state``). Trust that value rather than re-reading the
-        # context so an overridden reference date is honoured.
-        reference_date = self.reference_date
         href_date = self._user_defined_metadata.hindcast_reference_date
 
         if not isinstance(reference_date, datetime):
@@ -350,7 +346,7 @@ class MultioOutputPlugin(Output):
 
         for param, field in state["fields"].items():
             variable = self.typed_variables[param]
-            if variable.is_computed_forcing:
+            if variable.is_computed_forcing or self.skip_variable(param):
                 continue
 
             extra_keys = {}
