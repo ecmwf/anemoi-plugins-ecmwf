@@ -117,25 +117,31 @@ def _build_plugin(case: dict[str, Any], out_grib: str):
     )
     cached = bool(case.get("cached", False))
 
-    plan = multio.plans.Client(
-        plans=[
-            multio.plans.Plan(
-                name="integration-test",
-                actions=[
-                    multio.plans.EncodeMTG(cached=cached),  # plan action: encode-mtg2
-                    multio.plans.Sink(
-                        sinks=[
-                            multio.plans.sinks.File(
-                                append=True,
-                                per_server=False,
-                                path=out_grib,
-                            )
-                        ]
-                    ),
-                ],
+    sink_action = multio.plans.Sink(
+        sinks=[
+            multio.plans.sinks.File(
+                append=True,
+                per_server=False,
+                path=out_grib,
             )
         ]
     )
+    if case.get("plan") is not None:
+        plan = multio.plans.Plan.model_validate(case["plan"])
+        plan.actions.append(sink_action)
+        plan = multio.plans.Client(plans=[plan])
+    else:
+        plan = multio.plans.Client(
+            plans=[
+                multio.plans.Plan(
+                    name="integration-test",
+                    actions=[
+                        multio.plans.EncodeMTG(cached=cached),  # plan action: encode-mtg2
+                        sink_action,
+                    ],
+                )
+            ]
+        )
     plugin._plan = plan
     plugin._server = None
 

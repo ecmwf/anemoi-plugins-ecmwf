@@ -145,6 +145,9 @@ class Case(BaseModel):
     source: str = ""
     id: str = ""
 
+    plan: Any = None
+    """The multio plan to use for this case (injected by the loader)."""
+
     @model_validator(mode="after")
     def _validate_shape(self) -> "Case":
         if (self.step is None) == (self.steps is None):
@@ -181,6 +184,7 @@ class Case(BaseModel):
             "step": self.step,
             "steps": self.steps,
             "field": self.field.model_dump(),
+            "plan": self.plan,
         }
 
 
@@ -191,6 +195,8 @@ class CaseFile(BaseModel):
 
     defaults: dict[str, Any] = Field(default_factory=dict)
     cases: list[dict[str, Any]]
+    plan: Any = None
+    """Override for the multio plan used in each case."""
 
     def resolved(self, source: str) -> list[Case]:
         """Merge defaults into each raw case and validate to :class:`Case`."""
@@ -205,6 +211,7 @@ class CaseFile(BaseModel):
             merged = _deep_merge(defaults, raw)
             merged["source"] = source
             merged["id"] = f"{source.removesuffix('.yaml')}::{raw['name']}"
+            merged["plan"] = self.plan
             out.append(Case.model_validate(merged))
         return out
 
