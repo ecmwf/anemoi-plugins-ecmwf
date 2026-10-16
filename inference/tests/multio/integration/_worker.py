@@ -83,24 +83,38 @@ def _npoints(grid: str) -> int:
 
 
 def _build_plugin(case: dict[str, Any], out_grib: str):
-    """Construct a real MultioOutputGribPlugin without the heavy Output.__init__.
-
-    We inject exactly the attributes ``write_step`` touches (metadata, context,
-    typed_variables, user metadata, plan) so the test drives the genuine encode
-    path with a real multio server rather than a mock.
-    """
+    """Construct a MultioOutputGribPlugin for the given case and output path."""
     import multio
     from anemoi.inference.post_processors.accumulate import Accumulate
     from anemoi.plugins.ecmwf.inference.multio.multio_output import MultioOutputGribPlugin
-    from anemoi.plugins.ecmwf.inference.multio.multio_output import UserDefinedMetadata
     from anemoi.transform.variables import Variable
 
-    plugin = MultioOutputGribPlugin.__new__(MultioOutputGribPlugin)
+    grid = case["grid"]
 
-    # ``cached`` mirrors the operational plan's ``encode-mtg2: {cached: true}``.
-    # With caching on, mtg2 reuses a GRIB template across messages, which freezes
-    # the first accumulation field's time-range for all later ones -> the
-    # observed collapse of every ``tp`` to ``stepRange 0-1``. Default False.
+    post_processors: dict[str, list[Any]] = {}
+    if case.get("accumulate_from_start"):
+        post_processors = {"default": [Accumulate.__new__(Accumulate)]}
+
+    ref = case["reference"]
+    ref_dt = datetime.strptime(f"{ref['date']:08d}{int(ref['time']):04d}", "%Y%m%d%H%M")
+
+    vspec = dict(case["variable"])
+    vname = vspec.pop("name")
+    variable = Variable.from_dict(vname, vspec)
+
+    context = SimpleNamespace(post_processors=post_processors, reference_date=ref_dt, typed_variables={vname: variable})
+
+    plugin = MultioOutputGribPlugin(
+        context=context,
+        metadata=SimpleNamespace(
+            grid=grid,
+            timestep=_parse_step(case.get("timestep", 6)),
+            dataset_name="data",
+            typed_variables={vname: variable},
+        ),
+        path="",
+        **case["user"],
+    )
     cached = bool(case.get("cached", False))
 
     plan = multio.plans.Client(
@@ -123,27 +137,7 @@ def _build_plugin(case: dict[str, Any], out_grib: str):
         ]
     )
     plugin._plan = plan
-    plugin._archiver = None
-    plugin._initial_state_diagnostics_grib = None
     plugin._server = None
-    plugin._user_defined_metadata = UserDefinedMetadata(**case["user"])
-
-    grid = case["grid"]
-    plugin.metadata = SimpleNamespace(grid=grid, timestep=_parse_step(case.get("timestep", 6)))
-
-    post_processors: dict[str, list[Any]] = {}
-    if case.get("accumulate_from_start"):
-        post_processors = {"default": [Accumulate.__new__(Accumulate)]}
-
-    ref = case["reference"]
-    ref_dt = datetime.strptime(f"{ref['date']:08d}{int(ref['time']):04d}", "%Y%m%d%H%M")
-    plugin.context = SimpleNamespace(post_processors=post_processors, reference_date=ref_dt)
-    plugin.reference_date = ref_dt
-
-    vspec = dict(case["variable"])
-    vname = vspec.pop("name")
-    variable = Variable.from_dict(vname, vspec)
-    plugin.typed_variables = {vname: variable}
 
     return plugin, vname, grid
 

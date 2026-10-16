@@ -38,7 +38,7 @@ class UserMeta(BaseModel):
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-    klass: str = Field(alias="class")
+    klass: str = Field(alias="class", serialization_alias="class")
     type: str
     stream: str
     expver: str | int
