@@ -319,7 +319,7 @@ class MultioOutputPlugin(Output):
         if self._server is None:
             raise RuntimeError("Multio server is not open, call `.open()` first.")
 
-        # ``reference_date`` is initialised from the context by the base
+        reference_date = self.reference_date or self.context.reference_date
         # ``Output.__init__`` and may be overridden per-run (e.g. in
         # ``write_initial_state``). Trust that value rather than re-reading the
         # context so an overridden reference date is honoured.
