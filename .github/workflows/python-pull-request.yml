@@ -10,74 +10,18 @@ on:
     - cron: "9 2 * * 0" # at 9:02 on sunday
   workflow_dispatch:
 
-env:
-  UV_SYSTEM_PYTHON: 1
-
 jobs:
   quality:
     uses: ecmwf/reusable-workflows/.github/workflows/qa-precommit-run.yml@v2
     with:
       skip-hooks: "no-commit-to-branch"
 
+  # One call per platform: the sidebar groups the Python versions under each platform.
   pytest:
     strategy:
       fail-fast: false
       matrix:
         platform: ["ubuntu-latest", "macos-latest"]
-        python-version: ["3.11", "3.12", "3.13"]
-    runs-on: ${{ matrix.platform }}
-    timeout-minutes: 60
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        fetch-tags: true
-
-    - name: Install dependencies on macOS
-      if: runner.os == 'macOS'
-      run: |
-        brew install fftw
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install uv
-      uses: astral-sh/setup-uv@v6
-      with:
-        version: 0.7.19  # use same version as the one in ecmwf/reusable-workflows/.github/workflows/qa-pytest-pyproject.yml
-
-    - name: Detect changed packages
-      id: changed
-      run: |
-        echo "CHANGED_PACKAGES<<EOF" >> $GITHUB_ENV
-        git fetch origin ${{ github.base_ref }} --depth=1
-        for pkg in *; do
-            if [ -d "$pkg" ]; then
-                if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^${pkg}/"; then
-                    echo "$pkg"
-                fi
-            fi
-        done >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
-
-    - name: Install changed packages
-      if: env.CHANGED_PACKAGES != ''
-      run: |
-        uv pip install pytest pytest-md pytest-emoji pytest-cov
-        for pkg in $CHANGED_PACKAGES; do
-          uv pip install -e ./$pkg[all,tests]
-        done
-
-    - name: Run pytest for changed packages
-      if: env.CHANGED_PACKAGES != ''
-      run: |
-        for pkg in $CHANGED_PACKAGES; do
-          pushd $pkg # Change to the package directory
-          export GITHUB_WORKSPACE=$(pwd)
-          echo "Running pytest in $pkg"
-          pytest --cov=./ --cov-report=xml --emoji --md report.md
-          python -m coverage report
-          popd # Return to the previous directory
-        done
+    uses: ./.github/workflows/python-tests.yml
+    with:
+      platform: ${{ matrix.platform }}

@@ -1,0 +1,125 @@
+name: Python tests
+
+# Reusable workflow: runs the tests of the changed packages on one platform across
+# every supported Python version. It is called once per platform from
+# python-pull-request.yml so that the jobs are grouped per platform in the run sidebar.
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: "Runner label to run the tests on, e.g. ubuntu-latest"
+        required: true
+        type: string
+
+env:
+  UV_SYSTEM_PYTHON: 1
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ${{ inputs.platform }}
+    timeout-minutes: 60
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Install dependencies on macOS
+      if: runner.os == 'macOS'
+      run: |
+        brew install fftw
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: 0.7.19  # use same version as the one in ecmwf/reusable-workflows/.github/workflows/qa-pytest-pyproject.yml
+
+    - name: Detect changed packages
+      id: changed
+      env:
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        # On pull requests, test only packages changed against the base branch.
+        # On push, schedule and manual runs there is no base branch, so test every package.
+        # A change to the test workflows also tests every package.
+        test_all=true
+        if [ -n "$BASE_REF" ]; then
+            git fetch origin "$BASE_REF" --depth=1
+            changed_files=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+            if ! echo "$changed_files" | grep -qxF \
+                -e ".github/workflows/python-pull-request.yml" \
+                -e ".github/workflows/python-tests.yml"; then
+                test_all=false
+            fi
+        fi
+        echo "CHANGED_PACKAGES<<EOF" >> $GITHUB_ENV
+        for pkg in *; do
+            [ -f "$pkg/pyproject.toml" ] || continue
+            if [ "$test_all" = true ] || echo "$changed_files" | grep -q "^${pkg}/"; then
+                echo "$pkg"
+            fi
+        done >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Install changed packages
+      if: env.CHANGED_PACKAGES != ''
+      run: |
+        uv pip install pytest pytest-md pytest-emoji pytest-cov
+        for pkg in $CHANGED_PACKAGES; do
+          uv pip install -e ./$pkg[all,tests]
+        done
+
+    - name: Run pytest for changed packages
+      if: env.CHANGED_PACKAGES != ''
+      run: |
+        status=0
+        for pkg in $CHANGED_PACKAGES; do
+          pushd $pkg # Change to the package directory
+          export GITHUB_WORKSPACE=$(pwd)
+          echo "Running pytest in $pkg"
+          # Keep going on failure so every package writes its report; fail at the end.
+          pytest --cov=./ --cov-report=xml --emoji --md report.md \
+            --junitxml=report.xml -o junit_suite_name="$pkg" || status=1
+          python -m coverage report || true
+          popd # Return to the previous directory
+        done
+        exit $status
+
+    - name: Write test reports to the job summary
+      if: always() && env.CHANGED_PACKAGES != ''
+      run: |
+        {
+          echo "# Test results: ${{ inputs.platform }}, Python ${{ matrix.python-version }}"
+          for pkg in $CHANGED_PACKAGES; do
+            echo
+            echo "## $pkg"
+            if [ -f "$pkg/report.md" ]; then
+              # Demote headings so each package sits under its own section.
+              sed 's/^#/##/' "$pkg/report.md"
+            else
+              echo "No test report was written; see the pytest step log."
+            fi
+          done
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload test reports
+      if: always() && env.CHANGED_PACKAGES != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports-${{ inputs.platform }}-py${{ matrix.python-version }}
+        path: |
+          */report.xml
+          */report.md
+          */coverage.xml
+        if-no-files-found: warn
