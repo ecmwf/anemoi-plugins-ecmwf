@@ -90,12 +90,36 @@ jobs:
           export GITHUB_WORKSPACE=$(pwd)
           echo "Running pytest in $pkg"
           # Keep going on failure so every package writes its report; fail at the end.
-          pytest --cov=./ --cov-report=xml --emoji --md report.md \
+          # -v makes pytest-md list each test and failure in report.md.
+          pytest -v --cov=./ --cov-report=xml --emoji --md report.md \
             --junitxml=report.xml -o junit_suite_name="$pkg" || status=1
           python -m coverage report || true
           popd # Return to the previous directory
         done
         exit $status
+
+    - name: Write test reports to the job summary
+      if: always() && env.CHANGED_PACKAGES != ''
+      run: |
+        {
+          echo "# Test results: ${{ matrix.platform }}, Python ${{ matrix.python-version }}"
+          for pkg in $CHANGED_PACKAGES; do
+            echo
+            echo "## $pkg"
+            if [ -f "$pkg/report.md" ]; then
+              # Demote headings so each package sits under its own section.
+              sed 's/^#/###/' "$pkg/report.md"
+            else
+              echo "No test report was written; see the pytest step log."
+            fi
+            if [ -f "$pkg/.coverage" ]; then
+              echo
+              echo "### Coverage"
+              echo
+              (cd "$pkg" && python -m coverage report --format=markdown) || echo "Coverage report failed."
+            fi
+          done
+        } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Upload test reports
       if: always() && env.CHANGED_PACKAGES != ''
