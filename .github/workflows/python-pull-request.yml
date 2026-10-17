@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         platform: ["ubuntu-latest", "macos-latest"]
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 60
 
@@ -73,11 +73,26 @@ jobs:
     - name: Run pytest for changed packages
       if: env.CHANGED_PACKAGES != ''
       run: |
+        status=0
         for pkg in $CHANGED_PACKAGES; do
           pushd $pkg # Change to the package directory
           export GITHUB_WORKSPACE=$(pwd)
           echo "Running pytest in $pkg"
-          pytest --cov=./ --cov-report=xml --emoji --md report.md
-          python -m coverage report
+          # Keep going on failure so every package writes its report; fail at the end.
+          pytest --cov=./ --cov-report=xml --emoji --md report.md \
+            --junitxml=report.xml -o junit_suite_name="$pkg" || status=1
+          python -m coverage report || true
           popd # Return to the previous directory
         done
+        exit $status
+
+    - name: Upload test reports
+      if: always() && env.CHANGED_PACKAGES != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports-${{ matrix.platform }}-py${{ matrix.python-version }}
+        path: |
+          */report.xml
+          */report.md
+          */coverage.xml
+        if-no-files-found: warn
