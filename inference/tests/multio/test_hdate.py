@@ -165,7 +165,8 @@ def test_write_step_preserves_time(mock_multio_server, mock_state):
     for metadata, _ in calls:
         assert metadata["date"] == 20260610
         assert metadata["hdate"] == 20250610
-        assert metadata["time"] == 120000
+        # time is encoded as HHMM (metkit convention), e.g. 1200 for 12Z.
+        assert metadata["time"] == 1200
 
 
 @fake_checkpoints
