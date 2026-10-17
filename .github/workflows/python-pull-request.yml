@@ -10,124 +10,18 @@ on:
     - cron: "9 2 * * 0" # at 9:02 on sunday
   workflow_dispatch:
 
-env:
-  UV_SYSTEM_PYTHON: 1
-
 jobs:
   quality:
     uses: ecmwf/reusable-workflows/.github/workflows/qa-precommit-run.yml@v2
     with:
       skip-hooks: "no-commit-to-branch"
 
+  # One call per platform: the sidebar groups the Python versions under each platform.
   pytest:
     strategy:
       fail-fast: false
       matrix:
         platform: ["ubuntu-latest", "macos-latest"]
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
-    runs-on: ${{ matrix.platform }}
-    timeout-minutes: 60
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        fetch-tags: true
-
-    - name: Install dependencies on macOS
-      if: runner.os == 'macOS'
-      run: |
-        brew install fftw
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install uv
-      uses: astral-sh/setup-uv@v6
-      with:
-        version: 0.7.19  # use same version as the one in ecmwf/reusable-workflows/.github/workflows/qa-pytest-pyproject.yml
-
-    - name: Detect changed packages
-      id: changed
-      env:
-        BASE_REF: ${{ github.base_ref }}
-      run: |
-        # On pull requests, test only packages changed against the base branch.
-        # On push, schedule and manual runs there is no base branch, so test every package.
-        # A change to this workflow also tests every package.
-        test_all=true
-        if [ -n "$BASE_REF" ]; then
-            git fetch origin "$BASE_REF" --depth=1
-            changed_files=$(git diff --name-only "origin/${BASE_REF}...HEAD")
-            if ! echo "$changed_files" | grep -qx ".github/workflows/python-pull-request.yml"; then
-                test_all=false
-            fi
-        fi
-        echo "CHANGED_PACKAGES<<EOF" >> $GITHUB_ENV
-        for pkg in *; do
-            [ -f "$pkg/pyproject.toml" ] || continue
-            if [ "$test_all" = true ] || echo "$changed_files" | grep -q "^${pkg}/"; then
-                echo "$pkg"
-            fi
-        done >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
-
-    - name: Install changed packages
-      if: env.CHANGED_PACKAGES != ''
-      run: |
-        uv pip install pytest pytest-md pytest-emoji pytest-cov
-        for pkg in $CHANGED_PACKAGES; do
-          uv pip install -e ./$pkg[all,tests]
-        done
-
-    - name: Run pytest for changed packages
-      if: env.CHANGED_PACKAGES != ''
-      run: |
-        status=0
-        for pkg in $CHANGED_PACKAGES; do
-          pushd $pkg # Change to the package directory
-          export GITHUB_WORKSPACE=$(pwd)
-          echo "Running pytest in $pkg"
-          # Keep going on failure so every package writes its report; fail at the end.
-          # -v makes pytest-md list each test and failure in report.md.
-          pytest -v --cov=./ --cov-report=xml --emoji --md report.md \
-            --junitxml=report.xml -o junit_suite_name="$pkg" || status=1
-          python -m coverage report || true
-          popd # Return to the previous directory
-        done
-        exit $status
-
-    - name: Write test reports to the job summary
-      if: always() && env.CHANGED_PACKAGES != ''
-      run: |
-        {
-          echo "# Test results: ${{ matrix.platform }}, Python ${{ matrix.python-version }}"
-          for pkg in $CHANGED_PACKAGES; do
-            echo
-            echo "## $pkg"
-            if [ -f "$pkg/report.md" ]; then
-              # Demote headings so each package sits under its own section.
-              sed 's/^#/###/' "$pkg/report.md"
-            else
-              echo "No test report was written; see the pytest step log."
-            fi
-            if [ -f "$pkg/.coverage" ]; then
-              echo
-              echo "### Coverage"
-              echo
-              (cd "$pkg" && python -m coverage report --format=markdown) || echo "Coverage report failed."
-            fi
-          done
-        } >> "$GITHUB_STEP_SUMMARY"
-
-    - name: Upload test reports
-      if: always() && env.CHANGED_PACKAGES != ''
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-reports-${{ matrix.platform }}-py${{ matrix.python-version }}
-        path: |
-          */report.xml
-          */report.md
-          */coverage.xml
-        if-no-files-found: warn
+    uses: ./.github/workflows/python-tests.yml
+    with:
+      platform: ${{ matrix.platform }}
