@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.7.0...inference-0.7.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **inference/multio:** enable setup of gribjump ([ff105bc](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ff105bc4bf4b90d3903577889696e761a5e5cd7e))
+* **inference/multio:** improve timespan handling ([#115](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/115)) ([df82ce9](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/df82ce96c424e5bac95dc79fc4bfc220ea796089))
+
 ## [0.7.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.6.0...inference-0.7.0) (2026-08-24)
 
 
