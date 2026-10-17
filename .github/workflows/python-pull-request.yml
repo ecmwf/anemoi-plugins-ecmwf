@@ -50,14 +50,25 @@ jobs:
 
     - name: Detect changed packages
       id: changed
+      env:
+        BASE_REF: ${{ github.base_ref }}
       run: |
+        # On pull requests, test only packages changed against the base branch.
+        # On push, schedule and manual runs there is no base branch, so test every package.
+        # A change to this workflow also tests every package.
+        test_all=true
+        if [ -n "$BASE_REF" ]; then
+            git fetch origin "$BASE_REF" --depth=1
+            changed_files=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+            if ! echo "$changed_files" | grep -qx ".github/workflows/python-pull-request.yml"; then
+                test_all=false
+            fi
+        fi
         echo "CHANGED_PACKAGES<<EOF" >> $GITHUB_ENV
-        git fetch origin ${{ github.base_ref }} --depth=1
         for pkg in *; do
-            if [ -d "$pkg" ]; then
-                if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^${pkg}/"; then
-                    echo "$pkg"
-                fi
+            [ -f "$pkg/pyproject.toml" ] || continue
+            if [ "$test_all" = true ] || echo "$changed_files" | grep -q "^${pkg}/"; then
+                echo "$pkg"
             fi
         done >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
