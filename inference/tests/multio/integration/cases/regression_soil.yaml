@@ -1,0 +1,78 @@
+# (C) Copyright 2026- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+# ---------------------------------------------------------------------------
+# Multio -> GRIB regression soil test case.
+# Ensure that soil fields are mapped
+#
+# Each entry under ``cases`` produces one field that is written through a real
+# multio server (EncodeMTG -> file sink) and read back with earthkit-data. The
+# ``expect`` block lists GRIB header keys that must match after encoding.
+#
+# Structure of a case:
+#   name        : unique, human readable id (used as the pytest parametrize id)
+#   grid        : gaussian grid, drives the number of values in the payload
+#   user        : UserDefinedMetadata (class/type/stream/expver/model/...)
+#   reference   : {date: YYYYMMDD, time: HHMM} forecast reference (analysis) time
+#   step        : forecast step, hours (int) or metkit duration string ("1800s")
+#   variable    : anemoi-transform Variable spec (mars keys + optional process)
+#   field       : optional field generation controls (fill / nan_fraction)
+#   expect      : GRIB header keys checked against the round-tripped message
+#
+# Overriding defaults:
+#   Any key under ``defaults`` can be overridden per case. Mappings are merged
+#   key by key, so a case only lists what changes, e.g.
+#     user: {generatingProcessIdentifier: 5}   # keeps class/type/stream/...
+#     reference: {time: 1200}                  # keeps the default date
+#   Scalars and lists replace the default outright (grid: O96, step: 12).
+#   Setting ``steps`` replaces the default ``step`` (and vice versa).
+#   Set an optional user key to ``null`` to drop it, e.g. ``user: {model: null}``.
+# ---------------------------------------------------------------------------
+
+defaults:
+  grid: O48
+  user:
+    class: ai
+    type: fc
+    stream: oper
+    expver: "0001"
+    model: aifs-single
+    generatingProcessIdentifier: 6
+  reference:
+    date: 20260923
+    time: 0000
+  step: 0
+
+cases:
+  # --- soil parameters -----------------------------------
+  - name: sfc-stl1
+    step: 0
+    user:
+      generatingProcessIdentifier: 6
+    variable:
+      name: stl1
+      mars: {param: stl1, levtype: sfc}
+    expect:
+      shortName: sot
+      paramId: 260360
+      levtype: sol
+      levelist: 1
+
+  - name: sfc-swvl1
+    step: 0
+    user:
+      generatingProcessIdentifier: 6
+    variable:
+      name: swvl1
+      mars: {param: swvl1, levtype: sfc}
+    expect:
+      shortName: vsw
+      paramId: 260199
+      levtype: sol
+      levelist: 1

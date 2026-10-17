@@ -45,7 +45,7 @@ optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[mir,multio,opendat
 optional-dependencies.dynamics = [ "anemoi-transform", "earthkit-regrid", "pillow", "scipy", "torch" ]
 optional-dependencies.fdbplus = [ "anemoi-plugins-ecmwf-transform[mir]" ]
 optional-dependencies.mir = [ "anemoi-plugins-ecmwf-transform[mir]" ]
-optional-dependencies.multio = [ "pymultio[all]>=2.11.2.27" ]
+optional-dependencies.multio = [ "pymultio[all]>=2.12.0.33" ]
 optional-dependencies.opendata = [
   "anemoi-plugins-ecmwf-inference[regrid]",
   "anemoi-transform>=0.1.27",
@@ -60,6 +60,7 @@ optional-dependencies.tests = [
   "pytest",
   "pytest-mock",
   "pytest-xdist",
+  "pyyaml",
 ]
 optional-dependencies.thredds = [ "pydantic", "pyyaml" ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
@@ -109,4 +110,7 @@ testpaths = "tests"
 addopts = [
   #"--numprocesses=8",
   "--strict-config",
+]
+markers = [
+  "integration: real multio->GRIB encode/roundtrip tests (require pymultio + earthkit)",
 ]

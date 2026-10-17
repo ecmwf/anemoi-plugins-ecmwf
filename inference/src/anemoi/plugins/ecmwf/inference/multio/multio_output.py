@@ -365,7 +365,7 @@ class MultioOutputPlugin(Output):
             metadata = MultioMetadata(
                 param=param,
                 levtype=levtype,
-                levelist=variable.level * 100 if variable.level else None,
+                levelist=variable.level if variable.level else None,
                 timespan=timespan,
                 **shared_metadata,
             )
