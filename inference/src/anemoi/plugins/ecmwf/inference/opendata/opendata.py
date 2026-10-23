@@ -359,9 +359,13 @@ class OpenDataInputPlugin(MarsInput):
         kwargs.setdefault("grid", self.metadata.grid)
         kwargs.setdefault("area", self.metadata.area)
 
+        def patch(request: DataRequest) -> DataRequest:
+            # Configured `patches` are applied last, as in the mars and polytope inputs
+            return self.patch(self.patch_data_request(request))
+
         return retrieve(
             requests,
-            patch=self.patch_data_request,
+            patch=patch,
             source=self._source,
             **kwargs,
         )
