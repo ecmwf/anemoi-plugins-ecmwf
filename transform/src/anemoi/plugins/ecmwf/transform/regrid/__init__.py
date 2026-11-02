@@ -7,6 +7,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+import os
+
+# eccodes needs eckit-geo to resolve unstructured grids (uuidOfHGrid), eg. MIR output on named grids
+os.environ["ECCODES_ECKIT_GEO"] = "1"
+
 from .regrid import MIRRegrid
 
 __all__ = ["MIRRegrid"]
