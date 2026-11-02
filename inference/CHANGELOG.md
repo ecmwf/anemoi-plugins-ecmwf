@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.8.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.7.0...inference-0.8.0) (2026-11-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **transform/regrid:** build the MIR target grid with mir.Grid so latitude/longitude grids are regridded, MIRRegrid no longer takes a method
+* **transform/regrid:** move the named grids to transform, resolved by MIRRegrid
+
+### Features
+
+* **inference/mir_templates:** make templates for unstructured and stretched-grid (cutout) output ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **transform/regrid:** move the named grids to transform, resolved by MIRRegrid ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+
+
+### Bug Fixes
+
+* **inference/fdb_plus:** drop the method argument removed from MIRRegrid ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **inference/mir_templates:** choose the template grid with mir.Grid and check it against the output points ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **inference/multio:** enable setup of gribjump ([ff105bc](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ff105bc4bf4b90d3903577889696e761a5e5cd7e))
+* **inference/multio:** improve timespan handling ([#115](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/115)) ([df82ce9](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/df82ce96c424e5bac95dc79fc4bfc220ea796089))
+* **inference/multio:** validate_expver ([#121](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/121)) ([44797b5](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/44797b575ce3123a41a31a2b6b53b43de798bf3e))
+* **inference/regrid:** parse the checkpoint grid prefix ([#122](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/122)) ([77dfec3](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/77dfec39c49a6ec25829406ca994282953ccbb4c))
+* **inference/regrid:** take flat state coordinates from the regridded grid ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **transform/regrid:** build the MIR target grid with mir.Grid so latitude/longitude grids are regridded, MIRRegrid no longer takes a method ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **transform/regrid:** enable eckit-geo in eccodes and its grid cache ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **transform/regrid:** stamp the grid uid on unstructured MIR output ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+
 ## [0.7.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.6.0...inference-0.7.0) (2026-08-24)
 
 
