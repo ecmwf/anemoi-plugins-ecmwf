@@ -18,8 +18,6 @@ import numpy as np
 from anemoi.inference.grib.templates import IndexTemplateProvider
 from anemoi.inference.grib.templates import TemplateProvider
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
-from anemoi.plugins.ecmwf.transform.regrid.backend import _make_mir_grid
-from anemoi.plugins.ecmwf.transform.regrid.backend import grid_repr
 
 LOG = logging.getLogger(__name__)
 
@@ -72,46 +70,69 @@ class MirTemplatesProvider(TemplateProvider):
 
         Notes
         -----
-        The grid from the lookup is used as is when it has a ``area``, or when
-        it matches the number of output points. Otherwise (no grid, a grid
-        MIR cannot build, or a size mismatch, e.g. stretched / cutout grids)
-        the output latitudes/longitudes are used as an unstructured MIR grid.
+        The template is built from the ``grid`` and ``area`` of the lookup.
+        If the state has latitudes/longitudes, the template must have one point
+        per output point. When it does not (e.g. stretched / cutout grids, whose
+        lookup grid and area describe only one of the sources), or when MIR
+        cannot build the grid or area, the template is rebuilt as an
+        unstructured grid from the state's latitudes/longitudes (area dropped).
+        Without a grid in the lookup the state coordinates are used directly.
         """
         _lookup = lookup.copy()
 
         grid = _lookup.pop("grid", None)
         area = _lookup.pop("area", None)
 
-        state = kwargs.get("state")
-        unstructured = self._unstructured_grid(state)
+        if isinstance(grid, (int, float)) and not isinstance(grid, bool):
+            # anemoi-inference collapses a [0.5, 0.5] grid to 0.5, which MIR does not accept
+            grid = f"{grid}/{grid}"
 
-        if grid is None:
-            if unstructured is None:
-                LOG.warning(
-                    "No grid in the template lookup and no latitudes/longitudes in the state, "
-                    "cannot build a template for %s.",
-                    variable,
-                )
-                return None
-            grid, area = unstructured, None
-        elif unstructured is not None and area is None:
-            regridder = MIRRegrid(grid=grid, area=None)
-            reason = self._grid_mismatch(regridder.grid, len(unstructured["latitudes"]))
-            if reason is not None:
-                LOG.info("Using the output latitudes/longitudes as an unstructured grid: %s", reason)
-                grid = unstructured
+        coordinates = self._coordinates(kwargs.get("state"))
+
+        if grid is None and coordinates is None:
+            LOG.warning(
+                "No grid in the template lookup and no latitudes/longitudes in the state, "
+                "cannot build a template for %s.",
+                variable,
+            )
+            return None
 
         base_template = ekd.from_source("memory", self._base_template_provider.template(variable, lookup))
         if base_template is None:
             raise ValueError(f"Base template not found for variable {variable} with lookup {lookup}")
 
-        # Errors from MIR (e.g. on an unstructured grid) are deliberately not caught.
-        regridder = MIRRegrid(grid=grid, area=area)
-        return regridder.forward(base_template)[0]
+        if grid is not None:
+            try:
+                template = MIRRegrid(grid=grid, area=area).forward(base_template)[0]
+            except Exception as e:  # MIR raises generic RuntimeError / SpecError
+                if coordinates is None:
+                    raise
+                reason = f"MIR cannot build grid {grid!r} with area {area!r} ({e})"
+            else:
+                npoints = template.metadata("numberOfDataPoints")
+                if coordinates is None or npoints == len(coordinates[0]):
+                    return template
+                reason = (
+                    f"grid {grid!r} with area {area!r} has {npoints} points but the output has {len(coordinates[0])}"
+                )
+
+            LOG.info("Using the output latitudes/longitudes as an unstructured grid: %s", reason)
+
+        # Errors from MIR on the unstructured grid are deliberately not caught.
+        latitudes, longitudes = coordinates
+        unstructured = {"latitudes": latitudes.tolist(), "longitudes": longitudes.tolist()}
+        template = MIRRegrid(grid=unstructured).forward(base_template)[0]
+
+        npoints = template.metadata("numberOfDataPoints")
+        if npoints != len(latitudes):
+            raise ValueError(
+                f"Template for {variable} has {npoints} points, but the output state has {len(latitudes)} points"
+            )
+        return template
 
     @staticmethod
-    def _unstructured_grid(state: dict[str, Any] | None) -> dict[str, list[float]] | None:
-        """Build an unstructured MIR grid specification from the state's latitudes/longitudes."""
+    def _coordinates(state: dict[str, Any] | None) -> tuple[np.ndarray, np.ndarray] | None:
+        """Return the state's latitudes and longitudes as flat arrays, if usable."""
         if not state:
             return None
 
@@ -125,16 +146,4 @@ class MirTemplatesProvider(TemplateProvider):
         if latitudes.size == 0 or latitudes.size != longitudes.size:
             return None
 
-        return {"latitudes": latitudes.tolist(), "longitudes": longitudes.tolist()}
-
-    @staticmethod
-    def _grid_mismatch(grid: Any, npoints: int) -> str | None:
-        """Return why ``grid`` cannot describe ``npoints`` output points, or None if it can."""
-        try:
-            size = _make_mir_grid(grid).size()
-        except Exception as e:  # MIR raises generic RuntimeError / SpecError
-            return f"MIR cannot build grid {grid_repr(grid)!r} ({e})"
-
-        if size != npoints:
-            return f"grid {grid_repr(grid)!r} has {size} points but the output has {npoints}"
-        return None
+        return latitudes, longitudes

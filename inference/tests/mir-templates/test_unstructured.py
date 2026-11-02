@@ -11,6 +11,7 @@ import mir
 import numpy as np
 import pytest
 from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
+from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 
 
 class MockTemplateManager:
@@ -37,9 +38,9 @@ def _expected_uid(state: dict) -> str:
 
 
 def _check_unstructured(template, state: dict) -> None:
-    assert template.handle.get("gridType") == "unstructured_grid"
-    assert template.handle.get("numberOfDataPoints") == len(state["latitudes"])
-    assert template.handle.get("uuidOfHGrid") == _expected_uid(state)
+    assert template.metadata("gridType") == "unstructured_grid"
+    assert template.metadata("numberOfDataPoints") == len(state["latitudes"])
+    assert template.metadata("uuidOfHGrid") == _expected_uid(state)
 
 
 def test_no_grid_uses_state(provider: MirTemplatesProvider, state: dict):
@@ -64,25 +65,81 @@ def test_mismatched_grid_uses_state(provider: MirTemplatesProvider, state: dict,
     _check_unstructured(template, state)
 
 
+def test_mismatched_grid_and_area_uses_state(provider: MirTemplatesProvider, state: dict):
+    """A cutout checkpoint: the lookup has the LAM source's grid and area."""
+    template = provider.template("lsm", {"levtype": "sfc", "grid": "0.5/0.5", "area": "10/0/0/10"}, state=state)
+    _check_unstructured(template, state)
+
+
 def test_unbuildable_grid_uses_state(provider: MirTemplatesProvider, state: dict):
     template = provider.template("lsm", {"levtype": "sfc", "grid": "not-a-grid"}, state=state)
     _check_unstructured(template, state)
 
 
+def test_unbuildable_grid_without_state_raises(provider: MirTemplatesProvider):
+    with pytest.raises(Exception):
+        provider.template("lsm", {"levtype": "sfc", "grid": "not-a-grid"})
+
+
 def test_matching_grid_is_unchanged(provider: MirTemplatesProvider):
-    grid = mir.Grid(grid="O96")
-    npoints = grid.size()
+    npoints = mir.Grid(grid="O96").size()
     assert npoints == 40320
     state = {"latitudes": np.zeros(npoints), "longitudes": np.zeros(npoints)}
 
     template = provider.template("lsm", {"levtype": "sfc", "grid": "O96"}, state=state)
 
-    assert template.handle.get("gridType") == "reduced_gg"
+    assert template.metadata("gridType") == "reduced_gg"
     assert template.metadata().geography.mars_grid() == "O96"
-    assert template.handle.get("numberOfDataPoints") == npoints
+    assert template.metadata("numberOfDataPoints") == npoints
 
 
-def test_grid_with_area_ignores_state(provider: MirTemplatesProvider, state: dict):
-    template = provider.template("lsm", {"levtype": "sfc", "grid": "0.5/0.5", "area": "10/-0.5/0.5/11"}, state=state)
-    assert template.handle.get("gridType") == "regular_ll"
-    assert template.metadata().geography.mars_area() == [10.0, 359.5, 0.5, 11.0]
+def test_matching_grid_and_area_is_unchanged(provider: MirTemplatesProvider):
+    lookup = {"levtype": "sfc", "grid": "0.5/0.5", "area": "10/0/0/10"}
+    expected = provider.template("lsm", lookup)
+    latitudes, longitudes = expected.to_latlon(flatten=True).values()
+    state = {"latitudes": latitudes, "longitudes": longitudes}
+
+    template = provider.template("lsm", lookup, state=state)
+
+    assert template.metadata("gridType") == "regular_ll"
+    assert template.metadata().geography.mars_area() == expected.metadata().geography.mars_area()
+    assert template.metadata("numberOfDataPoints") == len(latitudes)
+
+
+def test_coordinates_round_trip(provider: MirTemplatesProvider, state: dict):
+    template = provider.template("lsm", {"levtype": "sfc", "grid": None}, state=state)
+    latlon = template.to_latlon(flatten=True)
+    np.testing.assert_allclose(latlon["lat"], state["latitudes"], atol=1e-4)
+    np.testing.assert_allclose(np.mod(latlon["lon"], 360.0), np.mod(state["longitudes"], 360.0), atol=1e-4)
+
+
+def test_unstructured_regrid_error_propagates(
+    provider: MirTemplatesProvider, state: dict, monkeypatch: pytest.MonkeyPatch
+):
+    forward = MIRRegrid.forward
+
+    def failing_forward(self, fields):
+        if isinstance(self.grid, dict):
+            raise RuntimeError("MIR failed on the unstructured grid")
+        return forward(self, fields)
+
+    monkeypatch.setattr(MIRRegrid, "forward", failing_forward)
+
+    with pytest.raises(RuntimeError, match="unstructured grid"):
+        provider.template("lsm", {"levtype": "sfc", "grid": "O96"}, state=state)
+
+
+def test_wrong_point_count_after_rebuild_raises(
+    provider: MirTemplatesProvider, state: dict, monkeypatch: pytest.MonkeyPatch
+):
+    forward = MIRRegrid.forward
+
+    def other_grid_forward(self, fields):
+        if isinstance(self.grid, dict):
+            return forward(MIRRegrid(grid="O48"), fields)
+        return forward(self, fields)
+
+    monkeypatch.setattr(MIRRegrid, "forward", other_grid_forward)
+
+    with pytest.raises(ValueError, match="points"):
+        provider.template("lsm", {"levtype": "sfc", "grid": "O96"}, state=state)
