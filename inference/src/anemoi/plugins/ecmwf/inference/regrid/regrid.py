@@ -105,9 +105,10 @@ class RegridPreprocessor(Processor):
     def _get_latlon(self, state: State) -> dict:
         resolved_grid = self._regrid.grid
         if isinstance(resolved_grid, dict) and "latitudes" in resolved_grid and "longitudes" in resolved_grid:
-            return {"lat": resolved_grid["latitudes"], "lon": resolved_grid["longitudes"]}
+            return {"lat": np.asarray(resolved_grid["latitudes"]), "lon": np.asarray(resolved_grid["longitudes"])}
         else:
-            return next(iter(state["fields"])).to_latlon()
+            # Flattened, as regular lat/lon output would otherwise give 2D coordinates
+            return next(iter(state["fields"])).to_latlon(flatten=True)
 
     def process(self, state: State) -> State:  # type: ignore
         """Process the fields by regridding them to the specified grid and area.

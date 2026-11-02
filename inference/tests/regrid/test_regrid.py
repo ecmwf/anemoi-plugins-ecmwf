@@ -156,3 +156,39 @@ class TestRegridPreprocessor:
 
         assert result["date"] == "2024-01-01"
         assert result["step"] == 6
+
+
+# --- coordinates of the regridded state, with MIR ---
+
+
+@pytest.fixture
+def surface_field():
+    """A global surface field to regrid, from the MIR templates base handles."""
+    import earthkit.data as ekd
+    from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
+
+    base = MirTemplatesProvider(MagicMock())._base_template_provider.template("2t", {"levtype": "sfc"})
+    return ekd.from_source("memory", base)
+
+
+@pytest.mark.parametrize(
+    "grid, area, npoints",
+    [
+        ("0.5/0.5", "70/-20/20/30", 101 * 101),
+        ("O48", None, 10944),
+        ({"latitudes": [50.0, 55.0, 60.0], "longitudes": [0.0, 5.0, 10.0]}, None, 3),
+    ],
+)
+def test_process_gives_flat_coordinates(mocker, surface_field, grid, area, npoints):
+    """The state coordinates are 1D arrays with one value per point of the regridded fields."""
+    pytest.importorskip("mir")
+    context = cast(Context, mocker.MagicMock())
+    metadata = cast(Metadata, mocker.MagicMock())
+    proc = RegridPreprocessor(context=context, metadata=metadata, grid=grid, area=area)
+
+    state = proc.process({"fields": surface_field})  # type: ignore
+
+    for key in ("latitudes", "longitudes"):
+        assert isinstance(state[key], np.ndarray)
+        assert state[key].shape == (npoints,)
+    assert next(iter(state["fields"])).to_numpy(flatten=True).shape == (npoints,)
