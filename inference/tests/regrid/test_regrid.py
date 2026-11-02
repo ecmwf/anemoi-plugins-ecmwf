@@ -121,6 +121,51 @@ class TestRegridPreprocessor:
             metadata = cast(Metadata, mocker.MagicMock())
             RegridPreprocessor(context=context, metadata=metadata, grid=grid)
 
+    @staticmethod
+    def _checkpoint_metadata(mocker, keys):
+        metadata = mocker.MagicMock()
+        metadata.supporting_arrays = {k: np.array([float(i), float(i) + 0.5]) for i, k in enumerate(keys)}
+        return metadata
+
+    @pytest.mark.parametrize(
+        "grid, lat_key, lon_key",
+        [
+            ("checkpoint", "latitudes", "longitudes"),
+            ("checkpoint:", "latitudes", "longitudes"),
+            ("CHECKPOINT", "latitudes", "longitudes"),
+            ("checkpoint:input", "input/latitudes", "input/longitudes"),
+            ("Checkpoint:input", "input/latitudes", "input/longitudes"),
+            ("checkpoint:source0", "source0/latitudes", "source0/longitudes"),
+        ],
+    )
+    def test_checkpoint_grid(self, mocker, grid, lat_key, lon_key):
+        """The checkpoint prefix is removed exactly and the right supporting arrays are used."""
+        context = cast(Context, mocker.MagicMock())
+        metadata = self._checkpoint_metadata(mocker, [lat_key, lon_key, "other/latitudes", "other/longitudes"])
+        with patch("anemoi.plugins.ecmwf.inference.regrid.regrid.MIRRegrid") as mock_mir:
+            RegridPreprocessor(context=context, metadata=metadata, grid=grid)
+        assert mock_mir.call_args.kwargs["grid"] == {
+            "latitudes": metadata.supporting_arrays[lat_key].tolist(),
+            "longitudes": metadata.supporting_arrays[lon_key].tolist(),
+        }
+
+    @pytest.mark.parametrize(
+        "grid, lat_key, lon_key",
+        [
+            ("checkpoint", "latitudes", "longitudes"),
+            ("checkpoint:input", "input/latitudes", "input/longitudes"),
+        ],
+    )
+    def test_checkpoint_grid_missing_arrays(self, mocker, grid, lat_key, lon_key):
+        """Missing supporting arrays raise a ValueError naming the expected keys."""
+        context = cast(Context, mocker.MagicMock())
+        metadata = self._checkpoint_metadata(mocker, ["other/latitudes", "other/longitudes"])
+        with patch("anemoi.plugins.ecmwf.inference.regrid.regrid.MIRRegrid"):
+            with pytest.raises(ValueError, match="supporting arrays") as exc:
+                RegridPreprocessor(context=context, metadata=metadata, grid=grid)
+        assert f"'{lat_key}'" in str(exc.value)
+        assert f"'{lon_key}'" in str(exc.value)
+
     def _make_mock_regridded(self):
         """Create a mock regridded fieldlist with proper iteration support."""
         mock_field = MagicMock()
