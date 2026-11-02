@@ -74,9 +74,9 @@ class MirTemplatesProvider(TemplateProvider):
         If the state has latitudes/longitudes, the template must have one point
         per output point. The size of the lookup grid (and area) is checked up
         front with ``mir.Grid``. When it differs (e.g. stretched / cutout grids,
-        whose lookup grid and area describe only one of the sources), or when
-        MIR cannot build the grid or area, the state's latitudes/longitudes
-        are used instead, as an unstructured grid (area dropped).
+        whose lookup grid and area describe only one of the sources), the
+        state's latitudes/longitudes are used instead, as an unstructured grid
+        (area dropped). A grid or area MIR cannot build raises.
         Without a grid in the lookup the state coordinates are used directly.
         The base field is regridded once, to the chosen grid.
         """
@@ -114,15 +114,10 @@ class MirTemplatesProvider(TemplateProvider):
                 if isinstance(lookup_regrid.grid, dict):
                     # Coordinate lookup grids are not compared (mir.Grid ignores their area):
                     # the state coordinates are the output points.
-                    lookup_npoints = None
                     reason = f"grid {grid!r} is given as coordinates"
                 else:
-                    try:
-                        lookup_npoints = self._grid_size(lookup_regrid.grid, area)
-                    except Exception as e:  # MIR raises generic RuntimeError / SpecError
-                        lookup_npoints = None
-                        reason = f"MIR cannot build grid {grid!r} with area {area!r} ({e})"
-                if lookup_npoints is not None:
+                    # A grid or area MIR cannot build raises
+                    lookup_npoints = self._grid_size(lookup_regrid.grid, area)
                     if lookup_npoints == npoints:
                         regrid = lookup_regrid
                     else:

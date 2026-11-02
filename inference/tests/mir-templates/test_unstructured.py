@@ -62,9 +62,11 @@ def test_mismatched_grid_and_area_uses_state(provider: MirTemplatesProvider, sta
     _check_unstructured(template, state)
 
 
-def test_unbuildable_grid_uses_state(provider: MirTemplatesProvider, state: dict):
-    template = provider.template("lsm", {"levtype": "sfc", "grid": "not-a-grid"}, state=state)
-    _check_unstructured(template, state)
+def test_unbuildable_grid_with_state_raises(provider: MirTemplatesProvider, state: dict, forward_grids: list):
+    """A grid MIR cannot build is an error, not a reason to use the state coordinates."""
+    with pytest.raises(Exception):
+        provider.template("lsm", {"levtype": "sfc", "grid": "not-a-grid"}, state=state)
+    assert forward_grids == []
 
 
 def test_unbuildable_grid_without_state_raises(provider: MirTemplatesProvider):
@@ -117,7 +119,6 @@ def test_wrong_point_count_after_rebuild_raises(
         {"levtype": "sfc", "grid": None},
         {"levtype": "sfc", "grid": "O96"},
         {"levtype": "sfc", "grid": "0.5/0.5", "area": "10/0/0/10"},
-        {"levtype": "sfc", "grid": "not-a-grid"},
     ],
 )
 def test_mismatch_regrids_once(provider: MirTemplatesProvider, state: dict, forward_grids: list, lookup: dict):
