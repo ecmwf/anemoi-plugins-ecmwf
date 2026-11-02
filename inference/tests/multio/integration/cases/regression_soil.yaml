@@ -52,6 +52,7 @@ defaults:
 cases:
   # --- soil parameters -----------------------------------
   - name: sfc-stl1
+    xfail: "multiolib 2.12.0.33 fails to encode stl1 as sot/sol (multio_write_field_float raises)"
     step: 0
     user:
       generatingProcessIdentifier: 6
@@ -65,6 +66,7 @@ cases:
       levelist: 1
 
   - name: sfc-swvl1
+    xfail: "multiolib 2.12.0.33 encodes swvl1 as sfc paramId 39, not vsw/sol paramId 260199"
     step: 0
     user:
       generatingProcessIdentifier: 6
