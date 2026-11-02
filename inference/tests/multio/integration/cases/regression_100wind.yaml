@@ -51,6 +51,7 @@ defaults:
 
 cases:
   - name: sfc-100u
+    xfail: "multiolib 2.12.0.33 fails to encode 100u (multio_write_field_float raises)"
     step: 0
     user:
       generatingProcessIdentifier: 6
