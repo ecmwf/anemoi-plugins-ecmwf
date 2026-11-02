@@ -48,7 +48,7 @@ class FDBPlusPreProcessor(Processor):
         super().__init__(context, metadata)
         self.target_grid = target_grid
 
-        self.regrid_processor = MIRRegrid(grid=self.target_grid, packing="simple", accuracy=16, method="array")
+        self.regrid_processor = MIRRegrid(grid=self.target_grid, packing="simple", accuracy=16)
         self.vordiv_to_uv_processor = VordivToUV(transform_grid=self.target_grid, backend=spectral_backend)
         self.sh_to_gg_processor = ShToGg(transform_grid=self.target_grid, backend=spectral_backend)
 
