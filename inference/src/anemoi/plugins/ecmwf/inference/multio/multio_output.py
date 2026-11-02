@@ -116,6 +116,19 @@ class UserDefinedMetadata(BaseModel):
             raise ValueError("hindcast_reference_date must be a datetime object")
         return v
 
+    @field_validator("expver", mode="before")
+    def validate_expver(cls, v):
+        """Convert and validate the experiment version (expver).
+
+        Ensures that the experiment version is either a string of digits or an integer.
+        Converts integers to a zero-padded 4-digit string.
+        """
+        if isinstance(v, str) and not v.isdigit():
+            raise ValueError("expver must be a string of digits or an integer")
+        if isinstance(v, int):
+            v = f"{v:04d}"
+        return v
+
 
 class MultioMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
