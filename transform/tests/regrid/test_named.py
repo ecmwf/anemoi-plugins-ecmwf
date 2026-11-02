@@ -8,8 +8,8 @@
 # nor does it submit to any jurisdiction.
 
 import pytest
-from anemoi.plugins.ecmwf.inference.regrid.named import KNOWN_GRIDS
-from anemoi.plugins.ecmwf.inference.regrid.named import NamedRegrid
+from anemoi.plugins.ecmwf.transform.regrid.named import KNOWN_GRIDS
+from anemoi.plugins.ecmwf.transform.regrid.named import NamedRegrid
 
 
 class TestKnownGrids:

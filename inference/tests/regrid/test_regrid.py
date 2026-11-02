@@ -121,51 +121,6 @@ class TestRegridPreprocessor:
             metadata = cast(Metadata, mocker.MagicMock())
             RegridPreprocessor(context=context, metadata=metadata, grid=grid)
 
-    def test_named_grid_case_insensitive(self, mocker):
-        """Named grid lookup is case-insensitive."""
-        mock_named = mocker.MagicMock()
-        mock_named.gridspec = {"grid": {"latitudes": [1.0], "longitudes": [2.0]}}
-
-        mocker.patch(
-            "anemoi.plugins.ecmwf.inference.regrid.regrid.KNOWN_GRIDS",
-            ["test_grid"],
-        )
-        mocker.patch(
-            "anemoi.plugins.ecmwf.inference.regrid.regrid.NamedRegrid",
-            return_value=mock_named,
-        )
-
-        context = cast(Context, mocker.MagicMock())
-        metadata = cast(Metadata, mocker.MagicMock())
-        with patch("anemoi.plugins.ecmwf.inference.regrid.regrid.MIRRegrid") as mock_mir:
-            RegridPreprocessor(context=context, metadata=metadata, grid="TEST_GRID")
-            call_kwargs = mock_mir.call_args.kwargs
-            assert call_kwargs["grid"] == {"latitudes": [1.0], "longitudes": [2.0]}
-
-    def test_named_grid(self, mocker):
-        """A known named grid is resolved to latitudes/longitudes from package resources."""
-        mock_named = mocker.MagicMock()
-        mock_named.gridspec = {"grid": {"latitudes": [1.0, 2.0], "longitudes": [3.0, 4.0]}}
-
-        mocker.patch(
-            "anemoi.plugins.ecmwf.inference.regrid.regrid.KNOWN_GRIDS",
-            ["test_grid"],
-        )
-        mocker.patch(
-            "anemoi.plugins.ecmwf.inference.regrid.regrid.NamedRegrid",
-            return_value=mock_named,
-        )
-
-        context = cast(Context, mocker.MagicMock())
-        metadata = cast(Metadata, mocker.MagicMock())
-        with patch("anemoi.plugins.ecmwf.inference.regrid.regrid.MIRRegrid") as mock_mir:
-            RegridPreprocessor(context=context, metadata=metadata, grid="test_grid")
-            call_kwargs = mock_mir.call_args.kwargs
-            assert call_kwargs["grid"] == {
-                "latitudes": [1.0, 2.0],
-                "longitudes": [3.0, 4.0],
-            }
-
     def _make_mock_regridded(self):
         """Create a mock regridded fieldlist with proper iteration support."""
         mock_field = MagicMock()
@@ -201,3 +156,39 @@ class TestRegridPreprocessor:
 
         assert result["date"] == "2024-01-01"
         assert result["step"] == 6
+
+
+# --- coordinates of the regridded state, with MIR ---
+
+
+@pytest.fixture
+def surface_field():
+    """A global surface field to regrid, from the MIR templates base handles."""
+    import earthkit.data as ekd
+    from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
+
+    base = MirTemplatesProvider(MagicMock())._base_template_provider.template("2t", {"levtype": "sfc"})
+    return ekd.from_source("memory", base)
+
+
+@pytest.mark.parametrize(
+    "grid, area, npoints",
+    [
+        ("0.5/0.5", "70/-20/20/30", 101 * 101),
+        ("O48", None, 10944),
+        ({"latitudes": [50.0, 55.0, 60.0], "longitudes": [0.0, 5.0, 10.0]}, None, 3),
+    ],
+)
+def test_process_gives_flat_coordinates(mocker, surface_field, grid, area, npoints):
+    """The state coordinates are 1D arrays with one value per point of the regridded fields."""
+    pytest.importorskip("mir")
+    context = cast(Context, mocker.MagicMock())
+    metadata = cast(Metadata, mocker.MagicMock())
+    proc = RegridPreprocessor(context=context, metadata=metadata, grid=grid, area=area)
+
+    state = proc.process({"fields": surface_field})  # type: ignore
+
+    for key in ("latitudes", "longitudes"):
+        assert isinstance(state[key], np.ndarray)
+        assert state[key].shape == (npoints,)
+    assert next(iter(state["fields"])).to_numpy(flatten=True).shape == (npoints,)
