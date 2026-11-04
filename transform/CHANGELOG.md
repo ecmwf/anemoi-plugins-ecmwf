@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/transform-0.3.0...transform-0.3.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **[inference/transform]:** move named grid package data to transform ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+* **inference/dynamics:** add optional grid to regression perturbation ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+* **inference/regrid:** remove unused method argument ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+* **transform/regrid:** use setdefault for ECCODES_ECKIT_GEO environment ([#128](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/128)) ([399da16](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/399da1605e729c64bb842c74abfedbd019f33e82))
+
+
+### Documentation
+
+* update nested READMEs to match the current code ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+
 ## [0.3.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/transform-0.2.0...transform-0.3.0) (2026-11-02)
 
 
