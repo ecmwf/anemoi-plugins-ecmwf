@@ -89,11 +89,11 @@ class TestGaspariCohn:
 def _make_regression_plugin(mocker, **overrides):
     """Create a RegressionPerturbationPlugin with a mocked context."""
     context = cast(Context, mocker)
-    context.checkpoint = MagicMock()
-    context.checkpoint.grid = "O96"
+    metadata = MagicMock()
+    metadata.grid = "O96"
     defaults = dict(
         context=context,
-        metadata=MagicMock(),
+        metadata=metadata,
         season="JAS",
         data_path="/nonexistent/",
         data_grid="N320",
@@ -149,13 +149,69 @@ class TestRegressionPerturbationInit:
         plugin = _make_regression_plugin(MagicMock(), rescale=20.0)
         assert plugin._rescale == 20.0
 
-    def test_target_grid_uses_data_grid(self):
-        plugin = _make_regression_plugin(MagicMock(), data_grid="O96")
+    def test_target_grid_default_is_none(self):
+        plugin = _make_regression_plugin(MagicMock(), data_grid="N640")
+        assert plugin._target_grid is None
+
+    def test_target_grid_explicit(self):
+        plugin = _make_regression_plugin(MagicMock(), grid="O48")
+        assert plugin._target_grid == "O48"
+
+    def test_target_grid_checkpoint_uses_metadata(self):
+        plugin = _make_regression_plugin(MagicMock(), grid="checkpoint")
         assert plugin._target_grid == "O96"
 
-    def test_target_grid_different_value(self):
-        plugin = _make_regression_plugin(MagicMock(), data_grid="N640")
-        assert plugin._target_grid == "N640"
+    def test_target_grid_checkpoint_without_metadata_grid_raises(self):
+        plugin = _make_regression_plugin(MagicMock(), grid="checkpoint")
+        plugin.metadata.grid = None
+        with pytest.raises(ValueError, match="no grid"):
+            plugin._target_grid
+
+
+class TestRegressionPerturbationRegrid:
+    """Test that regridding only happens when ``grid`` is set."""
+
+    RAW = {("z", 500): np.arange(4, dtype=np.float64), ("msl", None): np.ones(4, dtype=np.float64)}
+
+    @pytest.fixture
+    def interpolate(self, mocker):
+        mock = mocker.patch(
+            "anemoi.plugins.ecmwf.inference.dynamics.regression_perturbation.ekr.interpolate",
+            side_effect=lambda arr, src, dst: arr * 2.0,
+        )
+        return mock
+
+    def _plugin(self, mocker, **overrides):
+        plugin = _make_regression_plugin(MagicMock(), **overrides)
+        mocker.patch.object(plugin, "_compute_regression", return_value=dict(self.RAW))
+        return plugin
+
+    def test_no_grid_does_not_regrid(self, mocker, interpolate):
+        plugin = self._plugin(mocker)
+        result = plugin._perturbation_map
+        interpolate.assert_not_called()
+        np.testing.assert_array_equal(result[("z", 500)], self.RAW[("z", 500)])
+
+    def test_grid_regrids_from_data_grid(self, mocker, interpolate):
+        plugin = self._plugin(mocker, data_grid="N320", grid="O48")
+        result = plugin._perturbation_map
+        assert interpolate.call_count == len(self.RAW)
+        for call in interpolate.call_args_list:
+            assert call.args[1] == {"grid": "N320"}
+            assert call.args[2] == {"grid": "O48"}
+        np.testing.assert_array_equal(result[("z", 500)], self.RAW[("z", 500)] * 2.0)
+
+    def test_checkpoint_grid_regrids_to_metadata_grid(self, mocker, interpolate):
+        plugin = self._plugin(mocker, data_grid="N320", grid="checkpoint")
+        plugin._perturbation_map
+        assert interpolate.call_count == len(self.RAW)
+        for call in interpolate.call_args_list:
+            assert call.args[2] == {"grid": "O96"}
+
+    def test_grid_equal_to_data_grid_does_not_regrid(self, mocker, interpolate):
+        plugin = self._plugin(mocker, data_grid="N320", grid="N320")
+        plugin._perturbation_map
+        interpolate.assert_not_called()
 
 
 class TestRegressionPerturbationApply:
