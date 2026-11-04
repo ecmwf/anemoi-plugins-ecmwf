@@ -43,7 +43,6 @@ class RegridPreprocessor(Processor):
         *,
         grid: GridSpec | dict[str, str] | None = None,
         area: str | list[float] | tuple[float, ...] | None = None,
-        method: str = "grib",
     ) -> None:
         """Initialise the Regridding processor.
 
@@ -59,8 +58,6 @@ class RegridPreprocessor(Processor):
             a dict of coordinate file paths, or a dict of coordinate lists.
         area : str | list[float] | tuple[float, ...] | None, optional
             The target area for regridding, by default None.
-        method : str, optional
-            The regridding method to use, by default "grib".
         """
         super().__init__(context, metadata=metadata)
 
