@@ -84,18 +84,22 @@ class RegressionPerturbationPlugin(Processor):
     a reference variable at a chosen point, and the resulting perturbation
     field is applied to the model initial conditions.
 
-    The perturbation is computed on the data source grid (``data_grid``) and
-    regridded to the model target grid (``grid`` or checkpoint grid) via
-    ``earthkit.regrid``.
+    The perturbation is computed on the data source grid (``data_grid``). By
+    default (``grid`` unset) it is applied as is, so the input fields must
+    already be on ``data_grid``. If ``grid`` is given, the perturbation is
+    regridded from ``data_grid`` to ``grid`` via ``earthkit.regrid``. Use
+    ``grid: "checkpoint"`` to regrid to the grid of the model checkpoint
+    (taken from the checkpoint metadata).
 
     Example
     --------
     ```yaml
     pre_processors:
-        - regression_perturbation:
+        - regression-perturbation:
             season: "JAS"
             data_path: "/path/to/data/grib/"
             data_grid: "N320"
+            grid: "checkpoint"
             ylat: 15.0
             xlon: 320.0
             xlev: 5
@@ -128,6 +132,7 @@ class RegressionPerturbationPlugin(Processor):
         file_glob_suffix: str = ".grib",
         max_samples: int | None = None,
         rescale: float = 1.0,
+        grid: str | list[float] | None = None,
     ):
         super().__init__(context, metadata)
         if season not in SEASON_MONTHS:
@@ -150,6 +155,7 @@ class RegressionPerturbationPlugin(Processor):
         self._method = method
         self._file_glob_suffix = file_glob_suffix
         self._max_samples = max_samples
+        self._grid = grid
 
         # Build filter criteria for apply_function_to_fields
         self._fields: list[dict[str, Any]] = [{"shortName": p, "level": lev} for p in param_pl for lev in level_pl] + [
@@ -157,8 +163,16 @@ class RegressionPerturbationPlugin(Processor):
         ]
 
     @property
-    def _target_grid(self):
-        return self._data_grid if self._data_grid is not None else self.checkpoint.grid
+    def _target_grid(self) -> str | list[float] | None:
+        """Grid to regrid the perturbations to, or None if no regridding is requested."""
+        if self._grid is None:
+            return None
+        if isinstance(self._grid, str) and self._grid.lower() == "checkpoint":
+            checkpoint_grid = self.metadata.grid
+            if checkpoint_grid is None:
+                raise ValueError("grid='checkpoint' was requested but the checkpoint metadata has no grid.")
+            return checkpoint_grid
+        return self._grid
 
     def _glob_data_files(self) -> np.ndarray:
         """Global GRIB files for the configured season."""
@@ -294,7 +308,7 @@ class RegressionPerturbationPlugin(Processor):
         raw_map = self._compute_regression()
 
         target_grid = self._target_grid
-        need_regrid = self._data_grid != target_grid
+        need_regrid = target_grid is not None and target_grid != self._data_grid
         if need_regrid:
             LOG.info("Regridding perturbations from %s to %s", self._data_grid, target_grid)
 
@@ -339,5 +353,5 @@ class RegressionPerturbationPlugin(Processor):
             f"RegressionPerturbationPlugin(season='{self._season}', "
             f"ylat={self._ylat}, xlon={self._xlon}, locrad={self._locrad}, "
             f"amp={self._amp}, rescale={self._rescale}, data_grid='{self._data_grid}', "
-            f"grid='{self._target_grid}', method='{self._method}')"
+            f"grid={self._grid!r}, method='{self._method}')"
         )

@@ -1,6 +1,13 @@
 # An anemoi-inference mir grib templates plugin
 
 Use `mir` to dynamically create grib templates of the correct geometry.
+Install with `pip install anemoi-plugins-ecmwf-inference[mir]`, the template provider is then available as `mir`.
+
+## Base templates
+
+The grid is applied to a base field from `base_handles.yaml` (GRIB2, CCSDS packed, with no grid or area keys):
+one for `levtype: pl` and one for everything else.
+A different file, in the same templates yaml format, can be given with the `path` option of the provider.
 
 ## Grids
 
@@ -15,7 +22,9 @@ chosen up front: the size of the lookup grid and area is computed with
 `mir.Grid` and compared with the number of output points. If it differs (for a
 cutout the lookup grid and area describe only one of the sources), the state
 coordinates are used as an unstructured grid instead, dropping the area. If the
-lookup has no grid the state coordinates are used directly. A grid or area MIR
+lookup has no grid the state coordinates are used directly. If the lookup grid is a
+named grid (e.g. `meps`) or given as coordinates, the state coordinates are
+used as the output points, and are not compared. A grid or area MIR
 cannot build raises. The base field is then regridded once.
 
 If there is no grid and the state has no latitudes/longitudes, the provider
