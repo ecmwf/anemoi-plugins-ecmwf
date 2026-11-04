@@ -10,7 +10,7 @@
 import os
 
 # eccodes needs eckit-geo to resolve unstructured grids (uuidOfHGrid), eg. MIR output on named grids
-os.environ["ECCODES_ECKIT_GEO"] = "1"
+os.environ.setdefault("ECCODES_ECKIT_GEO", "1")
 # eckit-geo only records unstructured grids by uid in its cache (grid.yaml) with caching on,
 # without it another process cannot decode the output of MIR on such grids.
 # Must be set before eckit-geo is first used in the process.
