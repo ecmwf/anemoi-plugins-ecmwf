@@ -12,6 +12,11 @@ Interfaces and functionality are likely to change, and the project itself may be
 As this repo contains many repositories, see the underlying pages for information
 about how to install.
 
+| Package | Directory | Install |
+|---------|-----------|---------|
+| `anemoi-plugins-ecmwf-inference` | [`inference/`](inference/README.md) | `pip install anemoi-plugins-ecmwf-inference[PLUGIN]` |
+| `anemoi-plugins-ecmwf-transform` | [`transform/`](transform/README.md) | `pip install anemoi-plugins-ecmwf-transform[PLUGIN]` |
+
 ## Conventions
 
 When adding a plugin to this monorepo, add it under `{ANEMOI_PACKAGE}/src/.../{PLUGIN_NAME}`
@@ -24,7 +29,12 @@ inference
       | --- my_input
 ```
 
-For best discoverability, the plugin should follow the naming convention,
+For best discoverability, new plugins should follow this naming convention:
+
+- the directory name is the plugin name in snake_case, for example `my_input`;
+- the entry point and the `optional-dependencies` extra use the same plugin name, in lower case and without the package prefix, for example `my_input`.
+
+This is guidance for new plugins; some existing plugins predate it and keep their current names.
 
 ## Versioning & Release
 
