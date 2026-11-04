@@ -67,6 +67,7 @@ dev = [
 
 [tool.setuptools.package-data]
 "anemoi.plugins.ecmwf.transform" = [ "py.typed" ]
+"anemoi.plugins.ecmwf.transform.regrid.named" = [ "*/*.npz" ]
 
 [tool.setuptools_scm]
 root = ".."
