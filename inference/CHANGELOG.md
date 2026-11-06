@@ -1,5 +1,85 @@
 # Changelog
 
+## [0.10.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.9.0...inference-0.10.0) (2026-11-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* **transform/regrid:** build the MIR target grid with mir.Grid so latitude/longitude grids are regridded, MIRRegrid no longer takes a method
+* **transform/regrid:** move the named grids to transform, resolved by MIRRegrid
+* Update all plugins to work with multi-dataset in inference ([#83](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/83))
+
+### Features
+
+* [inference-multio] Add archive collector ([#34](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/34)) ([c9ba2ec](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/c9ba2ecfc9c541fa4166a3c1bcce08aa0ef4efc1))
+* [inference-multio] Add disambiguous entrypoint ([#33](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/33)) ([32707df](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/32707df09126b8edf2a00a65f0acefc231e87d58))
+* [inference-multio] Improvements on timespan and nans ([#30](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/30)) ([2e8aa90](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/2e8aa90bc9ef7362da739cd9283b02d41a08bbfd))
+* Add flexible mappings to opendata ([#55](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/55)) ([34d2a47](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/34d2a477cc4e027491d2deb014c562fc1c4fd760))
+* Add preprocessors to test dynamics  ([#25](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/25)) ([0e98f93](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/0e98f939b3d1c5a8b94d2082ef529062113c1e9f))
+* Add source parameter to data retrieval methods ([#108](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/108)) ([9f70a35](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/9f70a355c62f15c1d72eca5f096702865d5f6b09))
+* dynamic test ([#82](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/82)) ([4c7e033](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/4c7e03369a476cd04013b83dc316468065f26fb2))
+* FDB Plus input ([#102](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/102)) ([1ef32fe](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1ef32fe4d8b48d3f51619665dffce901336c549a))
+* **inference multio:** Add `ORIGIN` magic string for stream in metadata ([#71](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/71)) ([4e25267](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/4e25267100210ddbd592b2a1da2cdb022da2382d))
+* **inference opendata:** Add opendata input ([#15](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/15)) ([990fa3d](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/990fa3ddd60b058005f6cb33c2d53eea289c632d))
+* **inference regrid:** Add regrid preprocessor ([#16](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/16)) ([af00ffe](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/af00ffe5d57f3e5b8b65bbcba7791fa00070d1ba))
+* **inference, polytope:** Allow for grid / area to be set in config ([#46](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/46)) ([61e5d97](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/61e5d972e67d64d20101678ae14c2055e32ad038))
+* **inference.multio:** Add sinks argument to plan output ([#44](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/44)) ([0b33b89](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/0b33b89e7c59bd4865dfe43eee5cdce2cab4794d))
+* **inference/mir_templates:** make templates for unstructured and stretched-grid (cutout) output ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **inference/multio:** Enable parallel output ([#95](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/95)) ([30595e3](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/30595e37fe1f7a248b5fc179a4419a69d7f8335f))
+* **inference/multio:** implement hindcast date logic in MultioOutputPlugin ([#92](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/92)) ([c535677](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/c53567719d798c220bb6112ae88c85c0e0bcdcc0))
+* **inference/multio:** map ORIGIN stream for ensemble and hindcast runs ([#131](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/131)) ([e34487a](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/e34487a694d740f16bcf008902604bacbda0f8cb))
+* **inference/thredds:** add THREDDS profiles input plugin ([#107](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/107)) ([6a20b66](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/6a20b66dd0d80f96390db4a6279206c2890e84c6))
+* **multio:** Option to copy initial state diagnostics from grib ([#36](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/36)) ([14b4bdd](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/14b4bdd6b3f69a33b1c5a71a043c76d982140ac9))
+* **regrid:** add named grid support with lat/lon regridding ([#87](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/87)) ([48229a8](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/48229a8a66d02bcc62d5150920b32cc5b1a7a61f))
+* **regrid:** enhance checkpoint grid handling in regridding processor ([#88](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/88)) ([d936ff4](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d936ff4b3eff80f5971f4f3baf9462d7460d44b4))
+* **transform/regrid:** move the named grids to transform, resolved by MIRRegrid ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* Update all plugins to work with multi-dataset in inference ([#83](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/83)) ([ff0be3d](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ff0be3d0cbb13851e600b3dc7a099400db7755f9))
+
+
+### Bug Fixes
+
+* [inference-multio] Address timing and generatingProcessIdentifier issues ([#31](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/31)) ([405837c](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/405837c889e5d50baf4fb063362a85ca6eaa9240))
+* **[inference/transform]:** move named grid package data to transform ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+* [opendata] Use `od` instead of `ea` ([#42](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/42)) ([2457540](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/245754030d29790b57ce1bd1764f905e77601674))
+* Explicitly set misc-timeIncrementInSeconds to 0 ([#57](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/57)) ([efb6a3f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/efb6a3f972304e8e04177a97f4f5e3095664d811))
+* **inference mir:** ensure grid is str ([6397681](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/63976811396341e83b0c421c03fd572f78d28b53))
+* **inference mir:** Missing template kwargs ([#63](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/63)) ([f00e41e](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/f00e41e0a4323d8d83d2d00e55a0c1b11b7ebd2f))
+* **inference multio:** Issue with model validation for ens number ([#60](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/60)) ([fbf4f20](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/fbf4f20f097d9c77fb659a549783665743095387))
+* **inference-polytope:** patch request reference in metadata calls ([#89](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/89)) ([ea64936](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ea64936a3dba62146fdb37a66c419ea3e52f4d65))
+* **inference,opendata:** Override `optional_inputs` due to update ([#48](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/48)) ([8f8d3d8](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/8f8d3d8ba874cb92a80ea453fa97183c0e0d0cc0))
+* **inference/dynamics:** add optional grid to regression perturbation ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+* **inference/fdb_plus:** drop the method argument removed from MIRRegrid ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **inference/mir_templates:** choose the template grid with mir.Grid and check it against the output points ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **inference/multio:** enable setup of gribjump ([ff105bc](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/ff105bc4bf4b90d3903577889696e761a5e5cd7e))
+* **inference/multio:** improve timespan handling ([#115](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/115)) ([df82ce9](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/df82ce96c424e5bac95dc79fc4bfc220ea796089))
+* **inference/multio:** validate_expver ([#121](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/121)) ([44797b5](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/44797b575ce3123a41a31a2b6b53b43de798bf3e))
+* **inference/regrid:** parse the checkpoint grid prefix ([#122](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/122)) ([77dfec3](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/77dfec39c49a6ec25829406ca994282953ccbb4c))
+* **inference/regrid:** remove unused method argument ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+* **inference/regrid:** take flat state coordinates from the regridded grid ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* mir grid handling due to anemoi-inference ([#23](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/23)) ([a65ffa4](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/a65ffa49b6f4785bf46b6ae763ac369878e3ec1b))
+* **mir:** Update README.md ([#69](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/69)) ([b117fea](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/b117feae172f7fedd3b248971962ca2efec2255d))
+* Move mir version to lower bound ([#40](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/40)) ([96792b1](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/96792b10903a950e756995404b4f525ef40fed8f))
+* **multio:** Add keys to the encoder to account for missing values ([#76](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/76)) ([cbee5ca](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/cbee5cabafb84534c2fcb4367e647cae4b6e188b))
+* **multio:** Allow empty `model` ([#65](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/65)) ([4233b72](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/4233b72a1fcd8f16489c387d229d4118250c0ae9))
+* **opendata:** Add default to pop ([5e4ef50](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/5e4ef504c11bfb04e820a5cf46d62add965772ba))
+* **polytope:** Add missing keys with defaults ([#84](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/84)) ([5a449be](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/5a449be54113fa81731293890e32b5b4f7d4acba))
+* Provide upper bound on anemoi-inference ([#50](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/50)) ([71ac485](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/71ac485b436aad59c96c821f75eeae7d8ec7bdcd))
+* Reorganise repo ([#13](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/13)) ([8b47509](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/8b47509110db13f106f11397cbb2f89d80e82952))
+* Small values being rounded when using high missingValue ([#78](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/78)) ([a4067c1](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/a4067c1cefa165741f79fb412dad1aa3f74773cd))
+* **transform/regrid:** build the MIR target grid with mir.Grid so latitude/longitude grids are regridded, MIRRegrid no longer takes a method ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **transform/regrid:** enable eckit-geo in eccodes and its grid cache ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* **transform/regrid:** stamp the grid uid on unstructured MIR output ([1d57367](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/1d57367bddb371f0b6499946607d68d2c7988b2c))
+* Update mir version ([#38](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/38)) ([5601fab](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/5601fab1e7e5eaff171017186059446ff934eb76))
+* updates from anemoi-inference ([#18](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/18)) ([91194fb](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/91194fbb30ea9279d255e1f17cfab7b4e31533c7))
+* Upgrade to inference-0.8 ([#51](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/51)) ([c8de39b](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/c8de39bcb7cc31b132eb97f55449490bfc90490b))
+* Upgrade to inference: 0.8.1 ([#54](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/54)) ([a006085](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/a00608589fa2418111943713a5f9647939f1b8b1))
+
+
+### Documentation
+
+* Update multio readme ([#27](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/27)) ([b4373f8](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/b4373f834d88356555531eb257c4087726631e94))
+* update nested READMEs to match the current code ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+
 ## [0.9.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.8.0...inference-0.9.0) (2026-11-06)
 
 
