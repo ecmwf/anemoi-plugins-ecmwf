@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.9.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.8.0...inference-0.9.0) (2026-11-06)
+
+
+### Features
+
+* **inference/multio:** map ORIGIN stream for ensemble and hindcast runs ([#131](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/131)) ([e34487a](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/e34487a694d740f16bcf008902604bacbda0f8cb))
+
+
+### Bug Fixes
+
+* **[inference/transform]:** move named grid package data to transform ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+* **inference/dynamics:** add optional grid to regression perturbation ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+* **inference/regrid:** remove unused method argument ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+
+
+### Documentation
+
+* update nested READMEs to match the current code ([d10334f](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/d10334fd9e43f44bae8815ebbf5ae8040ceb7289))
+
 ## [0.8.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.7.0...inference-0.8.0) (2026-11-02)
 
 
