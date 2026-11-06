@@ -40,6 +40,7 @@ dynamic = [ "version" ]
 dependencies = [
   "anemoi-transform",
   "earthkit-data",
+  "pyproj",
 ]
 
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-transform[mir]" ]

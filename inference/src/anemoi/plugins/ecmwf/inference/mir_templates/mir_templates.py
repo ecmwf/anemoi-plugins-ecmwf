@@ -18,8 +18,16 @@ import numpy as np
 from anemoi.inference.grib.templates import IndexTemplateProvider
 from anemoi.inference.grib.templates import TemplateProvider
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
+from anemoi.plugins.ecmwf.transform.regrid.backend import canonical_lambert_grid
+from anemoi.plugins.ecmwf.transform.regrid.backend import is_lambert_grid
 
 LOG = logging.getLogger(__name__)
+
+
+def _lambert_grid_size(grid: dict[str, Any]) -> int:
+    """Return ``Nx * Ny`` of a Lambert grid given as a dict of GRIB keys (validated, no MIR needed)."""
+    keys = canonical_lambert_grid(grid)
+    return keys["Nx"] * keys["Ny"]  # type: ignore[operator]
 
 
 class BaseTemplateProvider(IndexTemplateProvider):
@@ -77,6 +85,10 @@ class MirTemplatesProvider(TemplateProvider):
         whose lookup grid and area describe only one of the sources), the
         state's latitudes/longitudes are used instead, as an unstructured grid
         (area dropped). A grid or area MIR cannot build raises.
+        A Lambert grid (a dict of GRIB keys with ``gridType: lambert``, anemoi-inference passes
+        dict grids on unchanged) is validated, sized as ``Nx * Ny`` and passed to MIR; unlike the
+        other dicts it is not a set of coordinates. A lookup area is ignored for it (the keys define
+        the domain, and MIR cannot crop a Lambert grid).
         Without a grid in the lookup the state coordinates are used directly.
         The base field is regridded once, to the chosen grid.
         """
@@ -84,6 +96,13 @@ class MirTemplatesProvider(TemplateProvider):
 
         grid = _lookup.pop("grid", None)
         area = _lookup.pop("area", None)
+
+        if is_lambert_grid(grid):
+            # The keys of a Lambert grid define its domain and MIR cannot crop it. The lookup still has
+            # the area of the checkpoint when the regridded fields report none (TemplateManager.load_template).
+            if area:
+                LOG.debug("Ignoring the lookup area %r: a Lambert grid defines its own domain", area)
+            area = None
 
         if isinstance(grid, (int, float)) and not isinstance(grid, bool):
             # anemoi-inference collapses a [0.5, 0.5] grid to 0.5, which MIR does not accept
@@ -111,7 +130,7 @@ class MirTemplatesProvider(TemplateProvider):
             if coordinates is None:
                 regrid = lookup_regrid
             else:
-                if isinstance(lookup_regrid.grid, dict):
+                if isinstance(lookup_regrid.grid, dict) and not is_lambert_grid(lookup_regrid.grid):
                     # Coordinate lookup grids are not compared (mir.Grid ignores their area):
                     # the state coordinates are the output points.
                     reason = f"grid {grid!r} is given as coordinates"
@@ -148,7 +167,12 @@ class MirTemplatesProvider(TemplateProvider):
         """Return the number of points of ``grid`` (within ``area``), using ``mir.Grid``.
 
         Structured grids only (regular or Gaussian grids, with or without an area).
+        A Lambert grid (a dict of GRIB keys with ``gridType: lambert``) cannot be built with
+        ``mir.Grid``: its size is ``Nx * Ny``, read from the keys (``area`` is ignored).
         """
+        if is_lambert_grid(grid):
+            return _lambert_grid_size(grid)
+
         import mir
 
         kwargs: dict[str, Any] = {}
