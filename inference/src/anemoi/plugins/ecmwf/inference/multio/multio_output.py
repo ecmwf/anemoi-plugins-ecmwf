@@ -40,6 +40,18 @@ CONVERT_PARAM_TO_PARAMID = True
 LOG = logging.getLogger(__name__)
 
 
+STREAM_MAPPING = {
+    "ensemble": {
+        "oper": "enfo",
+        "wave": "waef",
+    },
+    "hindcast": {
+        "enfo": "enfh",
+        "waef": "enwh",
+    },
+}
+
+
 def _format_step(step: timedelta) -> int:
     """Format a forecast step as whole hours for multio/metkit.
 
@@ -253,6 +265,14 @@ class MultioOutputPlugin(Output):
             isinstance(x, Accumulate) for k in self.context.post_processors for x in self.context.post_processors[k]
         )  # type: ignore[reportAttributeAccessIssue]
 
+    @property
+    def is_ensemble(self) -> bool:
+        return self._user_defined_metadata.number is not None
+
+    @property
+    def is_hindcast(self) -> bool:
+        return self._user_defined_metadata.hindcast_reference_date is not None
+
     def _timespan_for(self, variable: Any) -> int | Literal["fs"] | None:
         """Compute the multio ``timespan`` metadata for a variable.
 
@@ -364,7 +384,12 @@ class MultioOutputPlugin(Output):
 
             extra_keys = {}
             if self._user_defined_metadata.stream == originkey:
-                extra_keys["stream"] = variable.grib_keys.get("stream", "oper")
+                stream = variable.grib_keys.get("stream", "oper")
+                if self.is_ensemble:
+                    stream = STREAM_MAPPING["ensemble"].get(stream, stream)
+                if self.is_hindcast:
+                    stream = STREAM_MAPPING["hindcast"].get(stream, stream)
+                extra_keys["stream"] = stream
 
             param = variable.grib_keys.get("param", param)
             if CONVERT_PARAM_TO_PARAMID:
