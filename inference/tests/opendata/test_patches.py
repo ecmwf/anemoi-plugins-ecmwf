@@ -18,6 +18,7 @@ import pytest
 from anemoi.inference.runners import create_runner
 from anemoi.inference.testing import fake_checkpoints
 from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
+
 from anemoi.plugins.ecmwf.inference.opendata.opendata import OpenDataInputPlugin
 
 MODULE = "anemoi.plugins.ecmwf.inference.opendata.opendata"

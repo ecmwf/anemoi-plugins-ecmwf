@@ -23,6 +23,7 @@ import numpy as np
 import pytest
 import torch
 from anemoi.inference.context import Context
+
 from anemoi.plugins.ecmwf.inference.dynamics.subtract_tendency import SubtractTendencyPlugin
 
 # ---- SubtractTendency tests with synthetic GRIB ----

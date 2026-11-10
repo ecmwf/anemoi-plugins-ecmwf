@@ -17,6 +17,7 @@ import earthkit.data as ekd
 import numpy as np
 from anemoi.inference.grib.templates import IndexTemplateProvider
 from anemoi.inference.grib.templates import TemplateProvider
+
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 
 LOG = logging.getLogger(__name__)

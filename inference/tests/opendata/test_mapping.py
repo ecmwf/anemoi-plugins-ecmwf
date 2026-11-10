@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import earthkit.data as ekd
+
 from anemoi.plugins.ecmwf.inference.opendata.opendata import INVERSE_MAPPINGS
 from anemoi.plugins.ecmwf.inference.opendata.opendata import MAPPINGS
 from anemoi.plugins.ecmwf.inference.opendata.opendata import _expand_request

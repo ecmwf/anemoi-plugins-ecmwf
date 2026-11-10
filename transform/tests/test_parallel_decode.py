@@ -13,6 +13,7 @@ import os
 
 import numpy as np
 import pytest
+
 from anemoi.plugins.ecmwf.transform.utils import fields_to_numpy_parallel
 
 # Check dependencies

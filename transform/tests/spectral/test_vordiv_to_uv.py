@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+
 from anemoi.plugins.ecmwf.transform.spectral.backends import CalculationBackend
 from anemoi.plugins.ecmwf.transform.spectral.backends import backend_registry
 from anemoi.plugins.ecmwf.transform.spectral.backends import get_backend

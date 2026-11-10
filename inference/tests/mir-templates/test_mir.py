@@ -16,7 +16,6 @@ without MIR in ``test_provider.py``. Here MIR builds the templates.
 from typing import Any
 
 import pytest
-from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
 from cases import CASES
 from cases import LAYOUTS
 from cases import NULL_UID
@@ -26,6 +25,8 @@ from cases import assert_unstructured
 from cases import cutout_states
 from cases import flat_coordinates
 from cases import lookup_of
+
+from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
 
 STRUCTURED_GRID_TYPES = ("reduced_gg", "regular_ll")
 

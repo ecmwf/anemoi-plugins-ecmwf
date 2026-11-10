@@ -21,8 +21,9 @@ from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.metadata import Metadata
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
-from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 from anemoi.utils.grib import shortname_to_paramid
+
+from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 
 from .geopotential_height import OrographyProcessor
 

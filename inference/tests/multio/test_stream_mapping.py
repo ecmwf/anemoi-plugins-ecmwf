@@ -25,6 +25,7 @@ from anemoi.inference.runners import create_runner
 from anemoi.inference.testing import fake_checkpoints
 from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
 from anemoi.inference.types import State
+
 from anemoi.plugins.ecmwf.inference.multio import MultioOutputPlugin
 from anemoi.plugins.ecmwf.inference.multio.multio_output import UserDefinedMetadata
 

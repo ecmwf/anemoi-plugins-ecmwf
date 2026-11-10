@@ -16,6 +16,7 @@ import pytest
 from anemoi.inference.context import Context
 from anemoi.inference.metadata import Metadata
 from anemoi.inference.types import State
+
 from anemoi.plugins.ecmwf.inference.regrid.regrid import RegridPreprocessor
 from anemoi.plugins.ecmwf.inference.regrid.regrid import _open_coord_files
 
@@ -210,6 +211,7 @@ class TestRegridPreprocessor:
 def surface_field():
     """A global surface field to regrid, from the MIR templates base handles."""
     import earthkit.data as ekd
+
     from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
 
     base = MirTemplatesProvider(MagicMock())._base_template_provider.template("2t", {"levtype": "sfc"})

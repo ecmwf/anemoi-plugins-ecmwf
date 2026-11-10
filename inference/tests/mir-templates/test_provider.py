@@ -21,6 +21,7 @@ from typing import Any
 import numpy as np
 import pytest
 from anemoi.inference.grib.templates import create_template_provider
+
 from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
 from anemoi.plugins.ecmwf.inference.mir_templates import mir_templates as provider_module
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid

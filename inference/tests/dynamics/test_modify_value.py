@@ -13,8 +13,9 @@ import numpy as np
 import pytest
 from anemoi.inference.context import Context
 from anemoi.inference.metadata import Metadata
-from anemoi.plugins.ecmwf.inference.dynamics.modify_value import ModifyValuePlugin
 from pytest_mock import MockerFixture
+
+from anemoi.plugins.ecmwf.inference.dynamics.modify_value import ModifyValuePlugin
 
 
 def make_field(param: str) -> ekd.ArrayField:

@@ -25,9 +25,10 @@ from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
+from anemoi.transform.variables import Variable
+
 from anemoi.plugins.ecmwf.inference.multio.multio_output import MultioOutputPlugin
 from anemoi.plugins.ecmwf.inference.multio.multio_output import _format_timespan
-from anemoi.transform.variables import Variable
 
 # ---------------------------------------------------------------------------
 # Variable fixtures mirroring real ECMWF fields

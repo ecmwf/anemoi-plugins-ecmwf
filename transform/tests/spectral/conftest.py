@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import pytest
+
 from anemoi.plugins.ecmwf.transform.spectral.backends import backend_registry
 
 
