@@ -9,6 +9,7 @@
 
 
 import pytest
+
 from anemoi.plugins.ecmwf.inference.multio.multio_output import UserDefinedMetadata
 
 

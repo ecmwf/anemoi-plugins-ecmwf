@@ -21,8 +21,9 @@ from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.metadata import Metadata
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
-from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 from anemoi.utils.grib import shortname_to_paramid
+
+from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 
 from .geopotential_height import OrographyProcessor
 
@@ -223,9 +224,7 @@ def _rename_params(fieldlist: ekd.FieldList) -> ekd.FieldList:
 
         for inv in INVERSE_MAPPINGS:
             if inv.matches(field_metadata):
-                field._metadata = field.metadata().override(
-                    paramId=shortname_to_paramid(inv.true_param)
-                )  # type: ignore
+                field._metadata = field.metadata().override(paramId=shortname_to_paramid(inv.true_param))  # type: ignore
                 break
 
     return fieldlist

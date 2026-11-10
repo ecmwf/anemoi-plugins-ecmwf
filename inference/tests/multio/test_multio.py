@@ -18,6 +18,7 @@ from anemoi.inference.runners import create_runner
 from anemoi.inference.testing import fake_checkpoints
 from anemoi.inference.testing.mock_checkpoint import MockRunConfiguration
 from anemoi.inference.types import State
+
 from anemoi.plugins.ecmwf.inference.multio import MultioOutputPlugin
 
 
@@ -78,9 +79,9 @@ def test_multio_write_field_called(mock_multio_server, mock_state: State) -> Non
         if metadata["param"] == 228:
             assert "timespan" in metadata, f"Timespan should be set for accumulated fields - {metadata['param']}"
         else:
-            assert (
-                "timespan" not in metadata
-            ), f"Timespan should not be set for non-accumulated fields - {metadata['param']}"
+            assert "timespan" not in metadata, (
+                f"Timespan should not be set for non-accumulated fields - {metadata['param']}"
+            )
 
     # Check that flush was called without arguments
     mock_multio_server.flush.assert_called_with()

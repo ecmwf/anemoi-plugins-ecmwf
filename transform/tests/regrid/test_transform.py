@@ -22,6 +22,7 @@ import sys
 from typing import Any
 
 import pytest
+
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 from anemoi.plugins.ecmwf.transform.regrid.backend import GridSpec
 from anemoi.plugins.ecmwf.transform.regrid.backend import grid_repr

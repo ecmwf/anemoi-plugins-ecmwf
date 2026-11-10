@@ -1,4 +1,4 @@
-# (C) Copyright 2026- Anemoi contributors.
+# (C) Copyright 2026 ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+
 from anemoi.plugins.ecmwf.transform.spectral.backends import CalculationBackend
 from anemoi.plugins.ecmwf.transform.spectral.backends import backend_registry
 from anemoi.plugins.ecmwf.transform.spectral.backends import get_backend

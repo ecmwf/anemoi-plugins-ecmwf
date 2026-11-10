@@ -1,4 +1,4 @@
-# (C) Copyright 2025- Anemoi contributors.
+# (C) Copyright 2025-2026 ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -21,6 +21,7 @@ from typing import Any
 import numpy as np
 import pytest
 from anemoi.inference.grib.templates import create_template_provider
+
 from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
 from anemoi.plugins.ecmwf.inference.mir_templates import mir_templates as provider_module
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid

@@ -9,6 +9,7 @@
 import earthkit.data as ekd
 import numpy as np
 import pytest
+
 from anemoi.plugins.ecmwf.transform.virtual_temperature import VirtualTemperature
 
 NPOINTS = 20

@@ -13,6 +13,7 @@ Nothing here imports MIR, so the provider-logic tests run without it.
 """
 
 import pytest
+
 from anemoi.plugins.ecmwf.inference.mir_templates import MirTemplatesProvider
 
 

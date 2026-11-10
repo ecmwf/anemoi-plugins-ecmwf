@@ -1,4 +1,4 @@
-# (C) Copyright 2025- Anemoi contributors.
+# (C) Copyright 2025-2026 ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -14,6 +14,7 @@ from anemoi.inference.context import Context
 from anemoi.inference.metadata import Metadata
 from anemoi.inference.processor import Processor
 from anemoi.inference.types import State
+
 from anemoi.plugins.ecmwf.transform.regrid import MIRRegrid
 from anemoi.plugins.ecmwf.transform.regrid.backend import GridSpec
 

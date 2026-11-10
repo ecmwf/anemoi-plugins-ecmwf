@@ -1,4 +1,4 @@
-# (C) Copyright 2026- Anemoi contributors.
+# (C) Copyright 2026 ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -63,7 +63,7 @@ def trunc_from_nspec(nspec: int) -> int:
     trunc = int((-3 + (9 + 4 * nspec) ** 0.5) / 2)
     if (trunc + 1) * (trunc + 2) != nspec:
         raise ValueError(
-            f"Cannot derive truncation from spectral size {nspec}; " "expected (T+1)*(T+2) for some integer T"
+            f"Cannot derive truncation from spectral size {nspec}; expected (T+1)*(T+2) for some integer T"
         )
     return trunc
 

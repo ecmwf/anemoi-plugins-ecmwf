@@ -86,8 +86,9 @@ def _build_plugin(case: dict[str, Any], out_grib: str):
     """Construct a MultioOutputGribPlugin for the given case and output path."""
     import multio
     from anemoi.inference.post_processors.accumulate import Accumulate
-    from anemoi.plugins.ecmwf.inference.multio.multio_output import MultioOutputGribPlugin
     from anemoi.transform.variables import Variable
+
+    from anemoi.plugins.ecmwf.inference.multio.multio_output import MultioOutputGribPlugin
 
     grid = case["grid"]
 

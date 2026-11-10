@@ -1,4 +1,4 @@
-# (C) Copyright 2024 Anemoi contributors.
+# (C) Copyright 2024-2026 ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -13,8 +13,9 @@ import numpy as np
 import pytest
 from anemoi.inference.context import Context
 from anemoi.inference.metadata import Metadata
-from anemoi.plugins.ecmwf.inference.dynamics.modify_value import ModifyValuePlugin
 from pytest_mock import MockerFixture
+
+from anemoi.plugins.ecmwf.inference.dynamics.modify_value import ModifyValuePlugin
 
 
 def make_field(param: str) -> ekd.ArrayField:

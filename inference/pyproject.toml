@@ -12,14 +12,11 @@ requires = [ "setuptools>=60", "setuptools-scm>=8" ]
 
 [project]
 name = "anemoi-plugins-ecmwf-inference"
-
 description = "Plugins for anemoi.inference as built by ECMWF"
 readme = "README.md"
-
 keywords = [
   "anemoi-inference",
 ]
-
 license = { file = "LICENSE" }
 authors = [
   { name = "European Centre for Medium-Range Weather Forecasts (ECMWF)", email = "software.support@ecmwf.int" },
@@ -32,15 +29,14 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-
 dynamic = [ "version" ]
 dependencies = [
   "anemoi-inference>=0.11",
 ]
-
 optional-dependencies.all = [ "anemoi-plugins-ecmwf-inference[mir,multio,opendata,polytope]" ]
 optional-dependencies.dynamics = [ "anemoi-transform", "earthkit-regrid", "pillow", "scipy", "torch" ]
 optional-dependencies.fdbplus = [ "anemoi-plugins-ecmwf-transform[mir]" ]
@@ -64,52 +60,81 @@ optional-dependencies.tests = [
 ]
 optional-dependencies.thredds = [ "pydantic", "pyyaml" ]
 urls.Homepage = "https://github.com/ecmwf/anemoi-plugins-ecmwf"
-
 ## Entry Points
-entry-points."anemoi.inference.grib.templates".mir = "anemoi.plugins.ecmwf.inference.mir_templates.mir_templates:MirTemplatesProvider"
+entry-points."anemoi.inference.grib.templates".mir = """\
+  anemoi.plugins.ecmwf.inference.mir_templates.mir_templates:MirTemplatesProvider\
+  """
 entry-points."anemoi.inference.inputs".fdbplus = "anemoi.plugins.ecmwf.inference.fdb_plus:FDBPlusInput"
 entry-points."anemoi.inference.inputs".opendata = "anemoi.plugins.ecmwf.inference.opendata.opendata:OpenDataInputPlugin"
 entry-points."anemoi.inference.inputs".polytope = "anemoi.plugins.ecmwf.inference.polytope.polytope:PolytopeInputPlugin"
 entry-points."anemoi.inference.inputs".thredds_profile = "anemoi.plugins.ecmwf.inference.thredds:ThreddsProfilesInput"
-entry-points."anemoi.inference.mid_processors"."subtract_tendency" = "anemoi.plugins.ecmwf.inference.dynamics:SubtractTendencyPlugin"
-entry-points."anemoi.inference.outputs"."multio" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioDisambiguousOutputPlugin"
-entry-points."anemoi.inference.outputs"."multio.fdb" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputFDBPlugin"
-entry-points."anemoi.inference.outputs"."multio.grib" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputGribPlugin"
-entry-points."anemoi.inference.outputs"."multio.plan" = "anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputPlanPlugin"
-entry-points."anemoi.inference.pre_processors"."array_overlay" = "anemoi.plugins.ecmwf.inference.dynamics:ArrayOverlayPlugin"
-entry-points."anemoi.inference.pre_processors"."modify_value" = "anemoi.plugins.ecmwf.inference.dynamics:ModifyValuePlugin"
-entry-points."anemoi.inference.pre_processors"."regression-perturbation" = "anemoi.plugins.ecmwf.inference.dynamics:RegressionPerturbationPlugin"
-entry-points."anemoi.inference.pre_processors"."regrid" = "anemoi.plugins.ecmwf.inference.regrid:RegridPreprocessor"
-entry-points."anemoi.inference.runners"."steady-state" = "anemoi.plugins.ecmwf.inference.dynamics.steady_state:SteadyStateRunner"
+entry-points."anemoi.inference.mid_processors".subtract_tendency = """\
+  anemoi.plugins.ecmwf.inference.dynamics:SubtractTendencyPlugin\
+  """
+entry-points."anemoi.inference.outputs"."multio.fdb" = """\
+  anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputFDBPlugin\
+  """
+entry-points."anemoi.inference.outputs"."multio.grib" = """\
+  anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputGribPlugin\
+  """
+entry-points."anemoi.inference.outputs"."multio.plan" = """\
+  anemoi.plugins.ecmwf.inference.multio.multio_output:MultioOutputPlanPlugin\
+  """
+entry-points."anemoi.inference.outputs".multio = """\
+  anemoi.plugins.ecmwf.inference.multio.multio_output:MultioDisambiguousOutputPlugin\
+  """
+entry-points."anemoi.inference.pre_processors".array_overlay = """\
+  anemoi.plugins.ecmwf.inference.dynamics:ArrayOverlayPlugin\
+  """
+entry-points."anemoi.inference.pre_processors".modify_value = """\
+  anemoi.plugins.ecmwf.inference.dynamics:ModifyValuePlugin\
+  """
+entry-points."anemoi.inference.pre_processors".regression-perturbation = """\
+  anemoi.plugins.ecmwf.inference.dynamics:RegressionPerturbationPlugin\
+  """
+entry-points."anemoi.inference.pre_processors".regrid = "anemoi.plugins.ecmwf.inference.regrid:RegridPreprocessor"
+entry-points."anemoi.inference.runners".steady-state = """\
+  anemoi.plugins.ecmwf.inference.dynamics.steady_state:SteadyStateRunner\
+  """
 
 [dependency-groups]
 dev = [
   "anemoi-plugins-ecmwf-inference[tests]",
 ]
 
-[tool.setuptools.package-data]
-"anemoi.plugins.ecmwf.inference" = [ "py.typed" ]
-"anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
-"anemoi.plugins.ecmwf.inference.opendata" = [ "*.yaml" ]
+[tool.setuptools]
+package-data."anemoi.plugins.ecmwf.inference" = [ "py.typed" ]
+package-data."anemoi.plugins.ecmwf.inference.mir_templates" = [ "*.yaml" ]
+package-data."anemoi.plugins.ecmwf.inference.opendata" = [ "*.yaml" ]
 
 [tool.setuptools_scm]
-root = ".."
+version_file = "src/anemoi/plugins/ecmwf/inference/_version.py"
 version_scheme = "post-release"
 local_scheme = "no-local-version"
-git_describe_command = "git describe --dirty --tags --long --match 'inference-[0-9]*'"
+root = ".."
 tag_regex = "^inference-(?P<version>[vV]?[0-9]+[^-]*)"
-version_file = "src/anemoi/plugins/ecmwf/inference/_version.py"
 fallback_version = "0.0.0"
+git_describe_command = "git describe --dirty --tags --long --match 'inference-[0-9]*'"
 
-[tool.uv.sources]
-anemoi-plugins-ecmwf-inference = { workspace = true }
+[tool.uv]
+sources.anemoi-plugins-ecmwf-inference = { workspace = true }
 
-[tool.pytest.ini_options]
-testpaths = "tests"
-addopts = [
+[tool.ruff]
+line-length = 120
+lint.select = [ "E4", "E7", "E9", "F", "I" ]
+lint.isort.force-single-line = true
+lint.isort.known-first-party = [ "anemoi.plugins.ecmwf" ]
+lint.isort.known-third-party = [ "anemoi" ]
+
+[tool.pyproject-fmt]
+max_supported_python = "3.14"
+
+[tool.pytest]
+ini_options.testpaths = "tests"
+ini_options.addopts = [
   #"--numprocesses=8",
   "--strict-config",
 ]
-markers = [
+ini_options.markers = [
   "integration: real multio->GRIB encode/roundtrip tests (require pymultio + earthkit)",
 ]

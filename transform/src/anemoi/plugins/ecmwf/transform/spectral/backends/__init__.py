@@ -1,4 +1,4 @@
-# (C) Copyright 2026- Anemoi contributors.
+# (C) Copyright 2026 ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -74,8 +74,7 @@ def make_backend(grid: str, trunc: int, order: list[str] | None = None) -> Calcu
     except ValueError:
         fallback_grid = f"O{trunc + 1}"
         warnings.warn(
-            f"Grid '{grid}' pl not available in lookup. "
-            f"Falling back to '{fallback_grid}' (same truncation T{trunc}).",
+            f"Grid '{grid}' pl not available in lookup. Falling back to '{fallback_grid}' (same truncation T{trunc}).",
             stacklevel=3,
         )
         kloen = grid_to_pl(fallback_grid)
