@@ -1,5 +1,6 @@
+# This file is synced from https://github.com/ecmwf/reusable-workflows/tree/main/sync-files
+# Tool configuration (line length, rules, ...) belongs into pyproject.toml, not into hook args.
 repos:
-# Empty notebookds
 - repo: local
   hooks:
   - id: clear-notebooks-output
@@ -8,78 +9,61 @@ repos:
     stages: [pre-commit]
     language: python
     entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
-    additional_dependencies: [jupyter]
+    additional_dependencies: [nbconvert]
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
   hooks:
-  - id: check-yaml # Check YAML files for syntax errors only
+  - id: check-yaml
     args: [--unsafe, --allow-multiple-documents]
-  - id: debug-statements # Check for debugger imports and py37+ breakpoint()
-  - id: end-of-file-fixer # Ensure files end in a newline
-  - id: trailing-whitespace # Trailing whitespace checker
-  - id: no-commit-to-branch # Prevent committing to main / master
-  - id: check-added-large-files # Check for large files added to git
-  - id: check-merge-conflict # Check for files that contain merge conflict
+  - id: check-toml
+  - id: check-case-conflict
+  - id: debug-statements
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: no-commit-to-branch
+  - id: check-added-large-files
+  - id: check-merge-conflict
 - repo: https://github.com/pre-commit/pygrep-hooks
-  rev: v1.10.0  # Use the ref you want to point at
+  rev: v1.10.0
   hooks:
-  - id: python-use-type-annotations # Check for missing type annotations
-  - id: python-check-blanket-noqa # Check for # noqa: all
-  - id: python-no-log-warn # Check for log.warn
-- repo: https://github.com/psf/black-pre-commit-mirror
-  rev: 25.9.0
-  hooks:
-  - id: black
-    args: [--line-length=120]
-- repo: https://github.com/pycqa/isort
-  rev: 7.0.0
-  hooks:
-  - id: isort
-    args:
-    - -l 120
-    - --force-single-line-imports
-    - --profile black
-    - --project anemoi
+  - id: python-use-type-annotations
+  - id: python-check-blanket-noqa
+  - id: python-no-log-warn
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.3
+  rev: v0.16.8
   hooks:
-  - id: ruff
-    args:
-    - --line-length=120
-    - --fix
-    - --exit-non-zero-on-fix
-    - --exclude=docs/**/*_.py
+  - id: ruff-check
+    args: [--fix, --exit-non-zero-on-fix]
+  - id: ruff-format # after ruff-check, whose fixes may need reformatting
 - repo: https://github.com/sphinx-contrib/sphinx-lint
-  rev: v1.0.1
+  rev: v1.0.2
   hooks:
   - id: sphinx-lint
-# For now, we use it. But it does not support a lot of sphinx features
-- repo: https://github.com/dzhu/rstfmt
-  rev: v0.0.14
-  hooks:
-  - id: rstfmt
-    exclude: '(cli|schemas)/.*' # Because we use argparse and pydantic sphinx directives
 - repo: https://github.com/b8raoult/pre-commit-docconvert
   rev: "0.1.5"
   hooks:
   - id: docconvert
     args: ["numpy"]
+- repo: https://github.com/b8raoult/pre-commit-copyright-notice
+  rev: "0.3.0"
+  hooks:
+  - id: copyright-notice
+    args:
+    - --exclude=docs/**/*.py
+    - --fix
+    - --exit-non-zero-on-fix
+    - --holder
+    - ECMWF
+    - --license
+    - tools/pre-commit-copyright-notice.txt
 - repo: https://github.com/tox-dev/pyproject-fmt
-  rev: "v2.11.0"
+  rev: "v2.29.4"
   hooks:
   - id: pyproject-fmt
-    args: ["--max-supported-python", "3.13"]
 - repo: https://github.com/jshwi/docsig # Check docstrings against function sig
-  rev: v0.71.0
+  rev: v0.96.0
   hooks:
   - id: docsig
-    args:
-    - --ignore-no-params # Allow docstrings without parameters
-    - --check-dunders    # Check dunder methods
-    - --check-overridden # Check overridden methods
-    - --check-protected  # Check protected methods
-    - --check-class      # Check class docstrings
-    - --disable=SIG101,SIG102     # Disable empty docstrings
 ci:
-  autoupdate_schedule: monthly
+  autoupdate_schedule: quarterly # updates come from dependabot in reusable-workflows
   autoupdate_commit_msg: "chore(deps): pre-commit.ci autoupdate"

@@ -19,6 +19,12 @@ documentation:
     - "*.md"
     - "*.rst"
 
+config:
+- changed-files:
+  - any-glob-to-any-file:
+    - "**/src/**/config/**/*"
+    - "**/src/anemoi/inference/config.py"
+
 CI/CD:
 - changed-files:
   - any-glob-to-any-file:
