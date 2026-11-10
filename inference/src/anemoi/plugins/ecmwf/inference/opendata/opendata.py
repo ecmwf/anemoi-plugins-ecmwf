@@ -224,9 +224,7 @@ def _rename_params(fieldlist: ekd.FieldList) -> ekd.FieldList:
 
         for inv in INVERSE_MAPPINGS:
             if inv.matches(field_metadata):
-                field._metadata = field.metadata().override(
-                    paramId=shortname_to_paramid(inv.true_param)
-                )  # type: ignore
+                field._metadata = field.metadata().override(paramId=shortname_to_paramid(inv.true_param))  # type: ignore
                 break
 
     return fieldlist

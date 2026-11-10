@@ -132,9 +132,7 @@ class ArrayOverlayPlugin(Processor):
             overlay = np.mean(overlay, axis=-1)
 
         # TODO Harrison Cook: Remove when regrid can go from arbitrary to arbitrary grids.
-        overlay = np.array(
-            Image.fromarray(overlay).resize((1440, 721), Image.Resampling.BILINEAR)
-        )  # pyright: ignore[reportOptionalMemberAccess]
+        overlay = np.array(Image.fromarray(overlay).resize((1440, 721), Image.Resampling.BILINEAR))  # pyright: ignore[reportOptionalMemberAccess]
         overlay = np.nan_to_num(overlay, nan=0)
 
         return ekr.interpolate(overlay, {"grid": (0.25, 0.25)}, {"grid": grid})

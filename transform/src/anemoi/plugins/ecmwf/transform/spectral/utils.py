@@ -63,7 +63,7 @@ def trunc_from_nspec(nspec: int) -> int:
     trunc = int((-3 + (9 + 4 * nspec) ** 0.5) / 2)
     if (trunc + 1) * (trunc + 2) != nspec:
         raise ValueError(
-            f"Cannot derive truncation from spectral size {nspec}; " "expected (T+1)*(T+2) for some integer T"
+            f"Cannot derive truncation from spectral size {nspec}; expected (T+1)*(T+2) for some integer T"
         )
     return trunc
 

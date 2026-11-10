@@ -126,11 +126,9 @@ class VordivToUV(MatchingFieldsFilter):
         if self.transform_grid is not None:
             return self.transform_grid, grid_to_trunc(self.transform_grid)
 
-        raise ValueError("spectral_grid or transform_grid must be set for " "u/v -> vor/div backward transform")
+        raise ValueError("spectral_grid or transform_grid must be set for u/v -> vor/div backward transform")
 
-    def forward_transform(
-        self, vorticity: ekd.FieldList, divergence: ekd.FieldList
-    ) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
+    def forward_transform(self, vorticity: ekd.FieldList, divergence: ekd.FieldList) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
 
         grid, trunc = self._resolve_forward_grid(vorticity)
         backend = make_backend(grid, trunc, order=[self.backend] if self.backend is not None else None)
@@ -156,9 +154,7 @@ class VordivToUV(MatchingFieldsFilter):
             yield self.new_field_from_numpy(u[i], template=f, param=self.u_component_of_wind)
             yield self.new_field_from_numpy(v[i], template=f, param=self.v_component_of_wind)
 
-    def backward_transform(
-        self, u_component_of_wind: ekd.Field, v_component_of_wind: ekd.Field
-    ) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
+    def backward_transform(self, u_component_of_wind: ekd.Field, v_component_of_wind: ekd.Field) -> Iterator[ekd.Field]:  # type: ignore[reportIncompatibleMethodOverride]
         grid, trunc = self._resolve_backward_grid()
         backend = make_backend(grid, trunc, order=[self.backend] if self.backend is not None else None)
         vor, div = backend.uv_to_vordiv(u_component_of_wind.to_numpy(), v_component_of_wind.to_numpy())

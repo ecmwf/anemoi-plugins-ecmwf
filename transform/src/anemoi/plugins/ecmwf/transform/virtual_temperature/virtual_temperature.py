@@ -15,7 +15,6 @@ from anemoi.transform.filters.fields.matching import MatchingSpec
 
 
 class VirtualTemperature(MatchingFieldsFilter):
-
     MATCHING = MatchingSpec(
         select="param",
         forward=("specific_humidity", "temperature"),
