@@ -132,11 +132,9 @@ class UserDefinedMetadata(BaseModel):
     def validate_expver(cls, v):
         """Convert and validate the experiment version (expver).
 
-        Ensures that the experiment version is either a string of digits or an integer.
-        Converts integers to a zero-padded 4-digit string.
+        Ensures that the experiment version is a string by
+        converting integers to a zero-padded 4-digit string.
         """
-        if isinstance(v, str) and not v.isdigit():
-            raise ValueError("expver must be a string of digits or an integer")
         if isinstance(v, int):
             v = f"{v:04d}"
         return v
