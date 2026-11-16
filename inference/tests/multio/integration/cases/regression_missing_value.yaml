@@ -1,0 +1,113 @@
+# (C) Copyright 2026- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+# ---------------------------------------------------------------------------
+# Multio -> GRIB regression missing value test cases.
+# Ensure NaNs in the field become a real GRIB bitmap, for float32 and float64 fields.
+#
+# ecCodes marks a point as missing by exact equality with ``missingValue`` (a
+# double), so the plugin's fill value must be exactly representable in the field
+# dtype. When it is not (e.g. -9999.99 in float32) no bitmap is built and the
+# sentinel is packed as data, which ruins the packing range.
+#
+# The payload is deterministic (see ``_worker._make_field``): uniform in
+# ``field.fill`` with ``int(npoints * nan_fraction)`` NaNs, O48 having 6480 points.
+# ``expect`` values may be a bound mapping (``gte`` / ``lte``) instead of an exact
+# value; here ``min`` / ``max`` of the non-missing values must stay inside the fill
+# range, which fails if the sentinel was packed as data.
+# ``roundtrip`` additionally decodes the GRIB and compares it with the input field:
+# the decoded missing points must be exactly the input NaNs and every other value
+# must be within one quantisation step of the input.
+#
+# Each entry under ``cases`` produces one field that is written through a real
+# multio server (EncodeMTG -> file sink) and read back with earthkit-data. The
+# ``expect`` block lists GRIB header keys that must match after encoding.
+#
+# Structure of a case:
+#   name        : unique, human readable id (used as the pytest parametrize id)
+#   grid        : gaussian grid, drives the number of values in the payload
+#   user        : UserDefinedMetadata (class/type/stream/expver/model/...)
+#   reference   : {date: YYYYMMDD, time: HHMM} forecast reference (analysis) time
+#   step        : forecast step, hours (int) or metkit duration string ("1800s")
+#   variable    : anemoi-transform Variable spec (mars keys + optional process)
+#   field       : optional field generation controls (fill / nan_fraction)
+#   expect      : GRIB header keys checked against the round-tripped message
+#
+# Overriding defaults:
+#   Any key under ``defaults`` can be overridden per case. Mappings are merged
+#   key by key, so a case only lists what changes, e.g.
+#     user: {generatingProcessIdentifier: 5}   # keeps class/type/stream/...
+#     reference: {time: 1200}                  # keeps the default date
+#   Scalars and lists replace the default outright (grid: O96, step: 12).
+#   Setting ``steps`` replaces the default ``step`` (and vice versa).
+#   Set an optional user key to ``null`` to drop it, e.g. ``user: {model: null}``.
+# ---------------------------------------------------------------------------
+
+defaults:
+  grid: O48
+  user:
+    class: ai
+    type: fc
+    stream: oper
+    expver: "0001"
+    model: aifs-single
+    generatingProcessIdentifier: 6
+  reference:
+    date: 20260923
+    time: 0000
+  step: 0
+
+cases:
+  - name: nan-float32
+    field: {fill: [250.0, 310.0], nan_fraction: 0.25, dtype: float32}
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      bitmapPresent: 1
+      numberOfMissing: 1620
+      min: {gte: 249.9, lte: 260.0}
+      max: {gte: 300.0, lte: 310.1}
+    roundtrip: {}
+
+  - name: nan-float64
+    field: {fill: [250.0, 310.0], nan_fraction: 0.25, dtype: float64}
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      bitmapPresent: 1
+      numberOfMissing: 1620
+      min: {gte: 249.9, lte: 260.0}
+      max: {gte: 300.0, lte: 310.1}
+    roundtrip: {}
+
+  - name: no-nan-float32
+    field: {fill: [250.0, 310.0], nan_fraction: 0.0, dtype: float32}
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      bitmapPresent: 0
+      numberOfMissing: 0
+      min: {gte: 249.9, lte: 260.0}
+      max: {gte: 300.0, lte: 310.1}
+    roundtrip: {}
+
+  - name: no-nan-float64
+    field: {fill: [250.0, 310.0], nan_fraction: 0.0, dtype: float64}
+    variable:
+      name: 2t
+      mars: {param: 2t, levtype: sfc}
+    expect:
+      bitmapPresent: 0
+      numberOfMissing: 0
+      min: {gte: 249.9, lte: 260.0}
+      max: {gte: 300.0, lte: 310.1}
+    roundtrip: {}

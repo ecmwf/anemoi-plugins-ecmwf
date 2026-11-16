@@ -25,7 +25,8 @@ Protocol
 
 - reads the resolved case description (JSON) from the first argument;
 - writes exactly one GRIB file at the second argument via a real multio plan
-  ``[EncodeMTG (mtg2) -> File sink]``;
+  ``[EncodeMTG (mtg2) -> File sink]`` (plus ``<out.grib>.input.npy``, the generated
+  input field, when the case asks for a ``roundtrip`` check);
 - prints a single JSON line to stdout: ``{"ok": bool, "error": str|None}``.
 
 The parent (pytest) then reads the GRIB back with earthkit/eccodes and asserts
@@ -182,6 +183,10 @@ def run_case(case: dict[str, Any], out_grib: str) -> None:
     plugin, vname, grid = _build_plugin(case, out_grib)
     field = _make_field(case, _npoints(grid))
     npoints = field.size
+
+    if case.get("save_input"):
+        # The parent compares the decoded GRIB against this exact payload
+        np.save(out_grib + ".input.npy", field)
 
     steps = case["steps"] if case.get("steps") is not None else [case["step"]]
     steps_td = [_parse_step(s) for s in steps]
