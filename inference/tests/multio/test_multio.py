@@ -87,6 +87,48 @@ def test_multio_write_field_called(mock_multio_server, mock_state: State) -> Non
     mock_multio_server.flush.assert_called_with()
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@fake_checkpoints
+def test_multio_missing_value_exact_in_dtype(mock_multio_server, mock_state: State, dtype) -> None:
+    """The fill value written into the field must equal ``misc-missingValue`` exactly.
+
+    ecCodes marks points as missing by exact equality, so a missing value that is not
+    representable in the field dtype (e.g. ``-9999.99`` in float32) builds no bitmap.
+    """
+    config = MockRunConfiguration.load(
+        str((Path(__file__).parent / "configs/multio.yaml").absolute()),
+        overrides=dict(runner="no-model", device="cpu", input="dummy"),
+    )
+
+    runner = create_runner(config)  # type: ignore
+    output = runner.create_output("data", runner.tensor_handlers["data"].metadata)
+
+    output.open(mock_state)
+    output.reference_date = mock_state["date"]
+
+    mock_state["fields"] = {name: values.astype(dtype) for name, values in mock_state["fields"].items()}
+    for values in mock_state["fields"].values():
+        values[::2] = np.nan
+
+    output.write_step(mock_state)
+    output.close()
+
+    write_field_calls = mock_multio_server.write_field.call_args_list
+    assert write_field_calls
+
+    for call in write_field_calls:
+        metadata, field = call.args
+        assert field.dtype == dtype
+        assert not np.isnan(field).any()
+
+        missing_value = metadata["misc-missingValue"]
+        assert metadata["missingValue"] == missing_value
+        assert metadata["misc-bitmapPresent"] is True
+        # Exact equality after the cast to double ecCodes performs
+        assert (field.astype(np.float64) == missing_value).sum() == len(field[::2])
+        assert missing_value == float(dtype(missing_value))
+
+
 @fake_checkpoints
 def test_multio_archiver(mock_multio_server, mock_state) -> None:
     """Test archiver"""

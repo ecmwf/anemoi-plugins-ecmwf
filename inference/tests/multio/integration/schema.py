@@ -93,6 +93,8 @@ class FieldGen(BaseModel):
     """Uniform ``[low, high]`` range for the generated values."""
     nan_fraction: float = 0.0
     """Fraction of points set to NaN (to exercise bitmap / missing values)."""
+    dtype: Literal["float32", "float64"] = "float32"
+    """Numpy dtype of the generated values (the missing value must be exact in it)."""
 
 
 class Case(BaseModel):

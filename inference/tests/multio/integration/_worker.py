@@ -154,7 +154,7 @@ def _make_field(case: dict[str, Any], npoints: int) -> np.ndarray:
     field_cfg = case.get("field") or {}
     low, high = field_cfg.get("fill", [250.0, 310.0])
     rng = np.random.default_rng(0)
-    field = rng.uniform(low, high, size=npoints).astype("float32")
+    field = rng.uniform(low, high, size=npoints).astype(field_cfg.get("dtype", "float32"))
 
     nan_fraction = float(field_cfg.get("nan_fraction", 0.0))
     if nan_fraction > 0.0:

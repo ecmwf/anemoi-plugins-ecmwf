@@ -52,6 +52,58 @@ STREAM_MAPPING = {
 }
 
 
+MISSING_VALUE = -9999.99
+
+
+def _missing_value_for(dtype: np.dtype) -> float:
+    """Return the missing value, rounded to be exactly representable in ``dtype``.
+
+    ecCodes flags a point as missing by exact equality with ``missingValue`` (a double),
+    while the field values are cast from their own dtype to double. ``-9999.99`` is not
+    exactly representable in float32, so a float32 field filled with it would hold
+    ``-9999.990234375``, never match, and no bitmap would be built.
+
+    Parameters
+    ----------
+    dtype : np.dtype
+        Floating point dtype of the field.
+
+    Returns
+    -------
+    float
+        The missing value as a Python float, identical to what ``dtype`` stores.
+    """
+    return float(np.asarray(MISSING_VALUE, dtype=dtype))
+
+
+def _fill_missing(field: np.ndarray) -> tuple[np.ndarray, dict[str, Any]]:
+    """Replace NaNs in ``field`` by the missing value and build the matching multio keys.
+
+    The fill value and ``misc-missingValue`` are the same number, exact in the dtype of
+    ``field``, so that ecCodes finds the missing points and builds a bitmap.
+
+    Parameters
+    ----------
+    field : np.ndarray
+        Field values, possibly containing NaNs.
+
+    Returns
+    -------
+    tuple[np.ndarray, dict[str, Any]]
+        The field with NaNs filled and the missing value / bitmap keys to pass to multio.
+        The keys are empty when the field has no NaNs.
+    """
+    if not np.isnan(field).any():
+        return field, {}
+
+    missing_value = _missing_value_for(field.dtype)
+    return np.nan_to_num(field, nan=missing_value), {  # type: ignore
+        "misc-missingValue": missing_value,
+        "missingValue": missing_value,  # Yes both keys are needed, multio...
+        "misc-bitmapPresent": True,
+    }
+
+
 def _format_step(step: timedelta) -> int:
     """Format a forecast step as whole hours for multio/metkit.
 
@@ -410,21 +462,7 @@ class MultioOutputPlugin(Output):
             # Copy the field to ensure it is contiguous
             # Removes ValueError: ndarray is not C-contiguous
             # Replace NaNs with a missing value
-            field = field.copy(order="C")
-            missing_value = float(-9999.99)
-
-            missing_value_keys = {}
-            # Missing value keys
-
-            if np.isnan(field).any():
-                field = np.nan_to_num(field, nan=missing_value)  # type: ignore
-
-                # Set missing values and bitmap keys
-                missing_value_keys = {
-                    "misc-missingValue": missing_value,
-                    "missingValue": missing_value,  # Yes both keys are needed, multio...
-                    "misc-bitmapPresent": True,
-                }
+            field, missing_value_keys = _fill_missing(field.copy(order="C"))
 
             self._server.write_field(
                 {
