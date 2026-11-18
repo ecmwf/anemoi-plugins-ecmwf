@@ -34,8 +34,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 
+from .checks import DECODED_MISSING
+from .checks import check_message
+from .checks import check_roundtrip
 from .conftest import load_cases
 from .schema import Case
 
@@ -161,21 +165,16 @@ def _read_headers(grib_path: Path, keys: list[str]) -> list[dict[str, Any]]:
     return messages
 
 
-def _check_message(header: dict[str, Any], expect: dict[str, Any]) -> list[str]:
-    """Return a list of human-readable mismatches (empty == all good)."""
-    mismatches = []
-    for key, want in expect.items():
-        got = header.get(key)
-        # eccodes returns numbers as int/float and strings as str; normalise the
-        # comparison so YAML ints match eccodes ints and YAML strings match keys
-        # like stepRange ("0-6").
-        if isinstance(want, str) and not isinstance(got, str):
-            got_cmp: Any = str(got)
-        else:
-            got_cmp = got
-        if got_cmp != want:
-            mismatches.append(f"  {key}: expected {want!r}, got {got!r}")
-    return mismatches
+def _decode_values(grib_path: Path) -> tuple[np.ndarray, int]:
+    """Decode the first message: values (missing points set to ``DECODED_MISSING``), bitsPerValue."""
+    with open(grib_path, "rb") as handle:
+        gid = eccodes.codes_grib_new_from_file(handle)
+        assert gid is not None, "no GRIB message written"
+        try:
+            eccodes.codes_set(gid, "missingValue", DECODED_MISSING)
+            return eccodes.codes_get_values(gid), eccodes.codes_get(gid, "bitsPerValue")
+        finally:
+            eccodes.codes_release(gid)
 
 
 @pytest.mark.parametrize("case", ALL_CASES, ids=[c.id for c in ALL_CASES])
@@ -228,7 +227,7 @@ def test_multio_grib_encoding(case: Case, tmp_path: Path) -> None:
         if len(messages) != len(expect_sequence):
             mismatches.append(f"  expected {len(expect_sequence)} messages, got {len(messages)}")
         for idx, (header, step_expect) in enumerate(zip(messages, expect_sequence)):
-            for m in _check_message(header, step_expect):
+            for m in check_message(header, step_expect):
                 mismatches.append(f"  [step #{idx}]{m}")
         _finish(mismatches)
         return
@@ -238,5 +237,9 @@ def test_multio_grib_encoding(case: Case, tmp_path: Path) -> None:
     if len(messages) != 1:
         mismatches.append(f"  expected exactly one message, got {len(messages)}")
     else:
-        mismatches = _check_message(messages[0], expect)
+        mismatches = check_message(messages[0], expect)
+        if case.roundtrip is not None:
+            decoded, bits_per_value = _decode_values(out_grib)
+            expected = np.load(out_grib.with_name(out_grib.name + ".input.npy"))
+            mismatches += check_roundtrip(case.roundtrip, expected, decoded, bits_per_value)
     _finish(mismatches)

@@ -93,6 +93,28 @@ class FieldGen(BaseModel):
     """Uniform ``[low, high]`` range for the generated values."""
     nan_fraction: float = 0.0
     """Fraction of points set to NaN (to exercise bitmap / missing values)."""
+    dtype: Literal["float32", "float64"] = "float32"
+    """Numpy dtype of the generated values (the missing value must be exact in it)."""
+
+
+class Roundtrip(BaseModel):
+    """Decode the written GRIB and compare its values with the generated input field.
+
+    The worker saves the input field next to the GRIB; the test decodes the GRIB with
+    eccodes and checks, over the whole field:
+
+    - ``missing_mask``: the points decoded as missing are exactly the input NaNs
+      (for a field without NaNs: no point is missing);
+    - ``max_error``: every valid point decodes to within this absolute error of the input.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    missing_mask: bool = True
+    """Require the decoded missing mask to equal the input NaN mask."""
+    max_error: Literal["packing"] | float = "packing"
+    """Absolute error bound for valid points. ``packing`` is one quantisation step of
+    the packed data, ``(max - min) / (2**bitsPerValue - 1)`` over the valid input values."""
 
 
 class Case(BaseModel):
@@ -125,9 +147,17 @@ class Case(BaseModel):
 
     # expectations: expect XOR expect_sequence ---------------------------
     expect: dict[str, Any] = Field(default_factory=dict)
-    """GRIB header keys -> expected values for a single-message case."""
+    """GRIB header keys -> expected values for a single-message case.
+
+    A value is compared exactly, unless it is a mapping of inclusive bounds
+    (``{gte: 249.9, lte: 260.0}``, either bound optional) for a numeric key such
+    as the ``min`` / ``max`` of the decoded values.
+    """
     expect_sequence: list[dict[str, Any]] | None = None
     """One expectation map per step for a multi-message (sequence) case."""
+
+    roundtrip: Roundtrip | None = None
+    """Optional value round-trip check (single-message cases only), see :class:`Roundtrip`."""
 
     xfail: str | None = None
     """If set, the case is a known limitation and is expected to fail."""
@@ -156,6 +186,8 @@ class Case(BaseModel):
             raise ValueError(f"case {self.name!r}: 'steps' requires 'expect_sequence'")
         if self.step is not None and self.expect_sequence is not None:
             raise ValueError(f"case {self.name!r}: 'expect_sequence' requires 'steps'")
+        if self.roundtrip is not None and self.steps is not None:
+            raise ValueError(f"case {self.name!r}: 'roundtrip' is only supported for single-'step' cases")
         if self.steps is not None and len(self.steps) != len(self.expect_sequence or []):
             raise ValueError(f"case {self.name!r}: 'steps' and 'expect_sequence' length mismatch")
         return self
@@ -185,6 +217,7 @@ class Case(BaseModel):
             "steps": self.steps,
             "field": self.field.model_dump(),
             "plan": self.plan,
+            "save_input": self.roundtrip is not None,
         }
 
 
