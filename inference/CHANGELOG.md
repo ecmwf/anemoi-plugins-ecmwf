@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.9.0...inference-0.9.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **inference:** make multio missing value exact in field dtype ([#139](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/139)) ([16aa1d4](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/16aa1d4518e97530b61062aeeb484c21bcbbc2e2))
+* **inference:** refine expver validation logic ([#138](https://github.com/ecmwf/anemoi-plugins-ecmwf/issues/138)) ([7ff0c6e](https://github.com/ecmwf/anemoi-plugins-ecmwf/commit/7ff0c6e9ee278292802b080b2dd77c085e952cd8))
+
 ## [0.9.0](https://github.com/ecmwf/anemoi-plugins-ecmwf/compare/inference-0.8.0...inference-0.9.0) (2026-11-06)
 
 
