@@ -14,8 +14,9 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from anemoi.inference.context import Context
-from anemoi.inference.metadata import Metadata
+from anemoi.inference.metadata import InferenceMetadata
 from anemoi.inference.types import State
+from anemoi.metadata.arrays import DatasetArrays
 
 from anemoi.plugins.ecmwf.inference.regrid.regrid import RegridPreprocessor
 from anemoi.plugins.ecmwf.inference.regrid.regrid import _open_coord_files
@@ -60,7 +61,7 @@ class TestOpenCoordFiles:
 class TestRegridPreprocessor:
     def _make_processor(self, mocker, grid, area=None):
         context = cast(Context, mocker.MagicMock())
-        metadata = cast(Metadata, mocker.MagicMock())
+        metadata = cast(InferenceMetadata, mocker.MagicMock())
         with patch("anemoi.plugins.ecmwf.inference.regrid.regrid.MIRRegrid"):
             return RegridPreprocessor(context=context, metadata=metadata, grid=grid, area=area)
 
@@ -92,7 +93,7 @@ class TestRegridPreprocessor:
         }
 
         context = cast(Context, mocker.MagicMock())
-        metadata = cast(Metadata, mocker.MagicMock())
+        metadata = cast(InferenceMetadata, mocker.MagicMock())
         with patch("anemoi.plugins.ecmwf.inference.regrid.regrid.MIRRegrid") as mock_mir:
             RegridPreprocessor(context=context, metadata=metadata, grid=grid)
             call_kwargs = mock_mir.call_args.kwargs
@@ -104,7 +105,7 @@ class TestRegridPreprocessor:
         grid = {"latitudes": [10.0, 20.0], "longitudes": [100.0, 110.0]}
 
         context = cast(Context, mocker.MagicMock())
-        metadata = cast(Metadata, mocker.MagicMock())
+        metadata = cast(InferenceMetadata, mocker.MagicMock())
         with patch("anemoi.plugins.ecmwf.inference.regrid.regrid.MIRRegrid") as mock_mir:
             RegridPreprocessor(context=context, metadata=metadata, grid=grid)
             call_kwargs = mock_mir.call_args.kwargs
@@ -119,13 +120,13 @@ class TestRegridPreprocessor:
         }
         with pytest.raises(ValueError, match="mixed types"):
             context = cast(Context, mocker.MagicMock())
-            metadata = cast(Metadata, mocker.MagicMock())
+            metadata = cast(InferenceMetadata, mocker.MagicMock())
             RegridPreprocessor(context=context, metadata=metadata, grid=grid)
 
     @staticmethod
     def _checkpoint_metadata(mocker, keys):
         metadata = mocker.MagicMock()
-        metadata.supporting_arrays = {k: np.array([float(i), float(i) + 0.5]) for i, k in enumerate(keys)}
+        metadata.arrays = DatasetArrays({k: np.array([float(i), float(i) + 0.5]) for i, k in enumerate(keys)})
         return metadata
 
     @pytest.mark.parametrize(
@@ -146,8 +147,8 @@ class TestRegridPreprocessor:
         with patch("anemoi.plugins.ecmwf.inference.regrid.regrid.MIRRegrid") as mock_mir:
             RegridPreprocessor(context=context, metadata=metadata, grid=grid)
         assert mock_mir.call_args.kwargs["grid"] == {
-            "latitudes": metadata.supporting_arrays[lat_key].tolist(),
-            "longitudes": metadata.supporting_arrays[lon_key].tolist(),
+            "latitudes": metadata.arrays.get(lat_key).tolist(),
+            "longitudes": metadata.arrays.get(lon_key).tolist(),
         }
 
     @pytest.mark.parametrize(
@@ -230,7 +231,7 @@ def test_process_gives_flat_coordinates(mocker, surface_field, grid, area, npoin
     """The state coordinates are 1D arrays with one value per point of the regridded fields."""
     pytest.importorskip("mir")
     context = cast(Context, mocker.MagicMock())
-    metadata = cast(Metadata, mocker.MagicMock())
+    metadata = cast(InferenceMetadata, mocker.MagicMock())
     proc = RegridPreprocessor(context=context, metadata=metadata, grid=grid, area=area)
 
     state = proc.process({"fields": surface_field})  # type: ignore

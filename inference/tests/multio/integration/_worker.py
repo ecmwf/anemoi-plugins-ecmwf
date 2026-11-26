@@ -106,13 +106,13 @@ def _build_plugin(case: dict[str, Any], out_grib: str):
 
     context = SimpleNamespace(post_processors=post_processors, reference_date=ref_dt, typed_variables={vname: variable})
 
+    timing = SimpleNamespace(timestep_delta=_parse_step(case.get("timestep", 6)))
     plugin = MultioOutputGribPlugin(
         context=context,
         metadata=SimpleNamespace(
-            grid=grid,
-            timestep=_parse_step(case.get("timestep", 6)),
+            core=SimpleNamespace(task=SimpleNamespace(for_dataset=lambda dataset_name: timing)),
+            data=SimpleNamespace(grid=lambda: grid, typed_variables=lambda: {vname: variable}),
             dataset_name="data",
-            typed_variables={vname: variable},
         ),
         path="",
         **case["user"],

@@ -168,7 +168,7 @@ class RegressionPerturbationPlugin(Processor):
         if self._grid is None:
             return None
         if isinstance(self._grid, str) and self._grid.lower() == "checkpoint":
-            checkpoint_grid = self.metadata.grid
+            checkpoint_grid = self.metadata.data.grid()
             if checkpoint_grid is None:
                 raise ValueError("grid='checkpoint' was requested but the checkpoint metadata has no grid.")
             return checkpoint_grid

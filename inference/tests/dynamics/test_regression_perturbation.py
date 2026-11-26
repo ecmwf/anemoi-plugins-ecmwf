@@ -91,7 +91,7 @@ def _make_regression_plugin(mocker, **overrides):
     """Create a RegressionPerturbationPlugin with a mocked context."""
     context = cast(Context, mocker)
     metadata = MagicMock()
-    metadata.grid = "O96"
+    metadata.data.grid.return_value = "O96"
     defaults = dict(
         context=context,
         metadata=metadata,
@@ -164,7 +164,7 @@ class TestRegressionPerturbationInit:
 
     def test_target_grid_checkpoint_without_metadata_grid_raises(self):
         plugin = _make_regression_plugin(MagicMock(), grid="checkpoint")
-        plugin.metadata.grid = None
+        plugin.metadata.data.grid.return_value = None
         with pytest.raises(ValueError, match="no grid"):
             plugin._target_grid
 

@@ -14,7 +14,7 @@ from typing import Any
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
 from anemoi.inference.inputs.split import SplitInput
-from anemoi.inference.metadata import Metadata
+from anemoi.inference.metadata import InferenceMetadata
 
 from .profiles import available_profiles
 from .profiles import get_profile
@@ -28,14 +28,14 @@ LOG = logging.getLogger(__name__)
 class ThreddsProfilesInput(SplitInput):
     """Handles Thredds profiles as an input."""
 
-    def __init__(self, context: Context, metadata: Metadata, *, profile: str, **kwargs):
+    def __init__(self, context: Context, metadata: InferenceMetadata, *, profile: str, **kwargs):
         """Initialise the ThreddsProfilesInput.
 
         Parameters
         ----------
         context : Context
             The context in which the input is used.
-        metadata : Metadata
+        metadata : InferenceMetadata
             The metadata associated with the input.
         profile: str
             The profile of the Thredds file / server.

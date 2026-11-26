@@ -15,7 +15,7 @@ from typing import Any
 
 import earthkit.data as ekd
 from anemoi.inference.context import Context
-from anemoi.inference.metadata import Metadata
+from anemoi.inference.metadata import InferenceMetadata
 from anemoi.inference.processor import Processor
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import State
@@ -41,7 +41,7 @@ class FDBPlusPreProcessor(Processor):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         *,
         target_grid: str,
         spectral_backend: str | None = None,

@@ -17,9 +17,12 @@ from anemoi.inference.types import State
 
 @pytest.fixture
 def mock_metadata(mocker):
-    from anemoi.inference.metadata import Metadata
+    from anemoi.inference.metadata import InferenceMetadata
 
-    return mocker.MagicMock(spec=Metadata)
+    metadata = mocker.MagicMock(spec=InferenceMetadata)
+    # Set in ``InferenceMetadata.__init__``, so not part of the spec
+    metadata.dataset_name = "data"
+    return metadata
 
 
 STATE_NPOINTS = 50

@@ -23,7 +23,7 @@ from ._operate_on_fields import apply_function_to_fields
 
 if TYPE_CHECKING:
     from anemoi.inference.context import Context
-    from anemoi.inference.metadata import Metadata
+    from anemoi.inference.metadata import InferenceMetadata
 
 LOG = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class ArrayOverlayPlugin(Processor):
     def __init__(
         self,
         context: "Context",
-        metadata: "Metadata",
+        metadata: "InferenceMetadata",
         *,
         overlay: PathLike,
         fields: list[dict[str, Any]],
@@ -147,7 +147,7 @@ class ArrayOverlayPlugin(Processor):
         LOG.debug("ImageOverlay: Applying image overlay to %s.", field)
         data = field.to_numpy()
 
-        image_array = self.prepare_overlay(self.metadata.grid) / 255.0
+        image_array = self.prepare_overlay(self.metadata.data.grid()) / 255.0
         rescaled_array = ((1 - image_array) if self._invert else image_array) * self._rescale
 
         if self._method == "add":
