@@ -14,7 +14,7 @@ from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
 from anemoi.inference.inputs.mars import MarsInput
 from anemoi.inference.inputs.mars import postproc
-from anemoi.inference.metadata import Metadata
+from anemoi.inference.metadata import InferenceMetadata
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
 
@@ -101,7 +101,7 @@ class PolytopeInputPlugin(MarsInput):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         *,
         collection: str = "ecmwf-mars",
         **kwargs: Any,
@@ -112,7 +112,7 @@ class PolytopeInputPlugin(MarsInput):
         ----------
         context : Context
             The context for the input plugin.
-        metadata : Metadata
+        metadata : InferenceMetadata
             The metadata associated with the input plugin.
         collection : Optional[str], optional
             The collection to use for retrieval, by default 'ecmwf-mars'.
@@ -150,8 +150,8 @@ class PolytopeInputPlugin(MarsInput):
         kwargs = self.kwargs.copy()
         kwargs.setdefault("expver", "0001")
 
-        kwargs.setdefault("grid", self.metadata.grid)
-        kwargs.setdefault("area", self.metadata.area)
+        kwargs.setdefault("grid", self.metadata.data.grid())
+        kwargs.setdefault("area", self.metadata.data.area())
         kwargs.setdefault("stream", "oper")
         kwargs.setdefault("class", "od")
         kwargs.setdefault("step", 0)

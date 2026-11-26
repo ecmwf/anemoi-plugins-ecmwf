@@ -20,7 +20,7 @@ import numpy as np
 from anemoi.inference.context import Context
 from anemoi.inference.decorators import main_argument
 from anemoi.inference.decorators import supports_parallel_output
-from anemoi.inference.metadata import Metadata
+from anemoi.inference.metadata import InferenceMetadata
 from anemoi.inference.output import Output
 from anemoi.inference.post_processors.accumulate import Accumulate
 from anemoi.inference.types import ProcessorConfig
@@ -276,7 +276,7 @@ class MultioOutputPlugin(Output):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         plan: str | dict | multio.plans.Client | multio.plans.Server,
         *,
         variables: list[str] | None = None,
@@ -316,6 +316,14 @@ class MultioOutputPlugin(Output):
         )  # type: ignore[reportAttributeAccessIssue]
 
     @property
+    def _timestep(self) -> timedelta:
+        """The model timestep of the dataset this output handles."""
+        timestep = self.metadata.core.task.for_dataset(self.metadata.dataset_name).timestep_delta
+        if timestep is None:
+            raise ValueError("The checkpoint metadata does not give the model timestep")
+        return timestep
+
+    @property
     def is_ensemble(self) -> bool:
         return self._user_defined_metadata.number is not None
 
@@ -345,10 +353,10 @@ class MultioOutputPlugin(Output):
         if variable.is_accumulation:
             if self._is_accumulated_from_start:
                 return "fs"
-            return _format_timespan(variable.period or self.metadata.timestep)
+            return _format_timespan(variable.period or self._timestep)
 
         if not variable.is_instantanous:
-            return _format_timespan(variable.period or self.metadata.timestep)
+            return _format_timespan(variable.period or self._timestep)
 
         return None
 
@@ -421,7 +429,7 @@ class MultioOutputPlugin(Output):
 
         shared_metadata = {
             "step": _format_step(step),
-            "grid": str(self.metadata.grid).upper(),
+            "grid": str(self.metadata.data.grid()).upper(),
             "date": int(reference_date.strftime("%Y%m%d")),  # type: ignore
             "time": int(reference_date.strftime("%H%M")),  # type: ignore
             "hdate": int(hdate.strftime("%Y%m%d")) if hdate is not None else None,
@@ -511,7 +519,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         *,
         path: str,
         append: bool = False,
@@ -525,7 +533,7 @@ class MultioOutputGribPlugin(MultioOutputPlugin):
         ----------
         context : Context
             Model Runner
-        metadata : Metadata
+        metadata : InferenceMetadata
             Metadata for the output plugin
         path : str
             Path to write to
@@ -578,7 +586,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         fdb_config: str,
         *,
         debug: bool = False,
@@ -590,7 +598,7 @@ class MultioOutputFDBPlugin(MultioOutputPlugin):
         ----------
         context : Context
             Model Runner
-        metadata : Metadata
+        metadata : InferenceMetadata
             Metadata for the output plugin
         fdb_config : str
             FDB Configuration file
@@ -633,7 +641,7 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         plan: str | dict,
         *,
         sinks: list[multio.plans.sinks.SINKS] | None = None,
@@ -647,7 +655,7 @@ class MultioOutputPlanPlugin(MultioOutputPlugin):
         ----------
         context : Context
             Model Runner
-        metadata : Metadata
+        metadata : InferenceMetadata
             Metadata for the output plugin
         plan : str | dict
             Multio Plan

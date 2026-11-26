@@ -13,7 +13,7 @@ from typing import Any
 
 from anemoi.inference.context import Context
 from anemoi.inference.inputs.fdb import FDBInput
-from anemoi.inference.metadata import Metadata
+from anemoi.inference.metadata import InferenceMetadata
 
 from .pre_processor import FDBPlusPreProcessor
 
@@ -28,7 +28,7 @@ class FDBPlusInput(FDBInput):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         *,
         grid: str | None = None,
         spectral_backend: str | None = None,
@@ -40,13 +40,13 @@ class FDBPlusInput(FDBInput):
         ----------
         context : Any
             The context in which the input is used.
-        metadata : Metadata
+        metadata : InferenceMetadata
             The metadata associated with the input.
         grid : str | None, optional
             The target grid for the input. If not specified, the grid from the metadata will be used.
         """
         super().__init__(context, metadata=metadata, **kwargs)
-        target_grid = grid or metadata.grid
+        target_grid = grid or metadata.data.grid()
         if target_grid is None:
             raise ValueError("`grid` must be specified in metadata or init for FDBPlusInput")
         self.pre_processors.insert(

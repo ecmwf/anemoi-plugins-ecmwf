@@ -11,7 +11,7 @@ import logging
 
 import numpy as np
 from anemoi.inference.context import Context
-from anemoi.inference.metadata import Metadata
+from anemoi.inference.metadata import InferenceMetadata
 from anemoi.inference.processor import Processor
 from anemoi.inference.types import State
 
@@ -40,7 +40,7 @@ class RegridPreprocessor(Processor):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         *,
         grid: GridSpec | dict[str, str] | None = None,
         area: str | list[float] | tuple[float, ...] | None = None,
@@ -51,7 +51,7 @@ class RegridPreprocessor(Processor):
         ----------
         context : Context
             The context in which the processor operates.
-        metadata : Metadata
+        metadata : InferenceMetadata
             The metadata associated with the dataset this processor is handling.
         grid : str | list[float] | tuple[float, ...] | dict[str, list[float]] | dict[str, str]
             The target grid for regridding. Can be a grid string (e.g. "O32"),
@@ -82,19 +82,19 @@ class RegridPreprocessor(Processor):
                 coord_path = grid[len(CHECKPOINT_SENTINEL) :].removeprefix(":")
                 prefix = f"{coord_path}/" if coord_path else ""
                 lat_key, lon_key = f"{prefix}latitudes", f"{prefix}longitudes"
-                supporting_arrays = self.metadata.supporting_arrays
-                if lat_key not in supporting_arrays or lon_key not in supporting_arrays:
+                arrays = self.metadata.arrays
+                if lat_key not in arrays or lon_key not in arrays:
                     raise ValueError(
                         f"Checkpoint grid specified but metadata does not contain '{lat_key}' and '{lon_key}' supporting arrays. "
-                        f"Available supporting arrays: {list(supporting_arrays.keys())}"
+                        f"Available supporting arrays: {arrays.names}"
                     )
-                ckpt_lat = supporting_arrays[lat_key].tolist()
-                ckpt_lon = supporting_arrays[lon_key].tolist()
+                ckpt_lat = arrays.get(lat_key).tolist()
+                ckpt_lon = arrays.get(lon_key).tolist()
                 resolved_grid = {"latitudes": ckpt_lat, "longitudes": ckpt_lon}
             else:
                 resolved_grid = grid
         elif grid is None:
-            resolved_grid = metadata.grid
+            resolved_grid = metadata.data.grid()
         else:
             resolved_grid = grid
 

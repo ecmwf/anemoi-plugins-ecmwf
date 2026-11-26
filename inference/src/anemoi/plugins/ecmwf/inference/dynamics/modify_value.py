@@ -19,7 +19,7 @@ from ._operate_on_fields import apply_function_to_fields
 
 if TYPE_CHECKING:
     from anemoi.inference.context import Context
-    from anemoi.inference.metadata import Metadata
+    from anemoi.inference.metadata import InferenceMetadata
 
 VALID_METHODS = Literal["add", "subtract", "multiply", "divide", "replace"]
 METHOD_FUNCTIONS = {
@@ -49,7 +49,7 @@ class ModifyValuePlugin(Processor):
     def __init__(
         self,
         context: "Context",
-        metadata: "Metadata",
+        metadata: "InferenceMetadata",
         *,
         fields: list[dict[str, Any]],
         value: float | str,

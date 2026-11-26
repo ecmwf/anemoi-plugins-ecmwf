@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from anemoi.inference.context import Context
-    from anemoi.inference.metadata import Metadata
+    from anemoi.inference.metadata import InferenceMetadata
 
 
 class InferenceOrography(Orography):
@@ -44,14 +44,14 @@ class InferenceOrography(Orography):
 class OrographyProcessor(Processor):
     """A processor that applies the InferenceOrography filter to the given fields."""
 
-    def __init__(self, context: "Context", metadata: "Metadata", **kwargs: Any) -> None:
+    def __init__(self, context: "Context", metadata: "InferenceMetadata", **kwargs: Any) -> None:
         """Initialize the OrographyProcessor.
 
         Parameters
         ----------
         context : Context
             The context in which the filter is being used.
-        metadata : Metadata
+        metadata : InferenceMetadata
             The metadata associated with the processor.
         **kwargs : dict
             Additional keyword arguments to pass to the filter.

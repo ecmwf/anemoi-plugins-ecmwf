@@ -37,7 +37,7 @@ class SubtractTendencyPlugin(Processor):
     ----------
     context : Context
         The inference runner context.
-    metadata : Metadata
+    metadata : InferenceMetadata
         Metadata for the dataset this processor handles.
     tend_pl_path : str
         Path to the pressure-level tendency GRIB file.

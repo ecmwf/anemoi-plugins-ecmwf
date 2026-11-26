@@ -18,7 +18,7 @@ import earthkit.data as ekd
 import yaml
 from anemoi.inference.context import Context
 from anemoi.inference.inputs.mars import MarsInput
-from anemoi.inference.metadata import Metadata
+from anemoi.inference.metadata import InferenceMetadata
 from anemoi.inference.types import DataRequest
 from anemoi.inference.types import Date
 from anemoi.utils.grib import shortname_to_paramid
@@ -298,7 +298,7 @@ class OpenDataInputPlugin(MarsInput):
     def __init__(
         self,
         context: Context,
-        metadata: Metadata,
+        metadata: InferenceMetadata,
         source: str = "ecmwf",
         **kwargs: Any,
     ) -> None:
@@ -308,7 +308,7 @@ class OpenDataInputPlugin(MarsInput):
         ----------
         context : Any
             The context in which the input is used.
-        metadata : Metadata
+        metadata : InferenceMetadata
             The metadata associated with the input.
         source: str
             Source of the opendata. Possible values are 'ecmwf' to access ECMWF's servers,
@@ -355,8 +355,8 @@ class OpenDataInputPlugin(MarsInput):
             raise ValueError(f"No requests for {variables} ({dates})")
 
         kwargs = self.kwargs.copy()
-        kwargs.setdefault("grid", self.metadata.grid)
-        kwargs.setdefault("area", self.metadata.area)
+        kwargs.setdefault("grid", self.metadata.data.grid())
+        kwargs.setdefault("area", self.metadata.data.area())
 
         def patch(request: DataRequest) -> DataRequest:
             # Configured `patches` are applied last, as in the mars and polytope inputs

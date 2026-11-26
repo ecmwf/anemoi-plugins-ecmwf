@@ -84,7 +84,7 @@ def _make_plugin(*, accumulated_from_start: bool, timestep: timedelta) -> Multio
     """Build a bare plugin instance suitable for calling ``_timespan_for``.
 
     ``_timespan_for`` only touches ``self.context.post_processors`` (via
-    ``_is_accumulated_from_start``) and ``self.metadata.timestep``, so we avoid
+    ``_is_accumulated_from_start``) and the dataset task timing of ``self.metadata`` (``_timestep``), so we avoid
     the heavy ``__init__`` and inject just those attributes.
     """
     plugin = MultioOutputPlugin.__new__(MultioOutputPlugin)
@@ -94,7 +94,9 @@ def _make_plugin(*, accumulated_from_start: bool, timestep: timedelta) -> Multio
 
         post_processors = {"default": [Accumulate.__new__(Accumulate)]}
     plugin.context = SimpleNamespace(post_processors=post_processors)
-    plugin.metadata = SimpleNamespace(timestep=timestep)
+    timing = SimpleNamespace(timestep_delta=timestep)
+    task = SimpleNamespace(for_dataset=lambda dataset_name: timing)
+    plugin.metadata = SimpleNamespace(core=SimpleNamespace(task=task), dataset_name="data")
     return plugin
 
 

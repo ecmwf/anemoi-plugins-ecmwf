@@ -55,8 +55,8 @@ def _retrieve(mock_metadata, patches) -> list[dict]:
     plugin = OpenDataInputPlugin(runner, mock_metadata, variables=[], patches=patches)
 
     mock_metadata.mars_requests.return_value = _requests()
-    mock_metadata.grid = None
-    mock_metadata.area = None
+    mock_metadata.data.grid.return_value = None
+    mock_metadata.data.area.return_value = None
 
     fieldlist = MagicMock(spec=ekd.FieldList)
     with (
